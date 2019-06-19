@@ -59,6 +59,12 @@ cd private-join-and-compute
 bazel build :all
 ```
 
+If you get an error, you may need to build with the following flags:
+
+```bash
+bazel build :all --incompatible_disable_deprecated_attr_params=false --incompatible_depset_is_not_iterable=false --incompatible_new_actions_api=false --incompatible_no_support_tools_in_action_inputs=false
+```
+
 (All the following instructions must be run from inside the
 private-join-and-compute folder.)
 
