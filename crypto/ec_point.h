@@ -20,11 +20,7 @@
 #include <string>
 
 #include "crypto/openssl.inc"
-
-namespace util {
-template <typename T>
-class StatusOr;
-}  // namespace util
+#include "util/status.inc"
 
 namespace private_join_and_compute {
 
@@ -51,23 +47,23 @@ class ECPoint {
 
   // Converts this point to octet string in compressed form as defined in ANSI
   // X9.62 ECDSA.
-  util::StatusOr<std::string> ToBytesCompressed() const;
+  StatusOr<std::string> ToBytesCompressed() const;
 
   // Allows faster conversions than ToBytesCompressed but doubles the size of
   // the serialized point.
-  util::StatusOr<std::string> ToBytesUnCompressed() const;
+  StatusOr<std::string> ToBytesUnCompressed() const;
 
   // Returns an ECPoint whose value is (this * scalar).
   // Returns an INTERNAL error code if it fails.
-  util::StatusOr<ECPoint> Mul(const BigNum& scalar) const;
+  StatusOr<ECPoint> Mul(const BigNum& scalar) const;
 
   // Returns an ECPoint whose value is (this + point).
   // Returns an INTERNAL error code if it fails.
-  util::StatusOr<ECPoint> Add(const ECPoint& point) const;
+  StatusOr<ECPoint> Add(const ECPoint& point) const;
 
   // Returns an ECPoint whose value is (- this), the additive inverse of this.
   // Returns an INTERNAL error code if it fails.
-  util::StatusOr<ECPoint> Inverse() const;
+  StatusOr<ECPoint> Inverse() const;
 
   // Returns "true" if the value of this ECPoint is the point-at-infinity.
   // (The point-at-infinity is the additive unit in the EC group).
@@ -77,7 +73,7 @@ class ECPoint {
   bool CompareTo(const ECPoint& point) const;
 
   // Returns an ECPoint that is a copy of this.
-  util::StatusOr<ECPoint> Clone() const;
+  StatusOr<ECPoint> Clone() const;
 
  private:
   // Creates an ECPoint on the given group;

@@ -23,11 +23,8 @@
 #include "crypto/context.h"
 #include "crypto/openssl.inc"
 #include "util/status.inc"
-#include "util/status_macros.h"
 
 namespace private_join_and_compute {
-
-using util::StatusOr;
 
 BigNum::BigNum(const BigNum& other)
     : bn_(BignumPtr(CHECK_NOTNULL(BN_dup(other.bn_.get())))),
@@ -87,7 +84,7 @@ std::string BigNum::ToBytes() const {
 StatusOr<uint64_t> BigNum::ToIntValue() const {
   uint64_t val;
   if (!BN_get_u64(bn_.get(), &val)) {
-    return util::InvalidArgumentError("BigNum has more than 64 bits.");
+    return InvalidArgumentError("BigNum has more than 64 bits.");
   }
   return val;
 }

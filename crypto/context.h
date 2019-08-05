@@ -17,6 +17,7 @@
 #define CRYPTO_CONTEXT_H_
 
 #include <stdint.h>
+
 #include <memory>
 #include <string>
 
@@ -94,16 +95,20 @@ class Context {
   //
   // Returns a long value from the set [0, max_value).
   //
-  // Check Error: if bit length of max_value is greater than 512 * 254 = 130048.
+  // Check Error: if bit length of max_value is greater than 130048.
   // Since the counter used for expanding the output is expanded to 8 bit length
   // (hard-coded), any counter value that is greater than 256 would cause
-  // variable length inputs passed to the underlying sha512 calls and might make
-  // this random oracle's output not uniform across the output domain.
+  // variable length inputs passed to the underlying sha256/sha512 calls and
+  // might make this random oracle's output not uniform across the output
+  // domain.
   //
-  // The output length is increased by a security value of 512 which reduces the
-  // bias of selecting certain values more often than others when max_value is
-  // not a multiple of 2.
-  virtual BigNum RandomOracle(const std::string& x, const BigNum& max_value);
+  // The output length is increased by a security value of 256/512 which reduces
+  // the bias of selecting certain values more often than others when max_value
+  // is not a multiple of 2.
+  virtual BigNum RandomOracleSha256(const std::string& x,
+                                    const BigNum& max_value);
+  virtual BigNum RandomOracleSha512(const std::string& x,
+                                    const BigNum& max_value);
 
   // Evaluates a PRF keyed by 'key' on the given data. The returned value is
   // less than max_value.
@@ -160,6 +165,15 @@ class Context {
   const BigNum one_bn_;
   const BigNum two_bn_;
   const BigNum three_bn_;
+
+  enum RandomOracleHashType {
+    SHA256,
+    SHA512,
+  };
+
+  // If hash_type is invalid, this function will default to using SHA256.
+  virtual BigNum RandomOracle(const std::string& x, const BigNum& max_value,
+                              RandomOracleHashType hash_type);
 };
 
 }  // namespace private_join_and_compute

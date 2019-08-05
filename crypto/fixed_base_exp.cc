@@ -34,14 +34,11 @@
 #include "crypto/context.h"
 #include "crypto/mont_mul.h"
 #include "util/status.inc"
-#include "util/status_macros.h"
 
 DEFINE_bool(two_k_ary_exp, false,
             "Whether to use 2^k-ary fixed based exponentiation.");
 
 namespace private_join_and_compute {
-
-using util::StatusOr;
 
 namespace internal {
 
@@ -136,8 +133,10 @@ FixedBaseExp::FixedBaseExp(internal::FixedBaseExpImplBase* impl)
 FixedBaseExp::~FixedBaseExp() = default;
 
 StatusOr<BigNum> FixedBaseExp::ModExp(const BigNum& exp) const {
-  RET_INVALID_ARG_CHECK(exp.IsNonNegative())
-      << "FixedBaseExp::ModExp : Negative exponents not supported.";
+  if (!exp.IsNonNegative()) {
+    return InvalidArgumentError(
+        "FixedBaseExp::ModExp : Negative exponents not supported.");
+  }
   return impl_->ModExp(exp);
 }
 

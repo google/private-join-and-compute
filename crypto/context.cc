@@ -16,6 +16,7 @@
 #include "crypto/context.h"
 
 #include <math.h>
+
 #include <algorithm>
 #include <cmath>
 
@@ -86,21 +87,42 @@ std::string Context::Sha512String(const std::string& bytes) {
   return std::string(reinterpret_cast<char*>(hash), md_len);
 }
 
-BigNum Context::RandomOracle(const std::string& x, const BigNum& max_value) {
-  int output_bit_length = max_value.BitLength() + 512;
-  int iter_count = std::ceil(static_cast<float>(output_bit_length) / 512);
-  CHECK(iter_count < 255) << "The domain bit length must not be greater than "
-                             "130048. Desired bit length: "
-                          << output_bit_length;
-  int excess_bit_count = (iter_count * 512) - output_bit_length;
+BigNum Context::RandomOracle(const std::string& x, const BigNum& max_value,
+                             RandomOracleHashType hash_type) {
+  int hash_output_length = 256;
+  if (hash_type == SHA512) {
+    hash_output_length = 512;
+  }
+  int output_bit_length = max_value.BitLength() + hash_output_length;
+  int iter_count =
+      std::ceil(static_cast<float>(output_bit_length) / hash_output_length);
+  CHECK(iter_count * hash_output_length < 130048)
+      << "The domain bit length must not be greater than "
+         "130048. Desired bit length: "
+      << output_bit_length;
+  int excess_bit_count = (iter_count * hash_output_length) - output_bit_length;
   BigNum hash_output = CreateBigNum(0);
   for (int i = 1; i < iter_count + 1; i++) {
-    hash_output = hash_output.Lshift(512);
-    hash_output =
-        hash_output +
-        CreateBigNum(Sha512String(CreateBigNum(i).ToBytes().append(x)));
+    hash_output = hash_output.Lshift(hash_output_length);
+    std::string hashed_string;
+    if (hash_type == SHA512) {
+      hashed_string = Sha512String(CreateBigNum(i).ToBytes().append(x));
+    } else {
+      hashed_string = Sha256String(CreateBigNum(i).ToBytes().append(x));
+    }
+    hash_output = hash_output + CreateBigNum(hashed_string);
   }
   return hash_output.Rshift(excess_bit_count).Mod(max_value);
+}
+
+BigNum Context::RandomOracleSha512(const std::string& x,
+                                   const BigNum& max_value) {
+  return RandomOracle(x, max_value, SHA512);
+}
+
+BigNum Context::RandomOracleSha256(const std::string& x,
+                                   const BigNum& max_value) {
+  return RandomOracle(x, max_value, SHA256);
 }
 
 BigNum Context::PRF(const std::string& key, const std::string& data,

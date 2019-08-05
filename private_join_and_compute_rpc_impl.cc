@@ -20,49 +20,54 @@
 namespace private_join_and_compute {
 
 namespace {
-// Translates util::Status to grpc::Status
-::grpc::Status ConvertStatus(const util::Status& status) {
+// Translates Status to grpc::Status
+::grpc::Status ConvertStatus(const Status& status) {
   if (status.ok()) {
     return ::grpc::Status::OK;
   }
-  if (util::IsInvalidArgument(status)) {
+  if (IsInvalidArgument(status)) {
     return ::grpc::Status(::grpc::StatusCode::INVALID_ARGUMENT,
                           std::string(status.message()));
   }
-  if (util::IsInternal(status)) {
+  if (IsInternal(status)) {
     return ::grpc::Status(::grpc::StatusCode::INTERNAL,
                           std::string(status.message()));
   }
   return ::grpc::Status(::grpc::StatusCode::UNKNOWN,
                         std::string(status.message()));
 }
+
+class SingleMessageSink : public MessageSink<ServerMessage> {
+ public:
+  explicit SingleMessageSink(ServerMessage* server_message)
+      : server_message_(server_message) {}
+
+  ~SingleMessageSink() override = default;
+
+  Status Send(const ServerMessage& server_message) override {
+    if (!message_sent_) {
+      *server_message_ = server_message;
+      message_sent_ = true;
+      return OkStatus();
+    } else {
+      return InvalidArgumentError(
+          "SingleMessageSink can only accept a single message.");
+    }
+  }
+
+ private:
+  ServerMessage* server_message_ = nullptr;
+  bool message_sent_ = false;
+};
+
 }  // namespace
 
-::grpc::Status PrivateJoinAndComputeRpcImpl::StartProtocol(
-    ::grpc::ServerContext* context, const StartProtocolRequest* request,
-    ServerRoundOne* response) {
-  auto maybe_response = server_->EncryptSet();
-  if (maybe_response.ok()) {
-    *response = std::move(maybe_response.ValueOrDie());
-  }
-  return ConvertStatus(maybe_response.status());
-}
-
-::grpc::Status PrivateJoinAndComputeRpcImpl::ExecuteServerRoundTwo(
-    ::grpc::ServerContext* context, const ClientRoundOne* request,
-    ServerRoundTwo* response) {
-  if (protocol_finished_) {
-    return ::grpc::Status(
-        ::grpc::StatusCode::INVALID_ARGUMENT,
-        "PrivateJoinAndComputeRpcImpl: Protocol is already finished.");
-  }
-
-  auto maybe_response = server_->ComputeIntersection(*request);
-  if (maybe_response.ok()) {
-    *response = std::move(maybe_response.ValueOrDie());
-    protocol_finished_ = true;
-  }
-  return ConvertStatus(maybe_response.status());
+::grpc::Status PrivateJoinAndComputeRpcImpl::Handle(
+    ::grpc::ServerContext* context, const ClientMessage* request,
+    ServerMessage* response) {
+  SingleMessageSink message_sink(response);
+  auto status = protocol_server_impl_->Handle(*request, &message_sink);
+  return ConvertStatus(status);
 }
 
 }  // namespace private_join_and_compute

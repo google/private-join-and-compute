@@ -17,83 +17,29 @@
 #define UTIL_STATUS_MACROS_H_
 
 #include "absl/base/port.h"
-#include "util/status.inc"
+#include "util/status.h"
+#include "util/statusor.h"
 
-// Helper macro that checks if condition is true, otherwise it returns a status
-// with the given error_code.
-// Example:
-//   RET_ERROR_CHECK(condition, ::private_join_and_compute::StatusCode::kInternal) << message;
-#define RET_ERROR_CHECK(condition, error_code)                        \
-  while (ABSL_PREDICT_FALSE(!(condition)))                                 \
-  return util::StatusBuilder(error_code)                     \
-                 << #condition << " failed"
+// Helper macro that checks if the right hand side (rexpression) evaluates to a
+// StatusOr with Status OK, and if so assigns the value to the value on the left
+// hand side (lhs), otherwise returns the error status. Example:
+//   ASSIGN_OR_RETURN(lhs, rexpression);
+#define ASSIGN_OR_RETURN(lhs, rexpr)                                          \
+  PRIVACY_BLINDERS_ASSIGN_OR_RETURN_IMPL_(                                    \
+      PRIVACY_BLINDERS_STATUS_MACROS_IMPL_CONCAT_(status_or_value, __LINE__), \
+      lhs, rexpr)
 
-// Helper macro that checks if condition is true, otherwise it returns a status
-// with INTERNAL error code.
-// Example:
-//   RET_INTERNAL_CHECK(condition) << message;
-#define RET_INTERNAL_CHECK(condition)                        \
-  RET_ERROR_CHECK(condition, ::private_join_and_compute::StatusCode::kInternal)
+// Internal helper.
+#define PRIVACY_BLINDERS_ASSIGN_OR_RETURN_IMPL_(statusor, lhs, rexpr) \
+  auto statusor = (rexpr);                                            \
+  if (ABSL_PREDICT_FALSE(!statusor.ok())) {                           \
+    return std::move(statusor).status();                              \
+  }                                                                   \
+  lhs = std::move(statusor).ValueOrDie()
 
-// Helper macro that checks if condition is true, otherwise it returns a status
-// with INVALID_ARGUMENT error code.
-// Example:
-//   RET_INVALID_ARG_CHECK(condition) << message;
-#define RET_INVALID_ARG_CHECK(condition)                              \
-  while (ABSL_PREDICT_FALSE(!(condition)))                              \
-  RET_ERROR_CHECK(condition, ::private_join_and_compute::StatusCode::kInvalidArgument)
-
-// Helper macro that checks if val is not null. Val needs to return a pointer.
-// If val is null, it returns an INVALID_ARGUMENT error code, otherwise it
-// evaluates to val.
-
-#define RETURN_IF_NULL(val)                                            \
-  ({                                                                   \
-    auto _val_result = (val);                                          \
-    if (ABSL_PREDICT_FALSE(_val_result == nullptr)) {                       \
-      return util::StatusBuilder(::private_join_and_compute::StatusCode::kInvalidArgument) \
-             << #val " != nullptr"; \
-    }                                                                  \
-    _val_result;                                                       \
-  })
-
-namespace private_join_and_compute {
-namespace internal {
-
-// These helper functions allow RETURN_IF_ERROR to handle both util::Status and
-// util::StatusOr.
-inline ::util::Status ToStatus(const ::util::Status& s) { return s; }
-template <typename T>
-util::Status ToStatus(const ::util::StatusOr<T>& so) {
-  return so.status();
-}
-
-inline void ToValue(::util::Status* status) {}
-
-template <typename T>
-inline T ToValue(::util::StatusOr<T>* statusor) {
-  return statusor->ConsumeValueOrDie();
-}
-
-}  // namespace internal
-}  // namespace private_join_and_compute
-
-// Executes an expression that returns a util::StatusOr, extracting its value
-// and returns it (or returns a Status message if the status is not ok).
-//
-// Example:
-// MyClass val = RETURN_OR_ASSIGN(MaybeGetValue(...));
-// If MaybeGetValue result is not ok then this stmt issues a return with the
-// original status and it is autoboxed in a StatusOr.
-// If the result is ok, then the result value of MaybeGetValue is unboxed and
-// returned directly.
-#define RETURN_OR_ASSIGN(expr)                            \
-  ({                                                      \
-    auto _val_result = (expr);                            \
-    if (ABSL_PREDICT_FALSE(!_val_result.ok())) {          \
-      return ::private_join_and_compute::internal::ToStatus(_val_result); \
-    }                                                     \
-    ::private_join_and_compute::internal::ToValue(&_val_result);          \
-  })
+// Internal helper for concatenating macro values.
+#define PRIVACY_BLINDERS_STATUS_MACROS_IMPL_CONCAT_INNER_(x, y) x##y
+#define PRIVACY_BLINDERS_STATUS_MACROS_IMPL_CONCAT_(x, y) \
+  PRIVACY_BLINDERS_STATUS_MACROS_IMPL_CONCAT_INNER_(x, y)
 
 #endif  // UTIL_STATUS_MACROS_H_

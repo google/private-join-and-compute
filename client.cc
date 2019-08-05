@@ -26,11 +26,14 @@
 #include "include/grpcpp/grpcpp.h"
 #include "include/grpcpp/security/credentials.h"
 #include "include/grpcpp/support/status.h"
-#include "client_lib.h"
 #include "data_util.h"
-#include "match.grpc.pb.h"
-#include "match.pb.h"
+#include "client_impl.h"
+#include "private_join_and_compute.grpc.pb.h"
+#include "private_join_and_compute.pb.h"
+#include "protocol_client.h"
+#include "util/status.inc"
 #include "absl/memory/memory.h"
+#include "absl/strings/str_cat.h"
 
 DEFINE_string(port, "0.0.0.0:10501", "Port on which to contact server");
 DEFINE_string(client_data_file, "",
@@ -41,7 +44,37 @@ DEFINE_int32(
     "will be the product of two safe primes, each of size "
     "paillier_modulus_size/2.");
 
-using ::private_join_and_compute::PrivateJoinAndComputeRpc;
+namespace private_join_and_compute {
+namespace {
+
+class InvokeServerHandleClientMessageSink : public MessageSink<ClientMessage> {
+ public:
+  explicit InvokeServerHandleClientMessageSink(
+      std::unique_ptr<PrivateJoinAndComputeRpc::Stub> stub)
+      : stub_(std::move(stub)) {}
+
+  ~InvokeServerHandleClientMessageSink() override = default;
+
+  Status Send(const ClientMessage& message) override {
+    ::grpc::ClientContext client_context;
+    ::grpc::Status grpc_status =
+        stub_->Handle(&client_context, message, &last_server_response_);
+    if (grpc_status.ok()) {
+      return OkStatus();
+    } else {
+      return InternalError(absl::StrCat(
+          "GrpcClientMessageSink: Failed to send message, error code: ",
+          grpc_status.error_code(),
+          ", error_message: ", grpc_status.error_message()));
+    }
+  }
+
+  const ServerMessage& last_server_response() { return last_server_response_; }
+
+ private:
+  std::unique_ptr<PrivateJoinAndComputeRpc::Stub> stub_;
+  ServerMessage last_server_response_;
+};
 
 int ExecuteProtocol() {
   ::private_join_and_compute::Context context;
@@ -59,8 +92,8 @@ int ExecuteProtocol() {
       std::move(maybe_client_identifiers_and_associated_values.ValueOrDie());
 
   std::cout << "Client: Generating keys..." << std::endl;
-  std::unique_ptr<::private_join_and_compute::Client> client =
-      absl::make_unique<::private_join_and_compute::Client>(
+  std::unique_ptr<::private_join_and_compute::ProtocolClient> client =
+      absl::make_unique<::private_join_and_compute::PrivateIntersectionSumProtocolClientImpl>(
           &context, std::move(client_identifiers_and_associated_values.first),
           std::move(client_identifiers_and_associated_values.second),
           FLAGS_paillier_modulus_size);
@@ -70,85 +103,77 @@ int ExecuteProtocol() {
       PrivateJoinAndComputeRpc::NewStub(::grpc::CreateChannel(
           FLAGS_port, ::grpc::experimental::LocalCredentials(
                           grpc_local_connect_type::LOCAL_TCP)));
+  InvokeServerHandleClientMessageSink invoke_server_handle_message_sink(
+      std::move(stub));
 
-  // Execute StartProtocol.
+  // Execute StartProtocol and wait for response from ServerRoundOne.
   std::cout
       << "Client: Starting the protocol." << std::endl
       << "Client: Waiting for response and encrypted set from the server..."
       << std::endl;
-  ::private_join_and_compute::StartProtocolRequest start_protocol_request;
-  ::private_join_and_compute::ServerRoundOne server_round_one;
-  ::grpc::ClientContext start_protocol_client_context;
-  ::grpc::Status status =
-      stub->StartProtocol(&start_protocol_client_context,
-                          start_protocol_request, &server_round_one);
-  if (!status.ok()) {
+  auto start_protocol_status =
+      client->StartProtocol(&invoke_server_handle_message_sink);
+  if (!start_protocol_status.ok()) {
     std::cerr << "Client::ExecuteProtocol: failed to StartProtocol: "
-              << status.error_message() << std::endl;
+              << start_protocol_status << std::endl;
     return 1;
   }
+  ServerMessage server_round_one =
+      invoke_server_handle_message_sink.last_server_response();
 
-  // Execute ClientRoundOne.
+  // Execute ClientRoundOne, and wait for response from ServerRoundTwo.
   std::cout
       << "Client: Received encrypted set from the server, double encrypting..."
       << std::endl;
-  auto maybe_client_round_one = client->ReEncryptSet(server_round_one);
-  if (!maybe_client_round_one.ok()) {
+  std::cout << "Client: Sending double encrypted server data and "
+               "single-encrypted client data to the server."
+            << std::endl
+            << "Client: Waiting for encrypted intersection sum..." << std::endl;
+  auto client_round_one_status =
+      client->Handle(server_round_one, &invoke_server_handle_message_sink);
+  if (!client_round_one_status.ok()) {
     std::cerr << "Client::ExecuteProtocol: failed to ReEncryptSet: "
-              << maybe_client_round_one.status() << std::endl;
+              << client_round_one_status << std::endl;
     return 1;
   }
-  auto client_round_one = std::move(maybe_client_round_one.ValueOrDie());
 
   // Execute ServerRoundTwo.
   std::cout << "Client: Sending double encrypted server data and "
                "single-encrypted client data to the server."
             << std::endl
             << "Client: Waiting for encrypted intersection sum..." << std::endl;
-  ::private_join_and_compute::ServerRoundTwo server_round_two;
-  ::grpc::ClientContext server_round_two_client_context;
-  status = stub->ExecuteServerRoundTwo(&server_round_two_client_context,
-                                       client_round_one, &server_round_two);
-  if (!status.ok()) {
-    std::cerr << "Client::ExecuteProtocol: failed to ExecuteServerRoundTwo: "
-              << status.error_message() << std::endl;
-    return 1;
-  }
+  ServerMessage server_round_two =
+      invoke_server_handle_message_sink.last_server_response();
 
   // Compute the intersection size and sum.
   std::cout << "Client: Received response from the server. Decrypting the "
                "intersection-sum."
             << std::endl;
-  auto maybe_intersection_size_and_sum = client->DecryptSum(server_round_two);
-  if (!maybe_intersection_size_and_sum.ok()) {
+  auto intersection_size_and_sum_status =
+      client->Handle(server_round_two, &invoke_server_handle_message_sink);
+  if (!intersection_size_and_sum_status.ok()) {
     std::cerr << "Client::ExecuteProtocol: failed to DecryptSum: "
-              << maybe_intersection_size_and_sum.status() << std::endl;
+              << intersection_size_and_sum_status << std::endl;
     return 1;
   }
-  auto intersection_size_and_sum =
-      std::move(maybe_intersection_size_and_sum.ValueOrDie());
 
   // Output the result.
-
-  int64_t intersection_size = intersection_size_and_sum.first;
-  auto maybe_intersection_sum = intersection_size_and_sum.second.ToIntValue();
-  if (!maybe_intersection_sum.ok()) {
-    std::cerr
-        << "Client::ExecuteProtocol: failed to recover the intersection sum: "
-        << maybe_intersection_sum.status() << std::endl;
+  auto client_print_output_status = client->PrintOutput();
+  if (!client_print_output_status.ok()) {
+    std::cerr << "Client::ExecuteProtocol: failed to PrintOutput: "
+              << client_print_output_status << std::endl;
     return 1;
   }
-
-  std::cout << "Client: The intersection size is " << intersection_size
-            << " and the intersection-sum is "
-            << maybe_intersection_sum.ValueOrDie() << std::endl;
 
   return 0;
 }
+
+}  // namespace
+}  // namespace private_join_and_compute
 
 int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
   gflags::ParseCommandLineFlags(&argc, &argv, true);
 
-  return ExecuteProtocol();
+  return private_join_and_compute::ExecuteProtocol();
 }

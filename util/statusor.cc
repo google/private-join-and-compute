@@ -18,7 +18,7 @@
 #include "glog/logging.h"
 #include "util/status.h"
 
-namespace util {
+namespace private_join_and_compute {
 namespace internal {
 
 static const char* kInvalidStatusCtorArgMessage =
@@ -26,23 +26,24 @@ static const char* kInvalidStatusCtorArgMessage =
 static const char* kNullObjectCtorArgMessage =
     "NULL is not a valid constructor argument to StatusOr<T*>";
 
-::util::Status StatusOrHelper::HandleInvalidStatusCtorArg() {
+Status StatusOrHelper::HandleInvalidStatusCtorArg() {
   LOG(DFATAL) << kInvalidStatusCtorArgMessage;
-  // In optimized builds, we will fall back to ::util::error::INTERNAL.
+  // In optimized builds, we will fall back to private_join_and_compute::StatusCode::kInternal.
   return Status(::private_join_and_compute::StatusCode::kInternal,
                 kInvalidStatusCtorArgMessage);
 }
 
-::util::Status StatusOrHelper::HandleNullObjectCtorArg() {
+Status StatusOrHelper::HandleNullObjectCtorArg() {
   LOG(DFATAL) << kNullObjectCtorArgMessage;
-  // In optimized builds, we will fall back to ::util::error::INTERNAL.
+  // In optimized builds, we will fall back to
+  // ::private_join_and_compute::StatusCode::kInternal.
   return Status(::private_join_and_compute::StatusCode::kInternal, kNullObjectCtorArgMessage);
 }
 
-void StatusOrHelper::Crash(const ::util::Status& status) {
+void StatusOrHelper::Crash(const Status& status) {
   LOG(FATAL) << "Attempting to fetch value instead of handling error "
              << status;
 }
 
 }  // namespace internal
-}  // namespace util
+}  // namespace private_join_and_compute

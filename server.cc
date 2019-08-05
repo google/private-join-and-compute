@@ -27,9 +27,10 @@
 #include "include/grpcpp/server_context.h"
 #include "include/grpcpp/support/status.h"
 #include "data_util.h"
-#include "match.grpc.pb.h"
+#include "server_impl.h"
+#include "private_join_and_compute.grpc.pb.h"
 #include "private_join_and_compute_rpc_impl.h"
-#include "server_lib.h"
+#include "protocol_server.h"
 #include "absl/memory/memory.h"
 
 DEFINE_string(port, "0.0.0.0:10501", "Port on which to listen");
@@ -47,8 +48,8 @@ int RunServer() {
   }
 
   ::private_join_and_compute::Context context;
-  std::unique_ptr<::private_join_and_compute::Server> server =
-      absl::make_unique<::private_join_and_compute::Server>(
+  std::unique_ptr<::private_join_and_compute::ProtocolServer> server =
+      absl::make_unique<::private_join_and_compute::PrivateIntersectionSumProtocolServerImpl>(
           &context, std::move(maybe_server_identifiers.ValueOrDie()));
   ::private_join_and_compute::PrivateJoinAndComputeRpcImpl service(std::move(server));
 

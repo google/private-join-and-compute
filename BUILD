@@ -19,12 +19,52 @@ grpc_proto_library(
     srcs = ["match.proto"],
 )
 
+grpc_proto_library(
+    name = "private_intersection_sum_proto",
+    srcs = ["private_intersection_sum.proto"],
+    deps = [
+    	":match_proto",
+    ],
+)
+
+grpc_proto_library(
+    name = "private_join_and_compute_proto",
+    srcs = ["private_join_and_compute.proto"],
+    deps = [
+    	":private_intersection_sum_proto",
+    ],
+)
+
 cc_library(
-    name = "client_lib",
-    srcs = ["client_lib.cc"],
-    hdrs = ["client_lib.h"],
+    name = "message_sink",
+    hdrs = ["message_sink.h"],
+    deps = [
+    	":private_join_and_compute_proto",
+	"//util:status_includes",
+        "@com_google_absl//absl/memory",
+    ],
+)
+
+cc_library(
+    name = "protocol_client",
+    hdrs = ["protocol_client.h"],
+    deps = [
+    	":message_sink",
+    	":private_join_and_compute_proto",
+	"//util:status_includes",
+    ],
+)
+
+cc_library(
+    name = "client_impl",
+    srcs = ["client_impl.cc"],
+    hdrs = ["client_impl.h"],
     deps = [
         ":match_proto",
+	":message_sink",
+	":private_intersection_sum_proto",
+	":private_join_and_compute_proto",
+	":protocol_client",
         "//crypto:bn_util",
         "//crypto:ec_commutative_cipher",
         "//crypto:paillier",
@@ -35,11 +75,25 @@ cc_library(
 )
 
 cc_library(
-    name = "server_lib",
-    srcs = ["server_lib.cc"],
-    hdrs = ["server_lib.h"],
+    name = "protocol_server",
+    hdrs = ["protocol_server.h"],
+    deps = [
+    	":message_sink",
+        ":private_join_and_compute_proto",
+        "//util:status_includes",
+    ],
+)
+
+cc_library(
+    name = "server_impl",
+    srcs = ["server_impl.cc"],
+    hdrs = ["server_impl.h"],
     deps = [
         ":match_proto",
+	":message_sink",
+	":private_intersection_sum_proto",
+	":private_join_and_compute_proto",
+	":protocol_server",
         "//crypto:bn_util",
         "//crypto:ec_commutative_cipher",
         "//crypto:paillier",
@@ -79,8 +133,9 @@ cc_library(
     srcs = ["private_join_and_compute_rpc_impl.cc"],
     hdrs = ["private_join_and_compute_rpc_impl.h"],
     deps = [
-        ":match_proto",
-        ":server_lib",
+	":message_sink",
+	":private_join_and_compute_proto",
+	":protocol_server",
         "//util:status_includes",
         "@com_github_grpc_grpc//:grpc++",
     ],
@@ -91,9 +146,10 @@ cc_binary(
     srcs = ["server.cc"],
     deps = [
         ":data_util",
-        ":match_proto",
+        ":private_join_and_compute_proto",
         ":private_join_and_compute_rpc_impl",
-        ":server_lib",
+	":protocol_server",
+        ":server_impl",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_glog_glog//:glog",
         "@com_github_grpc_grpc//:grpc",
@@ -107,14 +163,16 @@ cc_binary(
     name = "client",
     srcs = ["client.cc"],
     deps = [
-        ":client_lib",
+        ":client_impl",
         ":data_util",
-        ":match_proto",
+        ":private_join_and_compute_proto",
+	":protocol_client",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_glog_glog//:glog",
         "@com_github_grpc_grpc//:grpc",
         "@com_github_grpc_grpc//:grpc++",
         "@com_google_absl//absl/base",
         "@com_google_absl//absl/memory",
+	"@com_google_absl//absl/strings",
     ],
 )

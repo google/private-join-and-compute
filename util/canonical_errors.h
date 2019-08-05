@@ -20,7 +20,7 @@
 
 #include "util/status.h"
 
-namespace util {
+namespace private_join_and_compute {
 
 Status InternalError(const std::string& message);
 Status InvalidArgumentError(const std::string& message);
@@ -28,7 +28,6 @@ Status InvalidArgumentError(const std::string& message);
 bool IsInternal(const Status& status);
 bool IsInvalidArgument(const Status& status);
 
-}  // namespace util
-
+}  // namespace private_join_and_compute
 
 #endif  // UTIL_CANONICAL_ERRORS_H_

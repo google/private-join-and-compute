@@ -26,7 +26,6 @@
 #include "crypto/fixed_base_exp.h"
 #include "crypto/two_modulus_crt.h"
 #include "util/status.inc"
-#include "util/status_macros.h"
 #include "absl/container/node_hash_map.h"
 
 DEFINE_int32(generator_try_count, 1000,
@@ -34,8 +33,6 @@ DEFINE_int32(generator_try_count, 1000,
              "safe prime starting from the candidate, 2.");
 
 namespace private_join_and_compute {
-
-using util::StatusOr;
 
 // A class representing a table of BigNums.
 // The column length of the table is fixed and given in the constructor.
@@ -233,7 +230,7 @@ class PrimeCrypto {
   // the value.)
   StatusOr<BigNum> EncryptWithRand(const BigNum& m, const BigNum& r) const {
     BigNum c_p = ComputeByBinomialExpansion(ctx_, precomp_, powers_, m);
-    BigNum g_to_r = RETURN_OR_ASSIGN(fbe_->ModExp(r));
+    ASSIGN_OR_RETURN(BigNum g_to_r, fbe_->ModExp(r));
     return c_p.ModMul(g_to_r, powers_[s_ + 1]);
   }
 
@@ -314,8 +311,8 @@ class PrimeCryptoWithRand {
   // random used.
   StatusOr<PaillierEncAndRand> EncryptAndGetRand(const BigNum& m) const {
     BigNum r = ctx_->GenerateRandBetween(ctx_->One(), prime_crypto_->p_);
-    BigNum ct = RETURN_OR_ASSIGN(EncryptWithRand(m, r));
-    BigNum exp_for_report_to_r = RETURN_OR_ASSIGN(exp_for_report_->ModExp(r));
+    ASSIGN_OR_RETURN(BigNum ct, EncryptWithRand(m, r));
+    ASSIGN_OR_RETURN(BigNum exp_for_report_to_r, exp_for_report_->ModExp(r));
     return {{std::move(ct), std::move(exp_for_report_to_r)}};
   }
 
@@ -360,27 +357,35 @@ BigNum PublicPaillier::LeftShift(const BigNum& c, int shift_amount) const {
 }
 
 StatusOr<BigNum> PublicPaillier::Encrypt(const BigNum& m) const {
-  RET_INVALID_ARG_CHECK(m.IsNonNegative())
-      << "PublicPaillier::Encrypt() - Cannot encrypt negative number.";
-  RET_INVALID_ARG_CHECK(m < n_powers_[s_])
-      << "PublicPaillier::Encrypt() - Message not smaller than n^s.";
+  if (!m.IsNonNegative()) {
+    return InvalidArgumentError(
+        "PublicPaillier::Encrypt() - Cannot encrypt negative number.");
+  }
+  if (m >= n_powers_[s_]) {
+    return InvalidArgumentError(
+        "PublicPaillier::Encrypt() - Message not smaller than n^s.");
+  }
   return EncryptUsingGeneratorAndRand(m, ctx_->GenerateRandLessThan(n_));
 }
 
 StatusOr<BigNum> PublicPaillier::EncryptUsingGeneratorAndRand(
     const BigNum& m, const BigNum& r) const {
-  RET_INVALID_ARG_CHECK(r <= n_)
-      << "The given random is not less than or equal to n.";
+  if (r > n_) {
+    return InvalidArgumentError(
+        "PublicPaillier: The given random is not less than or equal to n.");
+  }
   BigNum c = ComputeByBinomialExpansion(ctx_, precomp_, n_powers_, m);
-  BigNum g_n_to_r = RETURN_OR_ASSIGN(g_n_fbe_->ModExp(r));
+  ASSIGN_OR_RETURN(BigNum g_n_to_r, g_n_fbe_->ModExp(r));
   return c.ModMul(g_n_to_r, modulus_);
 }
 
 
 StatusOr<BigNum> PublicPaillier::EncryptWithRand(const BigNum& m,
                                                  const BigNum& r) const {
-  RET_INVALID_ARG_CHECK(r.Gcd(n_) == ctx_->One())
-      << "The given random is not in Z*n.";
+  if (r.Gcd(n_) != ctx_->One()) {
+    return InvalidArgumentError(
+        "PublicPaillier::EncryptWithRand: The given random is not in Z*n.");
+  }
   BigNum c = ComputeByBinomialExpansion(ctx_, precomp_, n_powers_, m);
   return c.ModMul(r.ModExp(n_powers_[s_], modulus_), modulus_);
 }
@@ -388,7 +393,7 @@ StatusOr<BigNum> PublicPaillier::EncryptWithRand(const BigNum& m,
 StatusOr<PaillierEncAndRand> PublicPaillier::EncryptAndGetRand(
     const BigNum& m) const {
   BigNum r = ctx_->RelativelyPrimeRandomLessThan(n_);
-  BigNum c = RETURN_OR_ASSIGN(EncryptWithRand(m, r));
+  ASSIGN_OR_RETURN(BigNum c, EncryptWithRand(m, r));
   return {{std::move(c), std::move(r)}};
 }
 
@@ -407,12 +412,16 @@ PrivatePaillier::PrivatePaillier(Context* ctx, const BigNum& p, const BigNum& q,
                                              q_crypto_->GetPToExp(s))) {}
 
 StatusOr<BigNum> PrivatePaillier::Encrypt(const BigNum& m) const {
-  RET_INVALID_ARG_CHECK(m.IsNonNegative())
-      << "PrivatePaillier::Encrypt() - Cannot encrypt negative number.";
-  RET_INVALID_ARG_CHECK(m < n_to_s_)
-      << "PrivatePaillier::Encrypt() - Message not smaller than n^s.";
-  BigNum p_ct = RETURN_OR_ASSIGN(p_crypto_->Encrypt(m));
-  BigNum q_ct = RETURN_OR_ASSIGN(q_crypto_->Encrypt(m));
+  if (!m.IsNonNegative()) {
+    return InvalidArgumentError(
+        "PrivatePaillier::Encrypt() - Cannot encrypt negative number.");
+  }
+  if (m >= n_to_s_) {
+    return InvalidArgumentError(
+        "PrivatePaillier::Encrypt() - Message not smaller than n^s.");
+  }
+  ASSIGN_OR_RETURN(BigNum p_ct, p_crypto_->Encrypt(m));
+  ASSIGN_OR_RETURN(BigNum q_ct, q_crypto_->Encrypt(m));
   return two_mod_crt_encrypt_->Compute(p_ct, q_ct);
 }
 
@@ -420,10 +429,14 @@ PrivatePaillier::PrivatePaillier(Context* ctx, const BigNum& p, const BigNum& q)
     : PrivatePaillier(ctx, p, q, kDefaultS) {}
 
 StatusOr<BigNum> PrivatePaillier::Decrypt(const BigNum& c) const {
-  RET_INVALID_ARG_CHECK(c.IsNonNegative())
-      << "PrivatePaillier::Decrypt() - Cannot decrypt negative number.";
-  RET_INVALID_ARG_CHECK(c < n_to_s_plus_one_)
-      << "PrivatePaillier::Decrypt() - Ciphertext not smaller than n^(s+1).";
+  if (!c.IsNonNegative()) {
+    return InvalidArgumentError(
+        "PrivatePaillier::Decrypt() - Cannot decrypt negative number.");
+  }
+  if (c >= n_to_s_plus_one_) {
+    return InvalidArgumentError(
+        "PrivatePaillier::Decrypt() - Ciphertext not smaller than n^(s+1).");
+  }
   return two_mod_crt_decrypt_->Compute(p_crypto_->Decrypt(c),
                                        q_crypto_->Decrypt(c));
 }
@@ -440,21 +453,25 @@ PrivatePaillierWithRand::PrivatePaillierWithRand(
 
 PrivatePaillierWithRand::~PrivatePaillierWithRand() = default;
 
-util::StatusOr<BigNum> PrivatePaillierWithRand::Encrypt(const BigNum& m) const {
+StatusOr<BigNum> PrivatePaillierWithRand::Encrypt(const BigNum& m) const {
   return private_paillier_->Encrypt(m);
 }
 
-util::StatusOr<PaillierEncAndRand> PrivatePaillierWithRand::EncryptAndGetRand(
+StatusOr<PaillierEncAndRand> PrivatePaillierWithRand::EncryptAndGetRand(
     const BigNum& m) const {
-  RET_INVALID_ARG_CHECK(m.IsNonNegative())
-      << "PrivatePaillier::Encrypt() - Cannot encrypt negative number.";
-  RET_INVALID_ARG_CHECK(m < private_paillier_->n_to_s_)
-      << "PrivatePaillier::Encrypt() - Message not smaller than n^s.";
+  if (!m.IsNonNegative()) {
+    return InvalidArgumentError(
+        "PrivatePaillier::Encrypt() - Cannot encrypt negative number.");
+  }
+  if (m >= private_paillier_->n_to_s_) {
+    return InvalidArgumentError(
+        "PrivatePaillier::Encrypt() - Message not smaller than n^s.");
+  }
 
-  const PaillierEncAndRand enc_p =
-      RETURN_OR_ASSIGN(p_crypto_->EncryptAndGetRand(m));
-  const PaillierEncAndRand enc_q =
-      RETURN_OR_ASSIGN(q_crypto_->EncryptAndGetRand(m));
+  ASSIGN_OR_RETURN(const PaillierEncAndRand enc_p,
+                   p_crypto_->EncryptAndGetRand(m));
+  ASSIGN_OR_RETURN(const PaillierEncAndRand enc_q,
+                   q_crypto_->EncryptAndGetRand(m));
 
   BigNum c = private_paillier_->two_mod_crt_encrypt_->Compute(enc_p.ciphertext,
                                                               enc_q.ciphertext);
@@ -462,7 +479,7 @@ util::StatusOr<PaillierEncAndRand> PrivatePaillierWithRand::EncryptAndGetRand(
   return {{std::move(c), std::move(r)}};
 }
 
-util::StatusOr<BigNum> PrivatePaillierWithRand::Decrypt(const BigNum& c) const {
+StatusOr<BigNum> PrivatePaillierWithRand::Decrypt(const BigNum& c) const {
   return private_paillier_->Decrypt(c);
 }
 

@@ -22,18 +22,16 @@
 #include "crypto/ec_group.h"
 #include "crypto/ec_point.h"
 #include "util/status.inc"
-#include "util/status_macros.h"
 
 namespace private_join_and_compute {
 
 namespace elgamal {
 
-util::StatusOr<
-    std::pair<std::unique_ptr<PublicKey>, std::unique_ptr<PrivateKey>>>
+StatusOr<std::pair<std::unique_ptr<PublicKey>, std::unique_ptr<PrivateKey>>>
 GenerateKeyPair(const ECGroup& ec_group) {
-  ECPoint g = RETURN_OR_ASSIGN(ec_group.GetFixedGenerator());
+  ASSIGN_OR_RETURN(ECPoint g, ec_group.GetFixedGenerator());
   BigNum x = ec_group.GeneratePrivateKey();
-  ECPoint y = RETURN_OR_ASSIGN(g.Mul(x));
+  ASSIGN_OR_RETURN(ECPoint y, g.Mul(x));
 
   std::unique_ptr<PublicKey> public_key(
       new PublicKey({std::move(g), std::move(y)}));
@@ -42,30 +40,29 @@ GenerateKeyPair(const ECGroup& ec_group) {
   return {{std::move(public_key), std::move(private_key)}};
 }
 
-util::StatusOr<elgamal::Ciphertext> Mul(
-    const elgamal::Ciphertext& ciphertext1,
-    const elgamal::Ciphertext& ciphertext2) {
-  ECPoint u = RETURN_OR_ASSIGN(ciphertext1.u.Add(ciphertext2.u));
-  ECPoint e = RETURN_OR_ASSIGN(ciphertext1.e.Add(ciphertext2.e));
+StatusOr<elgamal::Ciphertext> Mul(const elgamal::Ciphertext& ciphertext1,
+                                  const elgamal::Ciphertext& ciphertext2) {
+  ASSIGN_OR_RETURN(ECPoint u, ciphertext1.u.Add(ciphertext2.u));
+  ASSIGN_OR_RETURN(ECPoint e, ciphertext1.e.Add(ciphertext2.e));
   return {{std::move(u), std::move(e)}};
 }
 
-util::StatusOr<elgamal::Ciphertext> Exp(const elgamal::Ciphertext& ciphertext,
-                                        const BigNum& scalar) {
-  ECPoint u = RETURN_OR_ASSIGN(ciphertext.u.Mul(scalar));
-  ECPoint e = RETURN_OR_ASSIGN(ciphertext.e.Mul(scalar));
+StatusOr<elgamal::Ciphertext> Exp(const elgamal::Ciphertext& ciphertext,
+                                  const BigNum& scalar) {
+  ASSIGN_OR_RETURN(ECPoint u, ciphertext.u.Mul(scalar));
+  ASSIGN_OR_RETURN(ECPoint e, ciphertext.e.Mul(scalar));
   return {{std::move(u), std::move(e)}};
 }
 
-util::StatusOr<Ciphertext> GetZero(const ECGroup* group) {
-  ECPoint u = RETURN_OR_ASSIGN(group->GetPointAtInfinity());
-  ECPoint e = RETURN_OR_ASSIGN(group->GetPointAtInfinity());
+StatusOr<Ciphertext> GetZero(const ECGroup* group) {
+  ASSIGN_OR_RETURN(ECPoint u, group->GetPointAtInfinity());
+  ASSIGN_OR_RETURN(ECPoint e, group->GetPointAtInfinity());
   return {{std::move(u), std::move(e)}};
 }
 
-util::StatusOr<Ciphertext> CloneCiphertext(const Ciphertext& ciphertext) {
-  ECPoint clone_u = RETURN_OR_ASSIGN(ciphertext.u.Clone());
-  ECPoint clone_e = RETURN_OR_ASSIGN(ciphertext.e.Clone());
+StatusOr<Ciphertext> CloneCiphertext(const Ciphertext& ciphertext) {
+  ASSIGN_OR_RETURN(ECPoint clone_u, ciphertext.u.Clone());
+  ASSIGN_OR_RETURN(ECPoint clone_e, ciphertext.e.Clone());
   return {{std::move(clone_u), std::move(clone_e)}};
 }
 
@@ -85,24 +82,24 @@ ElGamalEncrypter::ElGamalEncrypter(
     : ec_group_(ec_group), public_key_(std::move(elgamal_public_key)) {}
 
 // Encrypts a message m, that has already been mapped onto the curve.
-util::StatusOr<elgamal::Ciphertext> ElGamalEncrypter::Encrypt(
+StatusOr<elgamal::Ciphertext> ElGamalEncrypter::Encrypt(
     const ECPoint& message) const {
   BigNum r = ec_group_->GeneratePrivateKey();  // generate a random exponent
   // u = g^r , e = m * y^r .
-  ECPoint u = RETURN_OR_ASSIGN(public_key_->g.Mul(r));
-  ECPoint y_to_r = RETURN_OR_ASSIGN(public_key_->y.Mul(r));
-  ECPoint e = RETURN_OR_ASSIGN(message.Add(y_to_r));
+  ASSIGN_OR_RETURN(ECPoint u, public_key_->g.Mul(r));
+  ASSIGN_OR_RETURN(ECPoint y_to_r, public_key_->y.Mul(r));
+  ASSIGN_OR_RETURN(ECPoint e, message.Add(y_to_r));
   return {{std::move(u), std::move(e)}};
 }
 
-util::StatusOr<elgamal::Ciphertext> ElGamalEncrypter::ReRandomize(
-      const elgamal::Ciphertext& elgamal_ciphertext) const {
+StatusOr<elgamal::Ciphertext> ElGamalEncrypter::ReRandomize(
+    const elgamal::Ciphertext& elgamal_ciphertext) const {
   BigNum r = ec_group_->GeneratePrivateKey();  // generate a random exponent
   // u = old_u * g^r , e = old_e * y^r .
-  ECPoint g_to_r = RETURN_OR_ASSIGN(public_key_->g.Mul(r));
-  ECPoint u = RETURN_OR_ASSIGN(elgamal_ciphertext.u.Add(g_to_r));
-  ECPoint y_to_r = RETURN_OR_ASSIGN(public_key_->y.Mul(r));
-  ECPoint e = RETURN_OR_ASSIGN(elgamal_ciphertext.e.Add(y_to_r));
+  ASSIGN_OR_RETURN(ECPoint g_to_r, public_key_->g.Mul(r));
+  ASSIGN_OR_RETURN(ECPoint u, elgamal_ciphertext.u.Add(g_to_r));
+  ASSIGN_OR_RETURN(ECPoint y_to_r, public_key_->y.Mul(r));
+  ASSIGN_OR_RETURN(ECPoint e, elgamal_ciphertext.e.Add(y_to_r));
   return {{std::move(u), std::move(e)}};
 }
 
@@ -114,11 +111,11 @@ ElGamalDecrypter::ElGamalDecrypter(
     std::unique_ptr<elgamal::PrivateKey> elgamal_private_key)
     : private_key_(std::move(elgamal_private_key)) {}
 
-util::StatusOr<ECPoint> ElGamalDecrypter::Decrypt(
+StatusOr<ECPoint> ElGamalDecrypter::Decrypt(
     const elgamal::Ciphertext& ciphertext) const {
-  ECPoint u_to_x = RETURN_OR_ASSIGN(ciphertext.u.Mul(private_key_->x));
-  ECPoint u_to_x_inverse = RETURN_OR_ASSIGN(u_to_x.Inverse());
-  ECPoint message = RETURN_OR_ASSIGN(ciphertext.e.Add(u_to_x_inverse));
+  ASSIGN_OR_RETURN(ECPoint u_to_x, ciphertext.u.Mul(private_key_->x));
+  ASSIGN_OR_RETURN(ECPoint u_to_x_inverse, u_to_x.Inverse());
+  ASSIGN_OR_RETURN(ECPoint message, ciphertext.e.Add(u_to_x_inverse));
   return {std::move(message)};
 }
 

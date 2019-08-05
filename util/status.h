@@ -39,9 +39,6 @@ enum StatusCode {
   kUnauthenticated = 16,
   kDoNotUseReservedForFutureExpansionUseDefaultInSwitchInstead_ = 20
 };
-}  // namespace private_join_and_compute
-
-namespace util {
 
 // A Status is a combination of an error code and a string message (for non-OK
 // error codes).
@@ -97,6 +94,6 @@ extern std::ostream& operator<<(std::ostream& os, const Status& other);
 
 inline Status OkStatus() { return Status(); }
 
-}  // namespace util
+}  // namespace private_join_and_compute
 
 #endif  // UTIL_STATUS_H_

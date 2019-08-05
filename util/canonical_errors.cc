@@ -19,7 +19,7 @@
 
 #include "util/status.h"
 
-namespace util {
+namespace private_join_and_compute {
 
 Status InternalError(const std::string& message) {
   return Status(private_join_and_compute::StatusCode::kInternal, message);
@@ -37,4 +37,4 @@ bool IsInvalidArgument(const Status& status) {
   return status.code() == private_join_and_compute::StatusCode::kInvalidArgument;
 }
 
-}  // namespace util
+}  // namespace private_join_and_compute

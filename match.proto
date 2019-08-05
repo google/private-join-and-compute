@@ -17,49 +17,13 @@ syntax = "proto2";
 
 package private_join_and_compute;
 
+// Holds a set of encrypted values.
 message EncryptedSet {
   repeated EncryptedElement elements = 1;
 }
 
+// Holds an encrypted value and possibly encrypted associated data.
 message EncryptedElement {
   optional bytes element = 1;
   optional bytes associated_data = 2;
-}
-
-message ClientRoundOne {
-  optional bytes public_key = 1;
-  optional EncryptedSet encrypted_set = 2;
-  optional EncryptedSet reencrypted_set = 3;
-}
-
-message ServerRoundOne {
-  optional EncryptedSet encrypted_set = 1;
-}
-
-message ServerState {
-  optional bytes ec_key = 1;
-}
-
-message ServerRoundTwo {
-  optional int64 intersection_size = 1;
-  optional bytes encrypted_sum = 2;
-}
-
-message ClientState {
-  optional bytes p = 1;
-  optional bytes q = 2;
-  optional bytes ec_key = 3;
-}
-
-
-// For initiating the protocol.
-message StartProtocolRequest {}
-
-// gRPC interface for Private Join and Compute.
-service PrivateJoinAndComputeRpc {
-  // Start the protocol.
-  rpc StartProtocol(StartProtocolRequest) returns (ServerRoundOne) {}
-
-  // Execute the second round of the protocol on the server.
-  rpc ExecuteServerRoundTwo(ClientRoundOne) returns (ServerRoundTwo) {}
 }

@@ -22,11 +22,9 @@
 #include "crypto/context.h"
 #include "crypto/openssl.inc"
 #include "util/status.inc"
-#include "util/status_macros.h"
+#include "absl/strings/str_cat.h"
 
 namespace private_join_and_compute {
-
-using util::StatusOr;
 
 ECPoint::ECPoint(const EC_GROUP* group, BN_CTX* bn_ctx)
     : bn_ctx_(bn_ctx), group_(group) {
@@ -50,10 +48,11 @@ StatusOr<std::string> ECPoint::ToBytesCompressed() const {
   int length = EC_POINT_point2oct(
       group_, point_.get(), POINT_CONVERSION_COMPRESSED, nullptr, 0, bn_ctx_);
   std::vector<unsigned char> bytes(length);
-  RET_INTERNAL_CHECK(0 != EC_POINT_point2oct(group_, point_.get(),
-                                             POINT_CONVERSION_COMPRESSED,
-                                             bytes.data(), length, bn_ctx_))
-      << OpenSSLErrorString();
+  if (0 == EC_POINT_point2oct(group_, point_.get(), POINT_CONVERSION_COMPRESSED,
+                              bytes.data(), length, bn_ctx_)) {
+    return InternalError(
+        absl::StrCat("EC_POINT_point2oct failed:", OpenSSLErrorString()));
+  }
   return std::string(reinterpret_cast<char*>(bytes.data()), bytes.size());
 }
 
@@ -61,43 +60,52 @@ StatusOr<std::string> ECPoint::ToBytesUnCompressed() const {
   int length = EC_POINT_point2oct(
       group_, point_.get(), POINT_CONVERSION_UNCOMPRESSED, nullptr, 0, bn_ctx_);
   std::vector<unsigned char> bytes(length);
-  RET_INTERNAL_CHECK(0 != EC_POINT_point2oct(group_, point_.get(),
-                                             POINT_CONVERSION_UNCOMPRESSED,
-                                             bytes.data(), length, bn_ctx_))
-      << OpenSSLErrorString();
+  if (0 == EC_POINT_point2oct(group_, point_.get(),
+                              POINT_CONVERSION_UNCOMPRESSED, bytes.data(),
+                              length, bn_ctx_)) {
+    return InternalError(
+        absl::StrCat("EC_POINT_point2oct failed:", OpenSSLErrorString()));
+  }
   return std::string(reinterpret_cast<char*>(bytes.data()), bytes.size());
 }
 
 StatusOr<ECPoint> ECPoint::Mul(const BigNum& scalar) const {
   ECPoint r = ECPoint(group_, bn_ctx_);
-  RET_INTERNAL_CHECK(1 == EC_POINT_mul(group_, r.point_.get(), nullptr,
-                                       point_.get(), scalar.GetConstBignumPtr(),
-                                       bn_ctx_))
-      << OpenSSLErrorString();
+  if (1 != EC_POINT_mul(group_, r.point_.get(), nullptr, point_.get(),
+                        scalar.GetConstBignumPtr(), bn_ctx_)) {
+    return InternalError(
+        absl::StrCat("EC_POINT_mul failed:", OpenSSLErrorString()));
+  }
   return std::move(r);
 }
 
 StatusOr<ECPoint> ECPoint::Add(const ECPoint& point) const {
   ECPoint r = ECPoint(group_, bn_ctx_);
-  RET_INTERNAL_CHECK(1 == EC_POINT_add(group_, r.point_.get(), point_.get(),
-                                       point.point_.get(), bn_ctx_))
-      << OpenSSLErrorString();
+  if (1 != EC_POINT_add(group_, r.point_.get(), point_.get(),
+                        point.point_.get(), bn_ctx_)) {
+    return InternalError(
+        absl::StrCat("EC_POINT_add failed:", OpenSSLErrorString()));
+  }
   return std::move(r);
 }
 
-util::StatusOr<ECPoint> ECPoint::Clone() const {
+StatusOr<ECPoint> ECPoint::Clone() const {
   ECPoint r = ECPoint(group_, bn_ctx_);
-  RET_INTERNAL_CHECK(1 == EC_POINT_copy(r.point_.get(), point_.get()))
-      << OpenSSLErrorString();
+  if (1 != EC_POINT_copy(r.point_.get(), point_.get())) {
+    return InternalError(
+        absl::StrCat("EC_POINT_copy failed:", OpenSSLErrorString()));
+  }
   return std::move(r);
 }
 
-util::StatusOr<ECPoint> ECPoint::Inverse() const {
+StatusOr<ECPoint> ECPoint::Inverse() const {
   // Create a copy of this.
-  ECPoint inv(RETURN_OR_ASSIGN(Clone()));
+  ASSIGN_OR_RETURN(ECPoint inv, Clone());
   // Invert the copy in-place.
-  RET_INTERNAL_CHECK(1 == EC_POINT_invert(group_, inv.point_.get(), bn_ctx_))
-      << OpenSSLErrorString();
+  if (1 != EC_POINT_invert(group_, inv.point_.get(), bn_ctx_)) {
+    return InternalError(
+        absl::StrCat("EC_POINT_invert failed:", OpenSSLErrorString()));
+  }
   return std::move(inv);
 }
 

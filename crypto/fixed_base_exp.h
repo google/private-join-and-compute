@@ -23,14 +23,10 @@
 #include "gflags/gflags_declare.h"
 #include "crypto/big_num.h"
 #include "crypto/context.h"
+#include "util/status.inc"
 
 // Declared for test-only.
 DECLARE_bool(two_k_ary_exp);
-
-namespace util {
-template <typename T>
-class StatusOr;
-}  // namespace util
 
 namespace private_join_and_compute {
 namespace internal {
@@ -47,7 +43,7 @@ class FixedBaseExp {
 
   // Computes fixed_base^exp mod modulus.
   // Returns INVALID_ARGUMENT if the exponent is negative.
-  util::StatusOr<BigNum> ModExp(const BigNum& exp) const;
+  StatusOr<BigNum> ModExp(const BigNum& exp) const;
 
   static std::unique_ptr<FixedBaseExp> GetFixedBaseExp(Context* ctx,
                                                        const BigNum& fixed_base,

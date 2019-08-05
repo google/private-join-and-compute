@@ -18,7 +18,7 @@
 #include <sstream>
 #include <utility>
 
-namespace util {
+namespace private_join_and_compute {
 
 namespace {
 
@@ -89,4 +89,4 @@ extern std::ostream& operator<<(std::ostream& os, const Status& other) {
   return os;
 }
 
-}  // namespace util
+}  // namespace private_join_and_compute

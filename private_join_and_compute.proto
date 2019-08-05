@@ -13,7 +13,28 @@
  * limitations under the License.
  */
 
-#include "util/canonical_errors.h"
-#include "util/status.h"
-#include "util/statusor.h"
-#include "util/status_macros.h"
+syntax = "proto2";
+
+package private_join_and_compute;
+
+import "private_intersection_sum.proto";
+
+message ClientMessage {
+  oneof client_message_oneof {
+    PrivateIntersectionSumClientMessage
+        private_intersection_sum_client_message = 1;
+  }
+}
+
+message ServerMessage {
+  oneof server_message_oneof {
+    PrivateIntersectionSumServerMessage
+        private_intersection_sum_server_message = 1;
+  }
+}
+
+// gRPC interface for Private Join and Compute.
+service PrivateJoinAndComputeRpc {
+  // Handles a single protocol round.
+  rpc Handle(ClientMessage) returns (ServerMessage) {}
+}

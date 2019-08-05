@@ -134,21 +134,21 @@ std::string EscapeForCsv(const std::string& input) {
 
 }  // namespace
 
-util::StatusOr<std::tuple<
-    std::vector<std::string>,
-    std::pair<std::vector<std::string>, std::vector<int64_t>>, int64_t>>
-GenerateRandomDatabases(int64_t server_data_size, int64_t client_data_size,
-                        int64_t intersection_size,
-                        int64_t max_associated_value) {
+auto GenerateRandomDatabases(int64_t server_data_size, int64_t client_data_size,
+                             int64_t intersection_size,
+                             int64_t max_associated_value)
+    -> StatusOr<std::tuple<
+        std::vector<std::string>,
+        std::pair<std::vector<std::string>, std::vector<int64_t>>, int64_t>> {
   // Check parameters
   if (intersection_size < 0 || server_data_size < 0 || client_data_size < 0 ||
       max_associated_value < 0) {
-    return util::InvalidArgumentError(
+    return InvalidArgumentError(
         "GenerateRandomDatabases: Sizes cannot be negative.");
   }
   if (intersection_size > server_data_size ||
       intersection_size > client_data_size) {
-    return util::InvalidArgumentError(
+    return InvalidArgumentError(
         "GenerateRandomDatabases: intersection_size is larger than "
         "client/server data size.");
   }
@@ -156,7 +156,7 @@ GenerateRandomDatabases(int64_t server_data_size, int64_t client_data_size,
   if (max_associated_value > 0 &&
       intersection_size >
           std::numeric_limits<int64_t>::max() / max_associated_value) {
-    return util::InvalidArgumentError(
+    return InvalidArgumentError(
         "GenerateRandomDatabases: intersection_size * max_associated_value  is "
         "larger than int64_t::max.");
   }
@@ -221,14 +221,13 @@ GenerateRandomDatabases(int64_t server_data_size, int64_t client_data_size,
                          intersection_sum);
 }
 
-util::Status WriteServerDatasetToFile(
-    const std::vector<std::string>& server_data,
-    absl::string_view server_data_filename) {
+Status WriteServerDatasetToFile(const std::vector<std::string>& server_data,
+                                absl::string_view server_data_filename) {
   // Open file.
   std::ofstream server_data_file;
   server_data_file.open(std::string(server_data_filename));
   if (!server_data_file.is_open()) {
-    return util::InvalidArgumentError(absl::StrCat(
+    return InvalidArgumentError(absl::StrCat(
         "WriteServerDatasetToFile: Couldn't open server data file: ",
         server_data_filename));
   }
@@ -241,21 +240,21 @@ util::Status WriteServerDatasetToFile(
   // Close file.
   server_data_file.close();
   if (server_data_file.fail()) {
-    return util::InternalError(
+    return InternalError(
         absl::StrCat("WriteServerDatasetToFile: Couldn't write to or close "
                      "server data file: ",
                      server_data_filename));
   }
 
-  return util::OkStatus();
+  return OkStatus();
 }
 
-util::Status WriteClientDatasetToFile(
+Status WriteClientDatasetToFile(
     const std::vector<std::string>& client_identifiers,
     const std::vector<int64_t>& client_associated_values,
     absl::string_view client_data_filename) {
   if (client_associated_values.size() != client_identifiers.size()) {
-    return util::InvalidArgumentError(
+    return InvalidArgumentError(
         "WriteClientDatasetToFile: there should be the same number of client "
         "identifiers and associated values.");
   }
@@ -264,7 +263,7 @@ util::Status WriteClientDatasetToFile(
   std::ofstream client_data_file;
   client_data_file.open(std::string(client_data_filename));
   if (!client_data_file.is_open()) {
-    return util::InvalidArgumentError(absl::StrCat(
+    return InvalidArgumentError(absl::StrCat(
         "WriteClientDatasetToFile: Couldn't open client data file: ",
         client_data_filename));
   }
@@ -279,22 +278,22 @@ util::Status WriteClientDatasetToFile(
   // Close file.
   client_data_file.close();
   if (client_data_file.fail()) {
-    return util::InternalError(
+    return InternalError(
         absl::StrCat("WriteClientDatasetToFile: Couldn't write to or close "
                      "client data file: ",
                      client_data_filename));
   }
 
-  return util::OkStatus();
+  return OkStatus();
 }
 
-util::StatusOr<std::vector<std::string>> ReadServerDatasetFromFile(
+StatusOr<std::vector<std::string>> ReadServerDatasetFromFile(
     absl::string_view server_data_filename) {
   // Open file.
   std::ifstream server_data_file;
   server_data_file.open(std::string(server_data_filename));
   if (!server_data_file.is_open()) {
-    return util::InvalidArgumentError(absl::StrCat(
+    return InvalidArgumentError(absl::StrCat(
         "ReadServerDatasetFromFile: Couldn't open server data file: ",
         server_data_filename));
   }
@@ -307,7 +306,7 @@ util::StatusOr<std::vector<std::string>> ReadServerDatasetFromFile(
   while (getline(server_data_file, line)) {
     std::vector<std::string> columns = SplitCsvLine(line);
     if (columns.size() != 1) {
-      return util::InvalidArgumentError(absl::StrCat(
+      return InvalidArgumentError(absl::StrCat(
           "ReadServerDatasetFromFile: Expected exactly 1 identifier per line, "
           "but line ",
           line_number, "has ", columns.size(),
@@ -320,7 +319,7 @@ util::StatusOr<std::vector<std::string>> ReadServerDatasetFromFile(
   // Close file.
   server_data_file.close();
   if (server_data_file.is_open()) {
-    return util::InternalError(absl::StrCat(
+    return InternalError(absl::StrCat(
         "ReadServerDatasetFromFile: Couldn't close server data file: ",
         server_data_filename));
   }
@@ -328,14 +327,14 @@ util::StatusOr<std::vector<std::string>> ReadServerDatasetFromFile(
   return server_data;
 }
 
-util::StatusOr<std::pair<std::vector<std::string>, std::vector<BigNum>>>
+StatusOr<std::pair<std::vector<std::string>, std::vector<BigNum>>>
 ReadClientDatasetFromFile(absl::string_view client_data_filename,
                           Context* context) {
   // Open file.
   std::ifstream client_data_file;
   client_data_file.open(std::string(client_data_filename));
   if (!client_data_file.is_open()) {
-    return util::InvalidArgumentError(absl::StrCat(
+    return InvalidArgumentError(absl::StrCat(
         "ReadClientDatasetFromFile: Couldn't open client data file: ",
         client_data_filename));
   }
@@ -350,7 +349,7 @@ ReadClientDatasetFromFile(absl::string_view client_data_filename,
   while (getline(client_data_file, line)) {
     std::vector<std::string> columns = SplitCsvLine(line);
     if (columns.size() != 2) {
-      return util::InvalidArgumentError(absl::StrCat(
+      return InvalidArgumentError(absl::StrCat(
           "ReadClientDatasetFromFile: Expected exactly 2 items per line, "
           "but line ",
           line_number, "has ", columns.size(),
@@ -360,7 +359,7 @@ ReadClientDatasetFromFile(absl::string_view client_data_filename,
     int64_t parsed_associated_value;
     if (!absl::SimpleAtoi(columns[1], &parsed_associated_value) ||
         parsed_associated_value < 0) {
-      return util::InvalidArgumentError(
+      return InvalidArgumentError(
           absl::StrCat("ReadClientDatasetFromFile: could not parse a "
                        "nonnegative associated value at line number",
                        line_number));
@@ -373,7 +372,7 @@ ReadClientDatasetFromFile(absl::string_view client_data_filename,
   // Close file.
   client_data_file.close();
   if (client_data_file.is_open()) {
-    return util::InternalError(absl::StrCat(
+    return InternalError(absl::StrCat(
         "ReadClientDatasetFromFile: Couldn't close client data file: ",
         client_data_filename));
   }

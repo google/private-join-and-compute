@@ -13,47 +13,35 @@
  * limitations under the License.
  */
 
-#include "server_lib.h"
+#include "server_impl.h"
 
 #include <algorithm>
 
 #include "crypto/paillier.h"
+#include "util/status.inc"
 #include "crypto/ec_commutative_cipher.h"
 #include "absl/memory/memory.h"
 
 using ::private_join_and_compute::BigNum;
-using ::private_join_and_compute::Context;
 using ::private_join_and_compute::ECCommutativeCipher;
 using ::private_join_and_compute::PublicPaillier;
-using ::util::StatusOr;
 
 namespace private_join_and_compute {
 
-Server::Server(Context* ctx, const std::vector<std::string>& inputs)
-    : ctx_(ctx), inputs_(inputs) {}
-
-Server::Server(Context* ctx, const std::string& serialized_state) : ctx_(ctx) {
-  ServerState state;
-  CHECK(state.ParseFromString(serialized_state));
-  if (state.has_ec_key()) {
-    ec_cipher_ = std::move(
-        ECCommutativeCipher::CreateFromKey(NID_secp224r1, state.ec_key())
-            .ValueOrDie());
-  }
-}
-
-StatusOr<ServerRoundOne> Server::EncryptSet() {
+StatusOr<PrivateIntersectionSumServerMessage::ServerRoundOne>
+PrivateIntersectionSumProtocolServerImpl::EncryptSet() {
   if (ec_cipher_ != nullptr) {
-    return util::InvalidArgumentError("Attempted to call EncryptSet twice.");
+    return InvalidArgumentError("Attempted to call EncryptSet twice.");
   }
   StatusOr<std::unique_ptr<ECCommutativeCipher>> ec_cipher =
-      ECCommutativeCipher::CreateWithNewKey(NID_secp224r1);
+      ECCommutativeCipher::CreateWithNewKey(
+          NID_secp224r1, ECCommutativeCipher::HashType::SHA512);
   if (!ec_cipher.ok()) {
     return ec_cipher.status();
   }
   ec_cipher_ = std::move(ec_cipher.ValueOrDie());
 
-  ServerRoundOne result;
+  PrivateIntersectionSumServerMessage::ServerRoundOne result;
   for (const std::string& input : inputs_) {
     EncryptedElement* encrypted =
         result.mutable_encrypted_set()->add_elements();
@@ -67,13 +55,14 @@ StatusOr<ServerRoundOne> Server::EncryptSet() {
   return result;
 }
 
-StatusOr<ServerRoundTwo> Server::ComputeIntersection(
-    const ClientRoundOne& client_message) {
+StatusOr<PrivateIntersectionSumServerMessage::ServerRoundTwo>
+PrivateIntersectionSumProtocolServerImpl::ComputeIntersection(
+    const PrivateIntersectionSumClientMessage::ClientRoundOne& client_message) {
   if (ec_cipher_ == nullptr) {
-    return util::InvalidArgumentError(
+    return InvalidArgumentError(
         "Called ComputeIntersection before EncryptSet.");
   }
-  ServerRoundTwo result;
+  PrivateIntersectionSumServerMessage::ServerRoundTwo result;
   BigNum N = ctx_->CreateBigNum(client_message.public_key());
   PublicPaillier public_paillier(ctx_, N, 2);
 
@@ -131,12 +120,54 @@ StatusOr<ServerRoundTwo> Server::ComputeIntersection(
   return result;
 }
 
-std::string Server::GetSerializedState() const {
-  ServerState state;
-  if (ec_cipher_ != nullptr) {
-    *state.mutable_ec_key() = ec_cipher_->GetPrivateKeyBytes();
+Status PrivateIntersectionSumProtocolServerImpl::Handle(
+    const ClientMessage& request,
+    MessageSink<ServerMessage>* server_message_sink) {
+  if (protocol_finished()) {
+    return InvalidArgumentError(
+        "PrivateIntersectionSumProtocolServerImpl: Protocol is already "
+        "complete.");
   }
-  return state.SerializeAsString();
+
+  // Check that the message is a PrivateIntersectionSum protocol message.
+  if (!request.has_private_intersection_sum_client_message()) {
+    return InvalidArgumentError(
+        "PrivateIntersectionSumProtocolServerImpl: Received a message for the "
+        "wrong protocol type");
+  }
+  const PrivateIntersectionSumClientMessage& client_message =
+      request.private_intersection_sum_client_message();
+
+  ServerMessage server_message;
+
+  if (client_message.has_start_protocol_request()) {
+    // Handle a protocol start message.
+    auto maybe_server_round_one = EncryptSet();
+    if (!maybe_server_round_one.ok()) {
+      return maybe_server_round_one.status();
+    }
+    *(server_message.mutable_private_intersection_sum_server_message()
+          ->mutable_server_round_one()) =
+        std::move(maybe_server_round_one.ValueOrDie());
+  } else if (client_message.has_client_round_one()) {
+    // Handle the client round 1 message.
+    auto maybe_server_round_two =
+        ComputeIntersection(client_message.client_round_one());
+    if (!maybe_server_round_two.ok()) {
+      return maybe_server_round_two.status();
+    }
+    *(server_message.mutable_private_intersection_sum_server_message()
+          ->mutable_server_round_two()) =
+        std::move(maybe_server_round_two.ValueOrDie());
+    // Mark the protocol as finished here.
+    protocol_finished_ = true;
+  } else {
+    return InvalidArgumentError(
+        "PrivateIntersectionSumProtocolServerImpl: Received a client message "
+        "of an unknown type.");
+  }
+
+  return server_message_sink->Send(server_message);
 }
 
 }  // namespace private_join_and_compute

@@ -55,32 +55,31 @@ static const int64_t kRandomIdentifierLengthBytes = 32;
 // either server or client data size, if max_associated_value is negative, or if
 // max_associated_value * intersection_size is larger than the max value of
 // int64_t.
-util::StatusOr<std::tuple<
-    std::vector<std::string>,
-    std::pair<std::vector<std::string>, std::vector<int64_t>>, int64_t>>
-GenerateRandomDatabases(int64_t server_data_size, int64_t client_data_size,
-                        int64_t intersection_size,
-                        int64_t max_associated_value);
+auto GenerateRandomDatabases(int64_t server_data_size, int64_t client_data_size,
+                             int64_t intersection_size,
+                             int64_t max_associated_value)
+    -> StatusOr<std::tuple<
+        std::vector<std::string>,
+        std::pair<std::vector<std::string>, std::vector<int64_t>>, int64_t>>;
 
 // Write Server Dataset to the specified file in CSV format.
-util::Status WriteServerDatasetToFile(
-    const std::vector<std::string>& server_data,
-    absl::string_view server_data_filename);
+Status WriteServerDatasetToFile(const std::vector<std::string>& server_data,
+                                absl::string_view server_data_filename);
 
 // Write Client Dataset to the specified file in CSV format.
-util::Status WriteClientDatasetToFile(
+Status WriteClientDatasetToFile(
     const std::vector<std::string>& client_identifiers,
     const std::vector<int64_t>& client_associated_values,
     absl::string_view client_data_filename);
 
 // Read Server Dataset from the specified file, which should be in CSV format.
-util::StatusOr<std::vector<std::string>> ReadServerDatasetFromFile(
+StatusOr<std::vector<std::string>> ReadServerDatasetFromFile(
     absl::string_view server_data_filename);
 
 // Read Client Dataset (identifiers and associated values) from the specified
 // file, which should be in CSV format. Automatically packages the parsed
 // associated values as BigNums for convenience.
-util::StatusOr<std::pair<std::vector<std::string>, std::vector<BigNum>>>
+StatusOr<std::pair<std::vector<std::string>, std::vector<BigNum>>>
 ReadClientDatasetFromFile(absl::string_view client_data_filename,
                           Context* context);
 

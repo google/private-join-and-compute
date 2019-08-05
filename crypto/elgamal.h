@@ -38,11 +38,7 @@
 
 #include "crypto/ec_group.h"
 #include "crypto/ec_point.h"
-
-namespace util {
-template <typename T>
-class StatusOr;
-}  // namespace util
+#include "util/status.inc"
 
 namespace private_join_and_compute {
 
@@ -69,23 +65,22 @@ struct PrivateKey {
 };
 
 // Generates a new ElGamal public-private key pair.
-util::StatusOr<
-    std::pair<std::unique_ptr<PublicKey>, std::unique_ptr<PrivateKey>>>
+StatusOr<std::pair<std::unique_ptr<PublicKey>, std::unique_ptr<PrivateKey>>>
 GenerateKeyPair(const ECGroup& ec_group);
 
 // Homomorphically multiply two ciphertexts.
 // (Note: this corresponds to addition in the EC group.)
-util::StatusOr<elgamal::Ciphertext> Mul(const elgamal::Ciphertext& ciphertext1,
-                                        const elgamal::Ciphertext& ciphertext2);
+StatusOr<elgamal::Ciphertext> Mul(const elgamal::Ciphertext& ciphertext1,
+                                  const elgamal::Ciphertext& ciphertext2);
 
 // Homomorphically exponentiate a ciphertext by a scalar.
 // (Note: this corresponds to multiplication in the EC group.)
-util::StatusOr<elgamal::Ciphertext> Exp(const elgamal::Ciphertext& ciphertext,
-                                        const BigNum& scalar);
+StatusOr<elgamal::Ciphertext> Exp(const elgamal::Ciphertext& ciphertext,
+                                  const BigNum& scalar);
 
-util::StatusOr<Ciphertext> GetZero(const ECGroup* group);
+StatusOr<Ciphertext> GetZero(const ECGroup* group);
 
-util::StatusOr<Ciphertext> CloneCiphertext(const Ciphertext& ciphertext);
+StatusOr<Ciphertext> CloneCiphertext(const Ciphertext& ciphertext);
 
 bool IsCiphertextZero(const Ciphertext& ciphertext);
 
@@ -106,11 +101,11 @@ class ElGamalEncrypter {
   ~ElGamalEncrypter() = default;
 
   // Encrypts a message m, that has already been mapped onto the curve.
-  util::StatusOr<elgamal::Ciphertext> Encrypt(const ECPoint& message) const;
+  StatusOr<elgamal::Ciphertext> Encrypt(const ECPoint& message) const;
 
   // Re-randomizes a ciphertext. After the re-randomization, the new ciphertext
   // is an encryption of the same message as before.
-  util::StatusOr<elgamal::Ciphertext> ReRandomize(
+  StatusOr<elgamal::Ciphertext> ReRandomize(
       const elgamal::Ciphertext& elgamal_ciphertext) const;
 
   // Returns a pointer to the owned ElGamal public key
@@ -136,7 +131,7 @@ class ElGamalDecrypter {
   ~ElGamalDecrypter() = default;
 
   // Decrypts a given ElGamal ciphertext.
-  util::StatusOr<ECPoint> Decrypt(const elgamal::Ciphertext& ciphertext) const;
+  StatusOr<ECPoint> Decrypt(const elgamal::Ciphertext& ciphertext) const;
 
   // Returns a pointer to the owned ElGamal private key
   const elgamal::PrivateKey* getPrivateKey() const {
