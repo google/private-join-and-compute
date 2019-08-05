@@ -103,8 +103,6 @@ class ECCommutativeCipher {
   // be refreshed.
   // Returns INVALID_ARGUMENT status instead if the curve_id is not valid
   // or INTERNAL status when crypto operations are not successful.
-  //
-  // All new users of EcCommutativeCipher should use SHA256.
   static ::private_join_and_compute::StatusOr<std::unique_ptr<ECCommutativeCipher>>
   CreateWithNewKey(int curve_id, HashType hash_type);
 
@@ -116,8 +114,6 @@ class ECCommutativeCipher {
   // Returns INVALID_ARGUMENT status instead if the private_key is not valid for
   // the given curve or the curve_id is not valid.
   // Returns INTERNAL status when crypto operations are not successful.
-  //
-  // All new users of EcCommutativeCipher should use SHA256.
   static ::private_join_and_compute::StatusOr<std::unique_ptr<ECCommutativeCipher>>
   CreateFromKey(int curve_id, const std::string& key_bytes, HashType hash_type);
 

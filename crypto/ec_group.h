@@ -62,9 +62,6 @@ class ECGroup {
   // Security: The number of operations required to hash a string depends on the
   // string, which could lead to a timing attack.
   // Security: This function is only secure for curves of prime order.
-  //
-  // New code should prefer this method of hashing to the curve, rather than
-  // GetPointByHashingToCurveSha512.
   StatusOr<ECPoint> GetPointByHashingToCurveSha256(const std::string& m) const;
 
   // Hashes m to a point on the elliptic curve y^2 = x^3 + ax + b over a
@@ -73,9 +70,6 @@ class ECGroup {
   //
   // Security: The number of operations required to hash a string depends on the
   // string, which could lead to a timing attack.
-  //
-  // This function is included for legacy compatibility. New code should prefer
-  // GetPointByHashingToCurveSha256 instead.
   StatusOr<ECPoint> GetPointByHashingToCurveSha512(const std::string& m) const;
 
   // Returns y^2 for the given x. The returned value is computed as x^3 + ax + b
