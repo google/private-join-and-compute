@@ -161,6 +161,9 @@ Status PrivateIntersectionSumProtocolServerImpl::Handle(
         std::move(maybe_server_round_two.ValueOrDie());
     // Mark the protocol as finished here.
     protocol_finished_ = true;
+    if (!protocol_finished_notification_->HasBeenNotified()) {
+      protocol_finished_notification_->Notify();
+    }
   } else {
     return InvalidArgumentError(
         "PrivateIntersectionSumProtocolServerImpl: Received a client message "

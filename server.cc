@@ -32,6 +32,7 @@
 #include "private_join_and_compute_rpc_impl.h"
 #include "protocol_server.h"
 #include "absl/memory/memory.h"
+#include "absl/synchronization/notification.h"
 
 DEFINE_string(port, "0.0.0.0:10501", "Port on which to listen");
 DEFINE_string(server_data_file, "",
@@ -48,9 +49,12 @@ int RunServer() {
   }
 
   ::private_join_and_compute::Context context;
+  absl::Notification protocol_finished_notification;
   std::unique_ptr<::private_join_and_compute::ProtocolServer> server =
       absl::make_unique<::private_join_and_compute::PrivateIntersectionSumProtocolServerImpl>(
-          &context, std::move(maybe_server_identifiers.ValueOrDie()));
+          &context,
+          &protocol_finished_notification,
+          std::move(maybe_server_identifiers.ValueOrDie()));
   ::private_join_and_compute::PrivateJoinAndComputeRpcImpl service(std::move(server));
 
   ::grpc::ServerBuilder builder;
@@ -69,9 +73,8 @@ int RunServer() {
       },
       grpc_server.get());
 
-  while (!service.protocol_finished()) {
-    // Wait for the server to be done, and then shut the server down.
-  }
+  // Wait for the server to be done, and then shut the server down.
+  protocol_finished_notification.WaitForNotification();
 
   // Shut down server.
   grpc_server->Shutdown();

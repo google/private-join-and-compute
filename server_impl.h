@@ -16,6 +16,8 @@
 #ifndef OPEN_SOURCE_SERVER_IMPL_H_
 #define OPEN_SOURCE_SERVER_IMPL_H_
 
+#include "absl/synchronization/notification.h"
+
 #include "crypto/context.h"
 #include "crypto/paillier.h"
 #include "match.pb.h"
@@ -35,8 +37,11 @@ namespace private_join_and_compute {
 class PrivateIntersectionSumProtocolServerImpl : public ProtocolServer {
  public:
   PrivateIntersectionSumProtocolServerImpl(::private_join_and_compute::Context* ctx,
+                                           absl::Notification* protocol_finished_notification,
                                            std::vector<std::string> inputs)
-      : ctx_(ctx), inputs_(std::move(inputs)) {}
+      : ctx_(ctx),
+        protocol_finished_notification_(protocol_finished_notification),
+        inputs_(std::move(inputs)) {}
 
   ~PrivateIntersectionSumProtocolServerImpl() override = default;
 
@@ -71,6 +76,7 @@ class PrivateIntersectionSumProtocolServerImpl : public ProtocolServer {
                           client_message);
 
   Context* ctx_;  // not owned
+  absl::Notification* protocol_finished_notification_;  // not owned
   std::unique_ptr<ECCommutativeCipher> ec_cipher_;
 
   // inputs_ will first contain the plaintext server identifiers, and later

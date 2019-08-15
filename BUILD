@@ -100,6 +100,7 @@ cc_library(
         "//util:status",
         "//util:status_includes",
         "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/synchronization",
     ],
 )
 
