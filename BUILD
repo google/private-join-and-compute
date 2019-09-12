@@ -176,3 +176,26 @@ cc_binary(
         "@com_google_absl//absl/strings",
     ],
 )
+
+cc_library(
+    name = "lib",
+    srcs = ["private_join_and_compute.cc"],
+    hdrs = ["private_join_and_compute.h"],
+    deps = [
+        "//:data_util",
+        "//:client_impl",
+        "//:protocol_client",
+        "//:server_impl",
+        "//:protocol_server",
+        "//:private_join_and_compute_rpc_impl",
+        # external dependencies
+        "@com_github_grpc_grpc//:grpc",
+        "@com_github_grpc_grpc//:grpc++",
+        "@com_google_absl//absl/base",
+        "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/synchronization",
+    ],
+    linkstatic = True,
+    visibility = ["//visibility:public"],
+)
