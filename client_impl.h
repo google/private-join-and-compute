@@ -63,6 +63,9 @@ class PrivateIntersectionSumProtocolClientImpl : public ProtocolClient {
   // Prints the result, namely the intersection size and the intersection sum.
   Status PrintOutput() override;
 
+  // Results the result, namely the intersection size and the intersection sum.
+  StatusOr<std::pair<int64_t, uint64_t>> ReturnOutput() override;
+
   bool protocol_finished() override { return protocol_finished_; }
 
   // Utility functions for testing.

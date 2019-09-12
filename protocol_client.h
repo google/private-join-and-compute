@@ -42,6 +42,10 @@ class ProtocolClient {
   // should print the output.
   virtual Status PrintOutput() = 0;
 
+  // For all subclasses, if the protocol is finished, calling this function
+  // should return the output.
+  virtual StatusOr<std::pair<int64_t, uint64_t>> ReturnOutput() = 0;
+
   // All subclasses should return true if the protocol is complete, and
   // false otherwise.
   virtual bool protocol_finished() = 0;

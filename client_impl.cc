@@ -172,4 +172,20 @@ Status PrivateIntersectionSumProtocolClientImpl::PrintOutput() {
   return OkStatus();
 }
 
+StatusOr<std::pair<int64_t, uint64_t>> PrivateIntersectionSumProtocolClientImpl::ReturnOutput() {
+  if (!protocol_finished()) {
+    return InvalidArgumentError(
+        "PrivateIntersectionSumProtocolClientImpl: Not ready to print the "
+        "output yet.");
+  }
+  auto maybe_converted_intersection_sum = intersection_sum_.ToIntValue();
+  if (!maybe_converted_intersection_sum.ok()) {
+    return maybe_converted_intersection_sum.status();
+  }
+  auto intersection_sum = maybe_converted_intersection_sum.ValueOrDie();
+  auto intersection_size = intersection_size_;
+  
+  return std::make_pair(intersection_size, intersection_sum);
+}
+
 }  // namespace private_join_and_compute
