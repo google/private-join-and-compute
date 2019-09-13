@@ -15,8 +15,6 @@
 
 #include "private_join_and_compute.h"
 
-// #include <thread>  // NOLINT
-
 #include "include/grpc/grpc_security_constants.h"
 #include "include/grpcpp/channel.h"
 #include "include/grpcpp/client_context.h"
@@ -197,7 +195,9 @@ int ServerSession::RunAsync(
 }
 
 int ServerSession::Wait() {
-  _state->finished->WaitForNotification();
+  while (!_state->finished->HasBeenNotified()) {
+    _state->finished->WaitForNotificationWithTimeout(absl::Milliseconds(100));
+  }
   _state->grpc_server->Shutdown();
   return 0;
 }
