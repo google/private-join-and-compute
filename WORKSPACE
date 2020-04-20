@@ -48,10 +48,10 @@ http_archive(
 
 load("@com_github_grpc_grpc//bazel:grpc_deps.bzl", "grpc_deps", "grpc_test_only_deps")
 
+# Includes boringssl, com_google_absl, and other dependencies.
 grpc_deps()
-
-grpc_test_only_deps()
 
 load("@com_github_grpc_grpc//bazel:grpc_extra_deps.bzl", "grpc_extra_deps")
 
+# Loads transitive dependencies of GRPC.
 grpc_extra_deps()
