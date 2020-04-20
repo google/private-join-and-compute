@@ -40,7 +40,6 @@ as Private Intersection-Sum.
 In order to run Private Join and Compute, you need to install Bazel, if you
 don't have it already.
 [Follow the instructions for your platform on the Bazel website.](https://docs.bazel.build/versions/master/install.html)
-Please use Bazel 0.28.1. A recent change introduced in Bazel 1.0 is causing build errors. We are working on updating this.
 
 You also need to install Git, if you don't have it already.
 [Follow the instructions for your platform on the Git website.](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
@@ -58,12 +57,6 @@ the Private Join and Compute library and dependencies using Bazel:
 ```bash
 cd private-join-and-compute
 bazel build :all
-```
-
-If you get an error, you may need to build with the following flags:
-
-```bash
-bazel build :all --incompatible_disable_deprecated_attr_params=false --incompatible_depset_is_not_iterable=false --incompatible_new_actions_api=false --incompatible_no_support_tools_in_action_inputs=false
 ```
 
 (All the following instructions must be run from inside the
