@@ -14,6 +14,8 @@
 
 # Build file for crypto folder in open-source Private Join and Compute.
 
+load("@com_github_grpc_grpc//bazel:grpc_build_system.bzl", "grpc_proto_library")
+
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
@@ -168,6 +170,11 @@ cc_library(
     ],
 )
 
+grpc_proto_library(
+    name = "paillier_proto",
+    srcs = ["paillier.proto"],
+)
+
 cc_library(
     name = "paillier",
     srcs = [
@@ -179,6 +186,7 @@ cc_library(
     deps = [
         ":bn_util",
         ":fixed_base_exp",
+        ":paillier_proto",
         ":two_modulus_crt",
         "//util:status",
         "//util:status_includes",

@@ -119,12 +119,6 @@ void SplitCSVLineWithDelimiterForStrings(const std::string& line,
   delete[] cline;
 }
 
-std::vector<std::string> SplitCsvLine(const std::string& line) {
-  std::vector<std::string> cols;
-  SplitCSVLineWithDelimiterForStrings(line, ',', &cols);
-  return cols;
-}
-
 // Escapes a string for CSV file writing. By default, this will surround each
 // string with double quotes, and escape each occurrence of a double quote by
 // replacing it with 2 double quotes.
@@ -133,6 +127,12 @@ std::string EscapeForCsv(const std::string& input) {
 }
 
 }  // namespace
+
+std::vector<std::string> SplitCsvLine(const std::string& line) {
+  std::vector<std::string> cols;
+  SplitCSVLineWithDelimiterForStrings(line, ',', &cols);
+  return cols;
+}
 
 auto GenerateRandomDatabases(int64_t server_data_size, int64_t client_data_size,
                              int64_t intersection_size,
@@ -206,7 +206,7 @@ auto GenerateRandomDatabases(int64_t server_data_size, int64_t client_data_size,
     int64_t associated_value =
         context.GenerateRandLessThan(associated_values_bound)
             .ToIntValue()
-            .ValueOrDie();
+            .value();
     client_associated_values.push_back(associated_value);
 
     if (server_identifiers_set.count(client_identifiers[i]) > 0) {

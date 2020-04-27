@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef OPEN_SOURCE_SERVER_IMPL_H_
-#define OPEN_SOURCE_SERVER_IMPL_H_
+#ifndef OPEN_SOURCE_PRIVATE_INTERSECTION_SUM_SERVER_IMPL_H_
+#define OPEN_SOURCE_PRIVATE_INTERSECTION_SUM_SERVER_IMPL_H_
 
 #include "crypto/context.h"
 #include "crypto/paillier.h"
@@ -81,4 +81,4 @@ class PrivateIntersectionSumProtocolServerImpl : public ProtocolServer {
 
 }  // namespace private_join_and_compute
 
-#endif  // OPEN_SOURCE_SERVER_IMPL_H_
+#endif  // OPEN_SOURCE_PRIVATE_INTERSECTION_SUM_SERVER_IMPL_H_

@@ -126,7 +126,9 @@ class ECCommutativeCipher {
   // ANSI X9.62 ECDSA.
   //
   // Returns an INVALID_ARGUMENT error code if an error occurs.
-  ::private_join_and_compute::StatusOr<std::string> Encrypt(const std::string& plaintext) const;
+  //
+  // This method is not threadsafe.
+  ::private_join_and_compute::StatusOr<std::string> Encrypt(const std::string& plaintext);
 
   // Encrypts an encoded point with the private key.
   //
@@ -137,8 +139,9 @@ class ECCommutativeCipher {
   //
   // This method can also be used to encrypt a value that has already been
   // hashed to the curve.
-  ::private_join_and_compute::StatusOr<std::string> ReEncrypt(
-      const std::string& ciphertext) const;
+  //
+  // This method is not threadsafe.
+  ::private_join_and_compute::StatusOr<std::string> ReEncrypt(const std::string& ciphertext);
 
   // Encrypts an ElGamal ciphertext with the private key.
   //
@@ -146,9 +149,11 @@ class ECCommutativeCipher {
   // of an ElGamal ciphertext on this curve as defined in ANSI X9.62 ECDSA.
   //
   // The result is another ElGamal ciphertext, encoded in compressed form.
+  //
+  // This method is not threadsafe.
   ::private_join_and_compute::StatusOr<std::pair<std::string, std::string>>
   ReEncryptElGamalCiphertext(
-      const std::pair<std::string, std::string>& elgamal_ciphertext) const;
+      const std::pair<std::string, std::string>& elgamal_ciphertext);
 
   // Decrypts an encoded point with the private key.
   //
@@ -163,8 +168,22 @@ class ECCommutativeCipher {
   // If the input point was single encrypted with this key, then the result
   // point is the original, unencrypted point. Note that this will not reverse
   // hashing to the curve.
-  ::private_join_and_compute::StatusOr<std::string> Decrypt(
-      const std::string& ciphertext) const;
+  //
+  // This method is not threadsafe.
+  ::private_join_and_compute::StatusOr<std::string> Decrypt(const std::string& ciphertext);
+
+  // Hashes a string to a point on the elliptic curve using the
+  // "try-and-increment" method.
+  // See Section 5.2 of https://crypto.stanford.edu/~dabo/papers/bfibe.pdf.
+  //
+  // The resulting point is returned encoded in compressed form as defined in
+  // ANSI X9.62 ECDSA.
+  //
+  // Returns an INVALID_ARGUMENT error code if an error occurs.
+  //
+  // This method is not threadsafe.
+  ::private_join_and_compute::StatusOr<std::string> HashToTheCurve(
+      const std::string& plaintext);
 
   // Returns the private key bytes so the key can be stored and reused.
   std::string GetPrivateKeyBytes() const;
@@ -176,7 +195,11 @@ class ECCommutativeCipher {
                       BigNum private_key, HashType hash_type);
 
   // Encrypts a point by multiplying the point with the private key.
-  ::private_join_and_compute::StatusOr<ECPoint> Encrypt(const ECPoint& point) const;
+  ::private_join_and_compute::StatusOr<ECPoint> Encrypt(const ECPoint& point);
+
+  // Hashes a string to a point on the elliptic curve.
+  ::private_join_and_compute::StatusOr<ECPoint> HashToTheCurveInternal(
+      const std::string& plaintext);
 
   // Context used for storing temporary values to be reused across openssl
   // function calls for better performance.

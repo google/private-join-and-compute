@@ -53,7 +53,7 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  auto dummy_data = std::move(maybe_dummy_data.ValueOrDie());
+  auto dummy_data = std::move(maybe_dummy_data.value());
   auto& server_identifiers = std::get<0>(dummy_data);
   auto& client_identifiers_and_associated_values = std::get<1>(dummy_data);
   int64_t intersection_sum = std::get<2>(dummy_data);

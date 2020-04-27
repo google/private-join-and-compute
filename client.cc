@@ -89,7 +89,7 @@ int ExecuteProtocol() {
     return 1;
   }
   auto client_identifiers_and_associated_values =
-      std::move(maybe_client_identifiers_and_associated_values.ValueOrDie());
+      std::move(maybe_client_identifiers_and_associated_values.value());
 
   std::cout << "Client: Generating keys..." << std::endl;
   std::unique_ptr<::private_join_and_compute::ProtocolClient> client =

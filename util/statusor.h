@@ -28,7 +28,7 @@
 //
 //  StatusOr<float> result = DoBigCalculationThatCouldFail();
 //  if (result.ok()) {
-//    float answer = result.ValueOrDie();
+//    float answer = result.value();
 //    printf("Big calculation yielded: %f", answer);
 //  } else {
 //    LOG(ERROR) << result.status();
@@ -38,7 +38,7 @@
 //
 //  StatusOr<Foo*> result = FooFactory::MakeNewFoo(arg);
 //  if (result.ok()) {
-//    std::unique_ptr<Foo> foo(result.ValueOrDie());
+//    std::unique_ptr<Foo> foo(result.value());
 //    foo->DoSomethingCool();
 //  } else {
 //    LOG(ERROR) << result.status();
@@ -48,7 +48,7 @@
 //
 //  StatusOr<std::unique_ptr<Foo>> result = FooFactory::MakeNewFoo(arg);
 //  if (result.ok()) {
-//    std::unique_ptr<Foo> foo = std::move(result.ValueOrDie());
+//    std::unique_ptr<Foo> foo = std::move(result.value());
 //    foo->DoSomethingCool();
 //  } else {
 //    LOG(ERROR) << result.status();
@@ -84,7 +84,7 @@ namespace private_join_and_compute {
   StatusOr();
 
   // Construct a new StatusOr with the given non-ok status. After calling
-  // this constructor, calls to ValueOrDie() will CHECK-fail.
+  // this constructor, calls to value() will CHECK-fail.
   //
   // NOTE: Not explicit - we want to use StatusOr<T> as a return
   // value, so it is convenient and sensible to be able to do 'return
@@ -97,7 +97,7 @@ namespace private_join_and_compute {
 
   // Construct a new StatusOr with the given value. If T is a plain pointer,
   // value must not be NULL. After calling this constructor, calls to
-  // ValueOrDie() will succeed, and calls to status() will return OK.
+  // value() will succeed, and calls to status() will return OK.
   //
   // NOTE: Not explicit - we want to use StatusOr<T> as a return type
   // so it is convenient and sensible to be able to do 'return T()'
@@ -130,10 +130,10 @@ namespace private_join_and_compute {
   bool ok() const;
 
   // Returns a reference to our current value, or CHECK-fails if !this->ok().
-  const T& ValueOrDie() const&;
-  T& ValueOrDie() &;
-  const T&& ValueOrDie() const&&;
-  T&& ValueOrDie() &&;
+  const T& value() const&;
+  T& value() &;
+  const T&& value() const&&;
+  T&& value() &&;
 
   // Ignores any errors. This method does nothing except potentially suppress
   // complaints from any tools that are checking that errors are not dropped on
@@ -226,7 +226,7 @@ inline bool StatusOr<T>::ok() const {
 }
 
 template <typename T>
-inline const T& StatusOr<T>::ValueOrDie() const& {
+inline const T& StatusOr<T>::value() const& {
   if (value_ == nullptr) {
     internal::StatusOrHelper::Crash(status());
   }
@@ -234,7 +234,7 @@ inline const T& StatusOr<T>::ValueOrDie() const& {
 }
 
 template <typename T>
-inline T& StatusOr<T>::ValueOrDie() & {
+inline T& StatusOr<T>::value() & {
   if (value_ == nullptr) {
     internal::StatusOrHelper::Crash(status());
   }
@@ -242,7 +242,7 @@ inline T& StatusOr<T>::ValueOrDie() & {
 }
 
 template <typename T>
-inline const T&& StatusOr<T>::ValueOrDie() const&& {
+inline const T&& StatusOr<T>::value() const&& {
   if (value_ == nullptr) {
     internal::StatusOrHelper::Crash(status());
   }
@@ -250,7 +250,7 @@ inline const T&& StatusOr<T>::ValueOrDie() const&& {
 }
 
 template <typename T>
-inline T&& StatusOr<T>::ValueOrDie() && {
+inline T&& StatusOr<T>::value() && {
   if (value_ == nullptr) {
     internal::StatusOrHelper::Crash(status());
   }

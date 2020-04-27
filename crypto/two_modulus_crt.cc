@@ -17,16 +17,15 @@
 
 namespace private_join_and_compute {
 
-TwoModulusCrt::TwoModulusCrt(const BigNum& coprime1, const BigNum& coprime2) :
-  crt_term1_(coprime2 * coprime2.ModInverse(coprime1)),
-  crt_term2_(coprime1 * coprime1.ModInverse(coprime2)),
-  coprime_product_(coprime1 * coprime2) {
-}
+TwoModulusCrt::TwoModulusCrt(const BigNum& coprime1, const BigNum& coprime2)
+    : crt_term1_(coprime2 * coprime2.ModInverse(coprime1)),
+      crt_term2_(coprime1 * coprime1.ModInverse(coprime2)),
+      coprime_product_(coprime1 * coprime2) {}
 
 BigNum TwoModulusCrt::Compute(const BigNum& solution1,
                               const BigNum& solution2) const {
-  return ((solution1 * crt_term1_) + (solution2 * crt_term2_)).Mod(
-      coprime_product_);
+  return ((solution1 * crt_term1_) + (solution2 * crt_term2_))
+      .Mod(coprime_product_);
 }
 
 BigNum TwoModulusCrt::GetCoprimeProduct() const { return coprime_product_; }

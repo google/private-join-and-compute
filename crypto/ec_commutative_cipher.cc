@@ -65,38 +65,26 @@ ECCommutativeCipher::CreateFromKey(int curve_id, const std::string& key_bytes,
 }
 
 StatusOr<std::string> ECCommutativeCipher::Encrypt(
-    const std::string& plaintext) const {
-  StatusOr<ECPoint> status_or_point;
-  if (hash_type_ == SHA512) {
-    status_or_point = group_.GetPointByHashingToCurveSha512(plaintext);
-  } else if (hash_type_ == SHA256) {
-    status_or_point = group_.GetPointByHashingToCurveSha256(plaintext);
-  } else {
-    return InvalidArgumentError("Invalid hash type.");
-  }
-
-  if (!status_or_point.ok()) {
-    return status_or_point.status();
-  }
-  ASSIGN_OR_RETURN(ECPoint encrypted_point,
-                   Encrypt(status_or_point.ValueOrDie()));
+    const std::string& plaintext) {
+  ASSIGN_OR_RETURN(ECPoint hashed_point, HashToTheCurveInternal(plaintext));
+  ASSIGN_OR_RETURN(ECPoint encrypted_point, Encrypt(hashed_point));
   return encrypted_point.ToBytesCompressed();
 }
 
 StatusOr<std::string> ECCommutativeCipher::ReEncrypt(
-    const std::string& ciphertext) const {
+    const std::string& ciphertext) {
   ASSIGN_OR_RETURN(ECPoint point, group_.CreateECPoint(ciphertext));
   ASSIGN_OR_RETURN(ECPoint reencrypted_point, Encrypt(point));
   return reencrypted_point.ToBytesCompressed();
 }
 
-StatusOr<ECPoint> ECCommutativeCipher::Encrypt(const ECPoint& point) const {
+StatusOr<ECPoint> ECCommutativeCipher::Encrypt(const ECPoint& point) {
   return point.Mul(private_key_);
 }
 
 StatusOr<std::pair<std::string, std::string>>
 ECCommutativeCipher::ReEncryptElGamalCiphertext(
-    const std::pair<std::string, std::string>& elgamal_ciphertext) const {
+    const std::pair<std::string, std::string>& elgamal_ciphertext) {
   ASSIGN_OR_RETURN(ECPoint u, group_.CreateECPoint(elgamal_ciphertext.first));
   ASSIGN_OR_RETURN(ECPoint e, group_.CreateECPoint(elgamal_ciphertext.second));
 
@@ -114,10 +102,29 @@ ECCommutativeCipher::ReEncryptElGamalCiphertext(
 }
 
 StatusOr<std::string> ECCommutativeCipher::Decrypt(
-    const std::string& ciphertext) const {
+    const std::string& ciphertext) {
   ASSIGN_OR_RETURN(ECPoint point, group_.CreateECPoint(ciphertext));
   ASSIGN_OR_RETURN(ECPoint decrypted_point, point.Mul(private_key_inverse_));
   return decrypted_point.ToBytesCompressed();
+}
+
+::private_join_and_compute::StatusOr<ECPoint> ECCommutativeCipher::HashToTheCurveInternal(
+    const std::string& plaintext) {
+  StatusOr<ECPoint> status_or_point;
+  if (hash_type_ == SHA512) {
+    status_or_point = group_.GetPointByHashingToCurveSha512(plaintext);
+  } else if (hash_type_ == SHA256) {
+    status_or_point = group_.GetPointByHashingToCurveSha256(plaintext);
+  } else {
+    return InvalidArgumentError("Invalid hash type.");
+  }
+  return status_or_point;
+}
+
+::private_join_and_compute::StatusOr<std::string> ECCommutativeCipher::HashToTheCurve(
+    const std::string& plaintext) {
+  ASSIGN_OR_RETURN(ECPoint point, HashToTheCurveInternal(plaintext));
+  return point.ToBytesCompressed();
 }
 
 std::string ECCommutativeCipher::GetPrivateKeyBytes() const {

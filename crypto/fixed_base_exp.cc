@@ -114,7 +114,7 @@ class TwoKAryFixedBaseExpImpl : public FixedBaseExpImplBase {
       for (int j = 0; j < 8; ++j) {
         z *= z;
       }
-      z *= cache_[static_cast<int16_t>(*it)];
+      z *= cache_[static_cast<uint8_t>(*it)];
     }
     return z.ToBigNum();
   }

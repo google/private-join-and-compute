@@ -104,6 +104,9 @@ class ECGroup {
   // Returns the cofactor.
   const BigNum& GetCofactor() const { return cofactor_; }
 
+  // Returns the curve id.
+  const int GetCurveId() const { return EC_GROUP_get_curve_name(group_.get()); }
+
   // Creates an ECPoint which is the identity.
   StatusOr<ECPoint> GetPointAtInfinity() const;
 

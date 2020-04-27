@@ -34,8 +34,8 @@ PrivateIntersectionSumProtocolClientImpl::
       intersection_sum_(ctx->Zero()),
       ec_cipher_(
           std::move(ECCommutativeCipher::CreateWithNewKey(
-                        NID_secp224r1, ECCommutativeCipher::HashType::SHA512)
-                        .ValueOrDie())) {}
+                        NID_secp224r1, ECCommutativeCipher::HashType::SHA256)
+                        .value())) {}
 
 StatusOr<PrivateIntersectionSumClientMessage::ClientRoundOne>
 PrivateIntersectionSumProtocolClientImpl::ReEncryptSet(
@@ -50,12 +50,12 @@ PrivateIntersectionSumProtocolClientImpl::ReEncryptSet(
     if (!encrypted.ok()) {
       return encrypted.status();
     }
-    *element->mutable_element() = encrypted.ValueOrDie();
+    *element->mutable_element() = encrypted.value();
     StatusOr<BigNum> value = private_paillier_->Encrypt(values_[i]);
     if (!value.ok()) {
       return value.status();
     }
-    *element->mutable_associated_data() = value.ValueOrDie().ToBytes();
+    *element->mutable_associated_data() = value.value().ToBytes();
   }
 
   std::vector<EncryptedElement> reencrypted_set;
@@ -65,7 +65,7 @@ PrivateIntersectionSumProtocolClientImpl::ReEncryptSet(
     if (!reenc.ok()) {
       return reenc.status();
     }
-    *reencrypted.mutable_element() = reenc.ValueOrDie();
+    *reencrypted.mutable_element() = reenc.value();
     reencrypted_set.push_back(reencrypted);
   }
   std::sort(reencrypted_set.begin(), reencrypted_set.end(),
@@ -91,7 +91,7 @@ PrivateIntersectionSumProtocolClientImpl::DecryptSum(
   if (!sum.ok()) {
     return sum.status();
   }
-  return std::make_pair(server_message.intersection_size(), sum.ValueOrDie());
+  return std::make_pair(server_message.intersection_size(), sum.value());
 }
 
 Status PrivateIntersectionSumProtocolClientImpl::StartProtocol(
@@ -132,7 +132,7 @@ Status PrivateIntersectionSumProtocolClientImpl::Handle(
     }
     *(client_message.mutable_private_intersection_sum_client_message()
           ->mutable_client_round_one()) =
-        std::move(maybe_client_round_one.ValueOrDie());
+        std::move(maybe_client_round_one.value());
     return client_message_sink->Send(client_message);
   } else if (server_message.private_intersection_sum_server_message()
                  .has_server_round_two()) {
@@ -144,7 +144,7 @@ Status PrivateIntersectionSumProtocolClientImpl::Handle(
       return maybe_result.status();
     }
     std::tie(intersection_size_, intersection_sum_) =
-        std::move(maybe_result.ValueOrDie());
+        std::move(maybe_result.value());
     // Mark the protocol as finished here.
     protocol_finished_ = true;
     return OkStatus();
@@ -168,7 +168,7 @@ Status PrivateIntersectionSumProtocolClientImpl::PrintOutput() {
   }
   std::cout << "Client: The intersection size is " << intersection_size_
             << " and the intersection-sum is "
-            << maybe_converted_intersection_sum.ValueOrDie() << std::endl;
+            << maybe_converted_intersection_sum.value() << std::endl;
   return OkStatus();
 }
 

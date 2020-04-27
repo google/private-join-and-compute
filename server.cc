@@ -50,7 +50,7 @@ int RunServer() {
   ::private_join_and_compute::Context context;
   std::unique_ptr<::private_join_and_compute::ProtocolServer> server =
       absl::make_unique<::private_join_and_compute::PrivateIntersectionSumProtocolServerImpl>(
-          &context, std::move(maybe_server_identifiers.ValueOrDie()));
+          &context, std::move(maybe_server_identifiers.value()));
   ::private_join_and_compute::PrivateJoinAndComputeRpcImpl service(std::move(server));
 
   ::grpc::ServerBuilder builder;

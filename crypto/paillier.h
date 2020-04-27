@@ -60,6 +60,7 @@
 
 #include "crypto/big_num.h"
 #include "crypto/context.h"
+#include "crypto/paillier.pb.h"
 #include "util/status.inc"
 
 namespace private_join_and_compute {
@@ -74,17 +75,19 @@ class PrimeCryptoWithRand;
 class FixedBaseExp;
 class TwoModulusCrt;
 
-// Forward declaration of Paillier zero knowledge proof class.
-namespace internal {
-class PaillierOrZkpe;
-}  // namespace internal
-
 // Holds the resulting ciphertext from a Paillier encryption as well as the
 // random number used.
 struct PaillierEncAndRand {
   BigNum ciphertext;
   BigNum rand;
 };
+
+// Returns a Paillier public key and private key. The Paillier modulus n will be
+// generated to be the product of safe primes p and q, each of modulus_length/2
+// bits. "s" is the Damgard-Jurik parameter: the corresponding message space is
+// n^s, and the ciphertext space is n^(s+1).
+StatusOr<std::pair<PaillierPublicKey, PaillierPrivateKey>>
+GeneratePaillierKeyPair(Context* ctx, int32_t modulus_length, int32_t s);
 
 // The class defining Damgaard-Jurik cryptosystem operations that can be
 // performed with the public key.
@@ -109,6 +112,9 @@ class PublicPaillier {
   // (i.e., s = 1)
   // n is the plaintext size and n^2 is the ciphertext size.
   PublicPaillier(Context* ctx, const BigNum& n);
+
+  // Creates a PublicPaillier from the given proto.
+  PublicPaillier(Context* ctx, const PaillierPublicKey& public_key_proto);
 
   // PublicPaillier is neither copyable nor movable.
   PublicPaillier(const PublicPaillier&) = delete;
@@ -160,6 +166,9 @@ class PublicPaillier {
   // returning it with the ciphertext.
   StatusOr<PaillierEncAndRand> EncryptAndGetRand(const BigNum& message) const;
 
+  const BigNum& n() const { return n_; }
+  int s() const { return s_; }
+
  private:
   // Factory class for creating BigNums and holding the temporary values for
   // the BigNum arithmetic operations. Ownership is not taken.
@@ -209,6 +218,9 @@ class PrivatePaillier {
   // Creates a PrivatePaillier equivalent to the original Paillier cryptosystem
   // (i.e., s = 1)
   PrivatePaillier(Context* ctx, const BigNum& p, const BigNum& q);
+
+  // Creates a PrivatePaillier from the supplied key proto.
+  PrivatePaillier(Context* ctx, const PaillierPrivateKey& private_key_proto);
 
   // PrivatePaillier is neither copyable nor movable.
   PrivatePaillier(const PrivatePaillier&) = delete;
@@ -305,4 +317,3 @@ class PrivatePaillierWithRand {
 }  // namespace private_join_and_compute
 
 #endif  // CRYPTO_PAILLIER_H_
-

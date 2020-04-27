@@ -83,5 +83,9 @@ StatusOr<std::pair<std::vector<std::string>, std::vector<BigNum>>>
 ReadClientDatasetFromFile(absl::string_view client_data_filename,
                           Context* context);
 
+// Splits a CSV line using ',' as a delimiter, and returns a vector of
+// associated strings.
+std::vector<std::string> SplitCsvLine(const std::string& line);
+
 }  // namespace private_join_and_compute
 #endif  // OPEN_SOURCE_DATA_UTIL_H_

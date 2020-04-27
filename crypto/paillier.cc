@@ -16,6 +16,7 @@
 #include "crypto/paillier.h"
 
 #include <stddef.h>
+
 #include <memory>
 #include <utility>
 
@@ -27,6 +28,7 @@
 #include "crypto/two_modulus_crt.h"
 #include "util/status.inc"
 #include "absl/container/node_hash_map.h"
+#include "absl/memory/memory.h"
 
 DEFINE_int32(generator_try_count, 1000,
              "The number of times to iteratively try to find a generator for a "
@@ -125,7 +127,7 @@ std::vector<BigNum> GetPowers(Context* ctx, const BigNum& num, int s) {
 
 // Returns a vector of (1 / (i!)) * n^i mod n^(s+1) for i in [0, s].
 std::vector<BigNum> GetPrecomp(Context* ctx, const BigNum& num,
-                          const BigNum& modulus, int s) {
+                               const BigNum& modulus, int s) {
   std::vector<BigNum> precomp;
   precomp.push_back(ctx->CreateBigNum(1));
   for (int i = 1; i <= s; i++) {
@@ -187,6 +189,32 @@ BigNum ComputeByBinomialExpansion(Context* ctx,
 }
 
 }  // namespace
+
+StatusOr<std::pair<PaillierPublicKey, PaillierPrivateKey>>
+GeneratePaillierKeyPair(Context* ctx, int32_t modulus_length, int32_t s) {
+  if (modulus_length / 2 <= 0 || s <= 0) {
+    return InvalidArgumentError(
+        "GeneratePaillierKeyPair: modulus_length/2 and s must each be >0");
+  }
+
+  BigNum p = ctx->GenerateSafePrime(modulus_length / 2);
+  BigNum q = ctx->GenerateSafePrime(modulus_length / 2);
+  while (p == q) {
+    q = ctx->GenerateSafePrime(modulus_length / 2);
+  }
+  BigNum n = p * q;
+
+  PaillierPrivateKey private_key;
+  private_key.set_p(p.ToBytes());
+  private_key.set_q(q.ToBytes());
+  private_key.set_s(s);
+
+  PaillierPublicKey public_key;
+  public_key.set_n(n.ToBytes());
+  public_key.set_s(s);
+
+  return std::make_pair(std::move(public_key), std::move(private_key));
+}
 
 // A helper class defining Encrypt and Decrypt for only one of the prime parts
 // of the composite number n. Computing (1+n)^m * g^r mod p^(s+1) where r is in
@@ -342,10 +370,16 @@ PublicPaillier::PublicPaillier(Context* ctx, const BigNum& n, int s)
 PublicPaillier::PublicPaillier(Context* ctx, const BigNum& n)
     : PublicPaillier(ctx, n, kDefaultS) {}
 
+PublicPaillier::PublicPaillier(Context* ctx,
+                               const PaillierPublicKey& public_key_proto)
+    : PublicPaillier(ctx, ctx->CreateBigNum(public_key_proto.n()),
+                     public_key_proto.s()) {}
+
 PublicPaillier::~PublicPaillier() = default;
 
-BigNum PublicPaillier::Add(const BigNum& c1, const BigNum& c2) const {
-  return c1.ModMul(c2, modulus_);
+BigNum PublicPaillier::Add(const BigNum& ciphertext1,
+                           const BigNum& ciphertext2) const {
+  return ciphertext1.ModMul(ciphertext2, modulus_);
 }
 
 BigNum PublicPaillier::Multiply(const BigNum& c, const BigNum& m) const {
@@ -411,6 +445,12 @@ PrivatePaillier::PrivatePaillier(Context* ctx, const BigNum& p, const BigNum& q,
       two_mod_crt_decrypt_(new TwoModulusCrt(p_crypto_->GetPToExp(s),
                                              q_crypto_->GetPToExp(s))) {}
 
+PrivatePaillier::PrivatePaillier(Context* ctx,
+                                 const PaillierPrivateKey& private_key_proto)
+    : PrivatePaillier(ctx, ctx->CreateBigNum(private_key_proto.p()),
+                      ctx->CreateBigNum(private_key_proto.q()),
+                      private_key_proto.s()) {}
+
 StatusOr<BigNum> PrivatePaillier::Encrypt(const BigNum& m) const {
   if (!m.IsNonNegative()) {
     return InvalidArgumentError(
@@ -446,9 +486,11 @@ PrivatePaillierWithRand::PrivatePaillierWithRand(
     : ctx_(private_paillier->ctx_), private_paillier_(private_paillier) {
   const BigNum& p = private_paillier_->p_crypto_->GetPToExp(1);
   const BigNum& q = private_paillier_->q_crypto_->GetPToExp(1);
-  two_mod_crt_rand_.reset(new TwoModulusCrt(p, q));
-  p_crypto_.reset(new PrimeCryptoWithRand(private_paillier_->p_crypto_.get()));
-  q_crypto_.reset(new PrimeCryptoWithRand(private_paillier_->q_crypto_.get()));
+  two_mod_crt_rand_ = absl::make_unique<TwoModulusCrt>(p, q);
+  p_crypto_ = absl::make_unique<PrimeCryptoWithRand>(
+      private_paillier_->p_crypto_.get());
+  q_crypto_ = absl::make_unique<PrimeCryptoWithRand>(
+      private_paillier_->q_crypto_.get());
 }
 
 PrivatePaillierWithRand::~PrivatePaillierWithRand() = default;

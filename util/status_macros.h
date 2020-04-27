@@ -35,7 +35,7 @@
   if (ABSL_PREDICT_FALSE(!statusor.ok())) {                           \
     return std::move(statusor).status();                              \
   }                                                                   \
-  lhs = std::move(statusor).ValueOrDie()
+  lhs = std::move(statusor).value()
 
 // Internal helper for concatenating macro values.
 #define PRIVACY_BLINDERS_STATUS_MACROS_IMPL_CONCAT_INNER_(x, y) x##y

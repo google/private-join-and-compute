@@ -32,7 +32,7 @@ namespace private_join_and_compute {
 // Makes use of a BN_CTX structure that holds temporary BIGNUMs needed for
 // arithmetic operations as dynamic memory allocation to create BIGNUMs is
 // expensive.
-class BigNum {
+class ABSL_MUST_USE_RESULT BigNum {
  public:
   // Deletes a BIGNUM.
   class BnDeleter {
