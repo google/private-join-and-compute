@@ -40,9 +40,9 @@ class ECGroup {
 
   // Constructs a new ECGroup object for the given named curve id.
   // See openssl header obj_mac.h for the available built-in curves.
-  // Use a well-known prime curve such as NID_secp224r1 recommended by NIST.
-  // Returns INTERNAL error code if there is a failure in crypto operations.
-  // Security: this function is secure only for prime order curves.
+  // Use a well-known prime curve such as NID_X9_62_prime256v1 recommended by
+  // NIST. Returns INTERNAL error code if there is a failure in crypto
+  // operations. Security: this function is secure only for prime order curves.
   // (All supported curves in BoringSSL have prime order.)
   static StatusOr<ECGroup> Create(int curve_id, Context* context);
 

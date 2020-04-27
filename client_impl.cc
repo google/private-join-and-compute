@@ -32,10 +32,10 @@ PrivateIntersectionSumProtocolClientImpl::
       p_(ctx_->GenerateSafePrime(modulus_size / 2)),
       q_(ctx_->GenerateSafePrime(modulus_size / 2)),
       intersection_sum_(ctx->Zero()),
-      ec_cipher_(
-          std::move(ECCommutativeCipher::CreateWithNewKey(
-                        NID_secp224r1, ECCommutativeCipher::HashType::SHA256)
-                        .value())) {}
+      ec_cipher_(std::move(
+          ECCommutativeCipher::CreateWithNewKey(
+              NID_X9_62_prime256v1, ECCommutativeCipher::HashType::SHA256)
+              .value())) {}
 
 StatusOr<PrivateIntersectionSumClientMessage::ClientRoundOne>
 PrivateIntersectionSumProtocolClientImpl::ReEncryptSet(

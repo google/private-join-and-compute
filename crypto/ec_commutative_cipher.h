@@ -45,23 +45,24 @@ namespace private_join_and_compute {
 // This class is not thread-safe.
 //
 // Security: The provided bit security is half the number of bits of the
-//  underlying curve. For example, using curve NID_secp224r1 gives 112 bit
-//  security.
+//  underlying curve. For example, using curve NID_X9_62_prime256v1 gives 128
+//  bit security.
 //
 // Example: To generate a cipher with a new private key for the named curve
-//    NID_secp224r1. The key can be securely stored and reused.
+//    NID_X9_62_prime256v1. The key can be securely stored and reused.
 //    #include <openssl/obj_mac.h>
 //    std::unique_ptr<ECCommutativeCipher> cipher =
 //        ECCommutativeCipher::CreateWithNewKey(
-//            NID_secp224r1, ECCommutativeCipher::HashType::SHA256);
+//            NID_X9_62_prime256v1, ECCommutativeCipher::HashType::SHA256);
 //    string key_bytes = cipher->GetPrivateKeyBytes();
 //
 //  Example: To generate a cipher with an existing private key for the named
-//    curve NID_secp224r1.
+//    curve NID_X9_62_prime256v1.
 //    #include <openssl/obj_mac.h>
 //    std::unique_ptr<ECCommutativeCipher> cipher =
 //        ECCommutativeCipher::CreateFromKey(
-//            NID_secp224r1, key_bytes, ECCommutativeCipher::HashType::SHA256);
+//            NID_X9_62_prime256v1, key_bytes,
+//            ECCommutativeCipher::HashType::SHA256);
 //
 // Example: To encrypt a message using a std::unique_ptr<ECCommutativeCipher>
 //    cipher generated as above.

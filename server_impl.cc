@@ -35,7 +35,7 @@ PrivateIntersectionSumProtocolServerImpl::EncryptSet() {
   }
   StatusOr<std::unique_ptr<ECCommutativeCipher>> ec_cipher =
       ECCommutativeCipher::CreateWithNewKey(
-          NID_secp224r1, ECCommutativeCipher::HashType::SHA256);
+          NID_X9_62_prime256v1, ECCommutativeCipher::HashType::SHA256);
   if (!ec_cipher.ok()) {
     return ec_cipher.status();
   }
