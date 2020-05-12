@@ -78,10 +78,16 @@ StatusOr<elgamal::Ciphertext> Mul(const elgamal::Ciphertext& ciphertext1,
 StatusOr<elgamal::Ciphertext> Exp(const elgamal::Ciphertext& ciphertext,
                                   const BigNum& scalar);
 
+// Returns a ciphertext encrypting the point at infinity, using fixed randomness
+// "0". This is a multiplicative identity for ElGamal ciphertexts.
 StatusOr<Ciphertext> GetZero(const ECGroup* group);
 
+// A convenience function that creates a copy of this ciphertext with the same
+// randomness and underlying message.
 StatusOr<Ciphertext> CloneCiphertext(const Ciphertext& ciphertext);
 
+// Checks if the given ciphertext is an encryption of the point of infinity
+// using randomness "0".
 bool IsCiphertextZero(const Ciphertext& ciphertext);
 
 }  // namespace elgamal
