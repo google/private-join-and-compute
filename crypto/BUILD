@@ -117,6 +117,43 @@ cc_library(
 )
 
 cc_library(
+    name = "commutative_elgamal",
+    srcs = [
+        "commutative_elgamal.cc",
+    ],
+    hdrs = [
+        "commutative_elgamal.h",
+    ],
+    deps = [
+        ":bn_util",
+        ":ec_util",
+        ":elgamal",
+        "//util:status",
+        "//util:status_includes",
+        "@com_github_gflags_gflags//:gflags",
+        "@com_github_glog_glog//:glog",
+    ],
+)
+
+cc_library(
+    name = "ec_point_util",
+    srcs = [
+        "ec_point_util.cc",
+    ],
+    hdrs = [
+        "ec_point_util.h",
+    ],
+    deps = [
+        ":bn_util",
+        ":ec_util",
+        "//util:status",
+        "//util:status_includes",
+        "@com_github_gflags_gflags//:gflags",
+        "@com_github_glog_glog//:glog",
+    ],
+)
+
+cc_library(
     name = "ec_commutative_cipher",
     srcs = [
         "ec_commutative_cipher.cc",
