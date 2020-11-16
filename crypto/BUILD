@@ -50,7 +50,6 @@ cc_library(
     deps = [
         "//crypto:openssl_includes",
         "//crypto:openssl_init",
-        "//util:status",
         "//util:status_includes",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_glog_glog//:glog",
@@ -89,7 +88,6 @@ cc_library(
     deps = [
         ":bn_util",
         "//crypto:openssl_includes",
-        "//util:status",
         "//util:status_includes",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_glog_glog//:glog",
@@ -109,10 +107,10 @@ cc_library(
     deps = [
         ":bn_util",
         ":ec_util",
-        "//util:status",
         "//util:status_includes",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_glog_glog//:glog",
+        "@com_google_absl//absl/memory",
     ],
 )
 
@@ -128,7 +126,6 @@ cc_library(
         ":bn_util",
         ":ec_util",
         ":elgamal",
-        "//util:status",
         "//util:status_includes",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_glog_glog//:glog",
@@ -146,7 +143,6 @@ cc_library(
     deps = [
         ":bn_util",
         ":ec_util",
-        "//util:status",
         "//util:status_includes",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_glog_glog//:glog",
@@ -165,7 +161,6 @@ cc_library(
         ":bn_util",
         ":ec_util",
         ":elgamal",
-        "//util:status",
         "//util:status_includes",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_glog_glog//:glog",
@@ -184,7 +179,6 @@ cc_library(
     deps = [
         ":bn_util",
         ":mont_mul",
-        "//util:status",
         "//util:status_includes",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_glog_glog//:glog",
@@ -225,7 +219,6 @@ cc_library(
         ":fixed_base_exp",
         ":paillier_proto",
         ":two_modulus_crt",
-        "//util:status",
         "//util:status_includes",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_glog_glog//:glog",

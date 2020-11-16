@@ -36,6 +36,8 @@
 #ifndef CRYPTO_ELGAMAL_H_
 #define CRYPTO_ELGAMAL_H_
 
+#include <vector>
+
 #include "crypto/ec_group.h"
 #include "crypto/ec_point.h"
 #include "util/status.inc"
@@ -67,6 +69,10 @@ struct PrivateKey {
 // Generates a new ElGamal public-private key pair.
 StatusOr<std::pair<std::unique_ptr<PublicKey>, std::unique_ptr<PrivateKey>>>
 GenerateKeyPair(const ECGroup& ec_group);
+
+// Joins the public key shares in a public key. The shares should be nonempty.
+StatusOr<std::unique_ptr<PublicKey>> GeneratePublicKeyFromShares(
+    const std::vector<std::unique_ptr<elgamal::PublicKey>>& shares);
 
 // Homomorphically multiply two ciphertexts.
 // (Note: this corresponds to addition in the EC group.)
@@ -138,6 +144,12 @@ class ElGamalDecrypter {
 
   // Decrypts a given ElGamal ciphertext.
   StatusOr<ECPoint> Decrypt(const elgamal::Ciphertext& ciphertext) const;
+
+  // Partially decrypts a given ElGamal ciphertext with a share of the secret
+  // key. The caller should rerandomize the ciphertext using the remaining
+  // partial public keys.
+  StatusOr<elgamal::Ciphertext> PartialDecrypt(
+      const elgamal::Ciphertext& ciphertext) const;
 
   // Returns a pointer to the owned ElGamal private key
   const elgamal::PrivateKey* getPrivateKey() const {

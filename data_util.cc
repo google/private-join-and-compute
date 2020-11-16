@@ -303,7 +303,7 @@ StatusOr<std::vector<std::string>> ReadServerDatasetFromFile(
   std::vector<std::string> server_data;
   std::string line;
   int64_t line_number = 0;
-  while (getline(server_data_file, line)) {
+  while (std::getline(server_data_file, line)) {
     std::vector<std::string> columns = SplitCsvLine(line);
     if (columns.size() != 1) {
       return InvalidArgumentError(absl::StrCat(
@@ -346,7 +346,7 @@ ReadClientDatasetFromFile(absl::string_view client_data_filename,
   std::vector<BigNum> client_associated_values;
   std::string line;
   int64_t line_number = 0;
-  while (getline(client_data_file, line)) {
+  while (std::getline(client_data_file, line)) {
     std::vector<std::string> columns = SplitCsvLine(line);
     if (columns.size() != 2) {
       return InvalidArgumentError(absl::StrCat(

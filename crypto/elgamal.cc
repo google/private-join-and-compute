@@ -22,6 +22,7 @@
 #include "crypto/ec_group.h"
 #include "crypto/ec_point.h"
 #include "util/status.inc"
+#include "absl/memory/memory.h"
 
 namespace private_join_and_compute {
 
@@ -38,6 +39,23 @@ GenerateKeyPair(const ECGroup& ec_group) {
   std::unique_ptr<PrivateKey> private_key(new PrivateKey({std::move(x)}));
 
   return {{std::move(public_key), std::move(private_key)}};
+}
+
+StatusOr<std::unique_ptr<PublicKey>> GeneratePublicKeyFromShares(
+    const std::vector<std::unique_ptr<elgamal::PublicKey>>& shares) {
+  if (shares.empty()) {
+    return InvalidArgumentError(
+        "ElGamal::GeneratePublicKeyFromShares() : empty shares provided");
+  }
+  ASSIGN_OR_RETURN(ECPoint g, (*shares.begin())->g.Clone());
+  ASSIGN_OR_RETURN(ECPoint y, (*shares.begin())->y.Clone());
+  for (size_t i = 1; i < shares.size(); i++) {
+    CHECK(g.CompareTo((*shares.at(i)).g))
+        << "Invalid public key shares provided with different generators g";
+    ASSIGN_OR_RETURN(y, y.Add((*shares.at(i)).y));
+  }
+
+  return absl::WrapUnique(new PublicKey({std::move(g), std::move(y)}));
 }
 
 StatusOr<elgamal::Ciphertext> Mul(const elgamal::Ciphertext& ciphertext1,
@@ -117,6 +135,13 @@ StatusOr<ECPoint> ElGamalDecrypter::Decrypt(
   ASSIGN_OR_RETURN(ECPoint u_to_x_inverse, u_to_x.Inverse());
   ASSIGN_OR_RETURN(ECPoint message, ciphertext.e.Add(u_to_x_inverse));
   return {std::move(message)};
+}
+
+StatusOr<elgamal::Ciphertext> ElGamalDecrypter::PartialDecrypt(
+    const elgamal::Ciphertext& ciphertext) const {
+  ASSIGN_OR_RETURN(ECPoint clone_u, ciphertext.u.Clone());
+  ASSIGN_OR_RETURN(ECPoint dec_e, ElGamalDecrypter::Decrypt(ciphertext));
+  return {{std::move(clone_u), std::move(dec_e)}};
 }
 
 }  // namespace private_join_and_compute

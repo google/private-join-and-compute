@@ -13,7 +13,25 @@
  * limitations under the License.
  */
 
-#include "util/canonical_errors.h"
-#include "util/status.h"
-#include "util/statusor.h"
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
+
 #include "util/status_macros.h"
+
+namespace private_join_and_compute {
+// Aliases StatusCode to be compatible with our code.
+using StatusCode = ::absl::StatusCode;
+// Aliases Status, StatusOr and canonical errors, to allow portable code to
+// accept or return private_join_and_compute::Status and private_join_and_compute::StatusOr, and be compatible
+// with both absl::Status and our open-source Status fork.
+using Status = absl::Status;
+template <typename T>
+using StatusOr = absl::StatusOr<T>;
+using absl::InternalError;
+using absl::InvalidArgumentError;
+using absl::IsInternal;
+using absl::IsInvalidArgument;
+using absl::OkStatus;
+}  // namespace private_join_and_compute
+
+

@@ -68,7 +68,6 @@ cc_library(
         "//crypto:bn_util",
         "//crypto:ec_commutative_cipher",
         "//crypto:paillier",
-        "//util:status",
         "//util:status_includes",
         "@com_google_absl//absl/memory",
     ],
@@ -97,7 +96,6 @@ cc_library(
         "//crypto:bn_util",
         "//crypto:ec_commutative_cipher",
         "//crypto:paillier",
-        "//util:status",
         "//util:status_includes",
         "@com_google_absl//absl/memory",
     ],
@@ -110,7 +108,6 @@ cc_library(
     deps = [
         ":match_proto",
         "//crypto:bn_util",
-        "//util:status",
         "//util:status_includes",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",

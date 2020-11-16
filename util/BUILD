@@ -30,6 +30,8 @@ cc_library(
     hdrs = glob(["*.h"]),
     deps = [
         "@com_github_glog_glog//:glog",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
         "@com_google_protobuf//:protobuf_lite",
     ],
 )
@@ -39,6 +41,8 @@ cc_library(
     hdrs = ["status.inc"],
     deps = [
         ":status",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/status:statusor",
         "@com_google_protobuf//:protobuf_lite",
     ],
 )

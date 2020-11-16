@@ -50,19 +50,27 @@ http_archive(
     ],
 )
 
+# Abseil C++ libraries
+git_repository(
+    name = "com_google_absl",
+    remote = "https://github.com/abseil/abseil-cpp.git",
+    commit = "0f3bb466b868b523cf1dc9b2aaaed65c77b28862",
+    shallow_since = "1603283562 -0400",
+)
+
 # gRPC
 http_archive(
     name = "com_github_grpc_grpc",
-    sha256 = "4cbce7f708917b6e58b631c24c59fe720acc8fef5f959df9a58cdf9558d0a79b",
-    strip_prefix = "grpc-1.28.1",
+    sha256 = "2060769f2d4b0d3535ba594b2ab614d7f68a492f786ab94b4318788d45e3278a",
+    strip_prefix = "grpc-1.33.2",
     urls = [
-        "https://github.com/grpc/grpc/archive/v1.28.1.tar.gz",
+        "https://github.com/grpc/grpc/archive/v1.33.2.tar.gz",
     ],
 )
 
 load("@com_github_grpc_grpc//bazel:grpc_deps.bzl", "grpc_deps")
 
-# Includes boringssl, com_google_absl, and other dependencies.
+# Includes boringssl, and other dependencies.
 grpc_deps()
 
 load("@com_github_grpc_grpc//bazel:grpc_extra_deps.bzl", "grpc_extra_deps")

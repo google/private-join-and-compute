@@ -17,8 +17,8 @@
 #define UTIL_STATUS_MACROS_H_
 
 #include "absl/base/port.h"
-#include "util/status.h"
-#include "util/statusor.h"
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
 
 // Helper macro that checks if the right hand side (rexpression) evaluates to a
 // StatusOr with Status OK, and if so assigns the value to the value on the left
