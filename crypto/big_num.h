@@ -24,6 +24,7 @@
 #include "gflags/gflags_declare.h"
 #include "crypto/openssl.inc"
 #include "util/status.inc"
+#include "absl/strings/string_view.h"
 
 namespace private_join_and_compute {
 
@@ -168,7 +169,7 @@ class ABSL_MUST_USE_RESULT BigNum {
 
  private:
   // Creates a new BigNum object from a bytes string.
-  explicit BigNum(BN_CTX* bn_ctx, const std::string& bytes);
+  explicit BigNum(BN_CTX* bn_ctx, absl::string_view bytes);
   // Creates a new BigNum object from a char array.
   explicit BigNum(BN_CTX* bn_ctx, const unsigned char* bytes, int length);
   // Creates a new BigNum object from the number.

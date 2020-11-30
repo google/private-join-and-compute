@@ -48,7 +48,7 @@ ECCommutativeCipher::CreateWithNewKey(int curve_id, HashType hash_type) {
 }
 
 StatusOr<std::unique_ptr<ECCommutativeCipher>>
-ECCommutativeCipher::CreateFromKey(int curve_id, const std::string& key_bytes,
+ECCommutativeCipher::CreateFromKey(int curve_id, absl::string_view key_bytes,
                                    HashType hash_type) {
   std::unique_ptr<Context> context(new Context);
   ASSIGN_OR_RETURN(ECGroup group, ECGroup::Create(curve_id, context.get()));
@@ -65,14 +65,14 @@ ECCommutativeCipher::CreateFromKey(int curve_id, const std::string& key_bytes,
 }
 
 StatusOr<std::string> ECCommutativeCipher::Encrypt(
-    const std::string& plaintext) {
+    absl::string_view plaintext) {
   ASSIGN_OR_RETURN(ECPoint hashed_point, HashToTheCurveInternal(plaintext));
   ASSIGN_OR_RETURN(ECPoint encrypted_point, Encrypt(hashed_point));
   return encrypted_point.ToBytesCompressed();
 }
 
 StatusOr<std::string> ECCommutativeCipher::ReEncrypt(
-    const std::string& ciphertext) {
+    absl::string_view ciphertext) {
   ASSIGN_OR_RETURN(ECPoint point, group_.CreateECPoint(ciphertext));
   ASSIGN_OR_RETURN(ECPoint reencrypted_point, Encrypt(point));
   return reencrypted_point.ToBytesCompressed();
@@ -102,14 +102,14 @@ ECCommutativeCipher::ReEncryptElGamalCiphertext(
 }
 
 StatusOr<std::string> ECCommutativeCipher::Decrypt(
-    const std::string& ciphertext) {
+    absl::string_view ciphertext) {
   ASSIGN_OR_RETURN(ECPoint point, group_.CreateECPoint(ciphertext));
   ASSIGN_OR_RETURN(ECPoint decrypted_point, point.Mul(private_key_inverse_));
   return decrypted_point.ToBytesCompressed();
 }
 
 ::private_join_and_compute::StatusOr<ECPoint> ECCommutativeCipher::HashToTheCurveInternal(
-    const std::string& plaintext) {
+    absl::string_view plaintext) {
   StatusOr<ECPoint> status_or_point;
   if (hash_type_ == SHA512) {
     status_or_point = group_.GetPointByHashingToCurveSha512(plaintext);
@@ -122,7 +122,7 @@ StatusOr<std::string> ECCommutativeCipher::Decrypt(
 }
 
 ::private_join_and_compute::StatusOr<std::string> ECCommutativeCipher::HashToTheCurve(
-    const std::string& plaintext) {
+    absl::string_view plaintext) {
   ASSIGN_OR_RETURN(ECPoint point, HashToTheCurveInternal(plaintext));
   return point.ToBytesCompressed();
 }

@@ -54,6 +54,7 @@ cc_library(
         "@com_github_gflags_gflags//:gflags",
         "@com_github_glog_glog//:glog",
         "@com_google_absl//absl/base",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -129,6 +130,7 @@ cc_library(
         "//util:status_includes",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_glog_glog//:glog",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -146,6 +148,7 @@ cc_library(
         "//util:status_includes",
         "@com_github_gflags_gflags//:gflags",
         "@com_github_glog_glog//:glog",
+        "@com_google_absl//absl/strings",
     ],
 )
 
@@ -165,6 +168,7 @@ cc_library(
         "@com_github_gflags_gflags//:gflags",
         "@com_github_glog_glog//:glog",
         "@com_google_absl//absl/base",
+        "@com_google_absl//absl/strings",
     ],
 )
 

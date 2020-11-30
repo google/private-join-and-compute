@@ -24,6 +24,7 @@
 #include "glog/logging.h"
 #include "crypto/big_num.h"
 #include "crypto/openssl.inc"
+#include "absl/strings/string_view.h"
 
 #define CRYPTO_CHECK(expr) CHECK(expr) << OpenSSLErrorString();
 
@@ -72,16 +73,16 @@ class Context {
   BigNum CreateBigNum(BigNum::BignumPtr bn);
 
   // Creates a BigNum initialized with the given bytes string.
-  BigNum CreateBigNum(const std::string& bytes);
+  BigNum CreateBigNum(absl::string_view bytes);
 
   // Creates a BigNum initialized with the given number.
   BigNum CreateBigNum(uint64_t number);
 
   // Hashes a string using SHA-256 to a byte string.
-  virtual std::string Sha256String(const std::string& bytes);
+  virtual std::string Sha256String(absl::string_view bytes);
 
   // Hashes a string using SHA-512 to a byte string.
-  virtual std::string Sha512String(const std::string& bytes);
+  virtual std::string Sha512String(absl::string_view bytes);
 
   // A random oracle function mapping x deterministically into a large domain.
   //
@@ -105,9 +106,9 @@ class Context {
   // The output length is increased by a security value of 256/512 which reduces
   // the bias of selecting certain values more often than others when max_value
   // is not a multiple of 2.
-  virtual BigNum RandomOracleSha256(const std::string& x,
+  virtual BigNum RandomOracleSha256(absl::string_view x,
                                     const BigNum& max_value);
-  virtual BigNum RandomOracleSha512(const std::string& x,
+  virtual BigNum RandomOracleSha512(absl::string_view x,
                                     const BigNum& max_value);
 
   // Evaluates a PRF keyed by 'key' on the given data. The returned value is
@@ -122,7 +123,7 @@ class Context {
   //  key is less than 80 bits.
   //
   //  This function is susceptible to timing attacks.
-  BigNum PRF(const std::string& key, const std::string& data,
+  BigNum PRF(absl::string_view key, absl::string_view data,
              const BigNum& max_value);
 
   // Creates a safe prime BigNum with the given bit-length.
@@ -172,7 +173,7 @@ class Context {
   };
 
   // If hash_type is invalid, this function will default to using SHA256.
-  virtual BigNum RandomOracle(const std::string& x, const BigNum& max_value,
+  virtual BigNum RandomOracle(absl::string_view x, const BigNum& max_value,
                               RandomOracleHashType hash_type);
 };
 

@@ -23,6 +23,7 @@
 #include "crypto/context.h"
 #include "crypto/openssl.inc"
 #include "util/status.inc"
+#include "absl/strings/string_view.h"
 
 namespace private_join_and_compute {
 
@@ -49,7 +50,7 @@ BigNum::BigNum(BN_CTX* bn_ctx, uint64_t number) : BigNum::BigNum(bn_ctx) {
   CRYPTO_CHECK(BN_set_u64(bn_.get(), number));
 }
 
-BigNum::BigNum(BN_CTX* bn_ctx, const std::string& bytes)
+BigNum::BigNum(BN_CTX* bn_ctx, absl::string_view bytes)
     : BigNum::BigNum(bn_ctx) {
   CRYPTO_CHECK(nullptr !=
                BN_bin2bn(reinterpret_cast<const unsigned char*>(bytes.data()),

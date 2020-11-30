@@ -25,6 +25,7 @@
 #include "crypto/ec_group.h"
 #include "crypto/ec_point.h"
 #include "util/status.inc"
+#include "absl/strings/string_view.h"
 
 namespace private_join_and_compute {
 
@@ -46,11 +47,11 @@ class ECPointUtil {
   StatusOr<std::string> GetRandomCurvePoint();
 
   // Hashes the given string to the curve.
-  StatusOr<std::string> HashToCurve(const std::string& input);
+  StatusOr<std::string> HashToCurve(absl::string_view input);
 
   // Checks if a string represents a curve point.
   // May give a false negative if an internal error occurs.
-  bool IsCurvePoint(const std::string& input);
+  bool IsCurvePoint(absl::string_view input);
 
  private:
   ECPointUtil(std::unique_ptr<Context> context, ECGroup group);

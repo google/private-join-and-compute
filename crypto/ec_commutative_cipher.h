@@ -25,6 +25,7 @@
 #include "crypto/ec_group.h"
 #include "crypto/ec_point.h"
 #include "util/status.inc"
+#include "absl/strings/string_view.h"
 
 namespace private_join_and_compute {
 
@@ -116,7 +117,7 @@ class ECCommutativeCipher {
   // the given curve or the curve_id is not valid.
   // Returns INTERNAL status when crypto operations are not successful.
   static ::private_join_and_compute::StatusOr<std::unique_ptr<ECCommutativeCipher>>
-  CreateFromKey(int curve_id, const std::string& key_bytes, HashType hash_type);
+  CreateFromKey(int curve_id, absl::string_view key_bytes, HashType hash_type);
 
   // Encrypts a string with the private key to a point on the elliptic curve.
   //
@@ -129,7 +130,7 @@ class ECCommutativeCipher {
   // Returns an INVALID_ARGUMENT error code if an error occurs.
   //
   // This method is not threadsafe.
-  ::private_join_and_compute::StatusOr<std::string> Encrypt(const std::string& plaintext);
+  ::private_join_and_compute::StatusOr<std::string> Encrypt(absl::string_view plaintext);
 
   // Encrypts an encoded point with the private key.
   //
@@ -142,7 +143,7 @@ class ECCommutativeCipher {
   // hashed to the curve.
   //
   // This method is not threadsafe.
-  ::private_join_and_compute::StatusOr<std::string> ReEncrypt(const std::string& ciphertext);
+  ::private_join_and_compute::StatusOr<std::string> ReEncrypt(absl::string_view ciphertext);
 
   // Encrypts an ElGamal ciphertext with the private key.
   //
@@ -171,7 +172,7 @@ class ECCommutativeCipher {
   // hashing to the curve.
   //
   // This method is not threadsafe.
-  ::private_join_and_compute::StatusOr<std::string> Decrypt(const std::string& ciphertext);
+  ::private_join_and_compute::StatusOr<std::string> Decrypt(absl::string_view ciphertext);
 
   // Hashes a string to a point on the elliptic curve using the
   // "try-and-increment" method.
@@ -183,8 +184,7 @@ class ECCommutativeCipher {
   // Returns an INVALID_ARGUMENT error code if an error occurs.
   //
   // This method is not threadsafe.
-  ::private_join_and_compute::StatusOr<std::string> HashToTheCurve(
-      const std::string& plaintext);
+  ::private_join_and_compute::StatusOr<std::string> HashToTheCurve(absl::string_view plaintext);
 
   // Returns the private key bytes so the key can be stored and reused.
   std::string GetPrivateKeyBytes() const;
@@ -200,7 +200,7 @@ class ECCommutativeCipher {
 
   // Hashes a string to a point on the elliptic curve.
   ::private_join_and_compute::StatusOr<ECPoint> HashToTheCurveInternal(
-      const std::string& plaintext);
+      absl::string_view plaintext);
 
   // Context used for storing temporary values to be reused across openssl
   // function calls for better performance.

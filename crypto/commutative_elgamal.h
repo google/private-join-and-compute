@@ -20,6 +20,7 @@
 
 #include "crypto/elgamal.h"
 #include "util/status.inc"
+#include "absl/strings/string_view.h"
 
 // Defines functions to generate ElGamal public/private keys, and
 // to encrypt/decrypt messages using those keys.
@@ -105,13 +106,13 @@ class CommutativeElGamal {
   static StatusOr<std::unique_ptr<CommutativeElGamal>>
   CreateFromPublicAndPrivateKeys(
       int curve_id, const std::pair<std::string, std::string>& public_key_bytes,
-      const std::string& private_key_bytes);
+      absl::string_view private_key_bytes);
 
   // Encrypts the supplied point, and returns the resulting ElGamal ciphertext.
   // Returns INVALID_ARGUMENT if the input is not on the same curve.
   // Returns INTERNAL when crypto operations fail.
   StatusOr<std::pair<std::string, std::string>> Encrypt(
-      const std::string& plaintext) const;
+      absl::string_view plaintext) const;
 
   // Encrypts the identity element of the EC group (typically the point at
   // infinity).  Note that the ciphertext returned by this method will never

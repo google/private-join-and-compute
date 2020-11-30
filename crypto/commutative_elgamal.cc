@@ -23,6 +23,7 @@
 #include "crypto/ec_point.h"
 #include "crypto/elgamal.h"
 #include "util/status.inc"
+#include "absl/strings/string_view.h"
 
 namespace private_join_and_compute {
 
@@ -78,7 +79,7 @@ CommutativeElGamal::CreateFromPublicKey(
 StatusOr<std::unique_ptr<CommutativeElGamal>>
 CommutativeElGamal::CreateFromPublicAndPrivateKeys(
     int curve_id, const std::pair<std::string, std::string>& public_key_bytes,
-    const std::string& private_key_bytes) {
+    absl::string_view private_key_bytes) {
   std::unique_ptr<Context> context(new Context);
   ASSIGN_OR_RETURN(ECGroup group,
                             ECGroup::Create(curve_id, context.get()));
@@ -109,7 +110,7 @@ CommutativeElGamal::CreateFromPublicAndPrivateKeys(
 }
 
 StatusOr<std::pair<std::string, std::string>> CommutativeElGamal::Encrypt(
-    const std::string& plaintext) const {
+    absl::string_view plaintext) const {
   ASSIGN_OR_RETURN(ECPoint plaintext_point,
                             group_.CreateECPoint(plaintext));
 

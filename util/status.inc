@@ -21,9 +21,8 @@
 namespace private_join_and_compute {
 // Aliases StatusCode to be compatible with our code.
 using StatusCode = ::absl::StatusCode;
-// Aliases Status, StatusOr and canonical errors, to allow portable code to
-// accept or return private_join_and_compute::Status and private_join_and_compute::StatusOr, and be compatible
-// with both absl::Status and our open-source Status fork.
+// Aliases Status, StatusOr and canonical errors. This alias exists for 
+// historical reasons (when this library had a fork of absl::Status).
 using Status = absl::Status;
 template <typename T>
 using StatusOr = absl::StatusOr<T>;

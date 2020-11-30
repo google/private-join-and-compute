@@ -23,6 +23,7 @@
 #include "crypto/ec_group.h"
 #include "crypto/ec_point.h"
 #include "util/status.inc"
+#include "absl/strings/string_view.h"
 
 namespace private_join_and_compute {
 
@@ -42,12 +43,12 @@ StatusOr<std::string> ECPointUtil::GetRandomCurvePoint() {
   return point.ToBytesCompressed();
 }
 
-StatusOr<std::string> ECPointUtil::HashToCurve(const std::string& input) {
+StatusOr<std::string> ECPointUtil::HashToCurve(absl::string_view input) {
   ASSIGN_OR_RETURN(ECPoint point, group_.GetPointByHashingToCurveSha512(input));
   return point.ToBytesCompressed();
 }
 
-bool ECPointUtil::IsCurvePoint(const std::string& input) {
+bool ECPointUtil::IsCurvePoint(absl::string_view input) {
   return group_.CreateECPoint(input).ok();
 }
 

@@ -23,6 +23,7 @@
 #include "crypto/openssl.inc"
 #include "util/status.inc"
 #include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 
 namespace private_join_and_compute {
 
@@ -161,7 +162,7 @@ StatusOr<ECPoint> ECGroup::GetPointByHashingToCurveInternal(
 }
 
 StatusOr<ECPoint> ECGroup::GetPointByHashingToCurveSha256(
-    const std::string& m) const {
+    absl::string_view m) const {
   BigNum x = context_->RandomOracleSha256(m, curve_params_.p);
   while (true) {
     auto status_or_point = GetPointByHashingToCurveInternal(x);
@@ -173,7 +174,7 @@ StatusOr<ECPoint> ECGroup::GetPointByHashingToCurveSha256(
 }
 
 StatusOr<ECPoint> ECGroup::GetPointByHashingToCurveSha512(
-    const std::string& m) const {
+    absl::string_view m) const {
   BigNum x = context_->RandomOracleSha512(m, curve_params_.p);
   while (true) {
     auto status_or_point = GetPointByHashingToCurveInternal(x);
@@ -234,7 +235,7 @@ StatusOr<ECPoint> ECGroup::CreateECPoint(const BigNum& x,
   return std::move(point);
 }
 
-StatusOr<ECPoint> ECGroup::CreateECPoint(const std::string& bytes) const {
+StatusOr<ECPoint> ECGroup::CreateECPoint(absl::string_view bytes) const {
   auto raw_ec_point_ptr = EC_POINT_new(group_.get());
   if (raw_ec_point_ptr == nullptr) {
     return InternalError("ECGroup::CreateECPoint: Failed to create point.");

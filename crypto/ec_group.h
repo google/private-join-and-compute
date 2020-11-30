@@ -23,6 +23,7 @@
 #include "crypto/context.h"
 #include "crypto/openssl.inc"
 #include "util/status.inc"
+#include "absl/strings/string_view.h"
 
 namespace private_join_and_compute {
 
@@ -62,7 +63,7 @@ class ECGroup {
   // Security: The number of operations required to hash a string depends on the
   // string, which could lead to a timing attack.
   // Security: This function is only secure for curves of prime order.
-  StatusOr<ECPoint> GetPointByHashingToCurveSha256(const std::string& m) const;
+  StatusOr<ECPoint> GetPointByHashingToCurveSha256(absl::string_view m) const;
 
   // Hashes m to a point on the elliptic curve y^2 = x^3 + ax + b over a
   // prime field using SHA512.
@@ -70,7 +71,7 @@ class ECGroup {
   //
   // Security: The number of operations required to hash a string depends on the
   // string, which could lead to a timing attack.
-  StatusOr<ECPoint> GetPointByHashingToCurveSha512(const std::string& m) const;
+  StatusOr<ECPoint> GetPointByHashingToCurveSha512(absl::string_view m) const;
 
   // Returns y^2 for the given x. The returned value is computed as x^3 + ax + b
   // mod p, where a and b are the parameters of the curve.
@@ -88,7 +89,7 @@ class ECGroup {
   // Returns an INTERNAL error code if creating the point fails.
   // Returns an INVALID_ARGUMENT error code if the created point is not in this
   // group or if it is the point at infinity.
-  StatusOr<ECPoint> CreateECPoint(const std::string& bytes) const;
+  StatusOr<ECPoint> CreateECPoint(absl::string_view bytes) const;
 
   // The parameters describing an elliptic curve given by the equation
   // y^2 = x^3 + a * x + b over a prime field Fp.
