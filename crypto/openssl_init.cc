@@ -71,7 +71,7 @@ void CryptoNewThreadID(CRYPTO_THREADID* tid) {
 // See crypto/threads/mmtest.c for usage in OpenSSL library.
 void CryptoLockingCallback(int mode, int n, const char* file, int line) {
   CHECK_GE(n, 0);
-  auto& mutex = &(openssl_init.mutexes[n]);
+  auto& mutex = openssl_init.mutexes[n];
   if (mode & CRYPTO_LOCK) {
     mutex.lock();
   } else {
