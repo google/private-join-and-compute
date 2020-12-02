@@ -17,6 +17,8 @@
 #include <memory>
 #include <string>
 
+#define GLOG_NO_ABBREVIATED_SEVERITIES
+#include "glog/logging.h"
 #include "gflags/gflags.h"
 
 #include "include/grpc/grpc_security_constants.h"

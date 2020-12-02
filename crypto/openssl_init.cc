@@ -14,6 +14,7 @@
  */
 
 #include "crypto/openssl_init.h"
+#include "openssl/base.h"  // For OPENSSL_IS_BORINGSSL.
 
 #if !defined(OPENSSL_IS_BORINGSSL)
 #include <pthread.h>
