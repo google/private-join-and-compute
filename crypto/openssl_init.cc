@@ -17,12 +17,10 @@
 #include "openssl/base.h"  // For OPENSSL_IS_BORINGSSL.
 
 #if !defined(OPENSSL_IS_BORINGSSL)
-#include <pthread.h>
+#include <mutex>
 
-#include <mutex>  // NOLINT(build/c++11): only using std::call_once, not mutex.
-
-#include "glog/logging.h"
 #include "crypto/openssl.inc"
+#include "glog/logging.h"
 #endif
 
 namespace private_join_and_compute {
@@ -34,11 +32,7 @@ void CryptoLockingCallback(int mode, int n, const char* file, int line);
 
 class OpenSSLInit {
  public:
-  OpenSSLInit() : mutexes(CRYPTO_num_locks()) {
-    for (int i = 0; i < CRYPTO_num_locks(); ++i) {
-      pthread_mutex_init(&(mutexes[i]), nullptr);
-    }
-  }
+  OpenSSLInit() : mutexes(CRYPTO_num_locks()) {}
 
   void LoadErrStrings() {
     ERR_load_BN_strings();
@@ -57,13 +51,10 @@ class OpenSSLInit {
 
   ~OpenSSLInit() {
     CRYPTO_set_locking_callback(nullptr);
-    for (int i = 0; i < CRYPTO_num_locks(); ++i) {
-      pthread_mutex_destroy(&(mutexes[i]));
-    }
     ERR_free_strings();
   }
 
-  std::vector<pthread_mutex_t> mutexes;
+  std::vector<std::mutex> mutexes;
 };
 
 static std::once_flag init_flag;
@@ -71,20 +62,21 @@ static OpenSSLInit openssl_init;
 
 void CryptoNewThreadID(CRYPTO_THREADID* tid) {
 #if defined(OS_NACL)  // pthread_t is a pointer type in native client.
-    CRYPTO_THREADID_set_pointer(tid, pthread_self());
+  CRYPTO_THREADID_set_pointer(tid, std::thread::native_handle());
 #else
-    CRYPTO_THREADID_set_numeric(tid, static_cast<uint64_t>(pthread_self()));
+  CRYPTO_THREADID_set_numeric(
+      tid, static_cast<uint64_t>(std::thread::native_handle()));
 #endif
 }
 
 // See crypto/threads/mmtest.c for usage in OpenSSL library.
 void CryptoLockingCallback(int mode, int n, const char* file, int line) {
   CHECK_GE(n, 0);
-  pthread_mutex_t* mutex = &(openssl_init.mutexes[n]);
+  auto& mutex = openssl_init.mutexes[n];
   if (mode & CRYPTO_LOCK) {
-    pthread_mutex_lock(mutex);
+    mutex.lock();
   } else {
-    pthread_mutex_unlock(mutex);
+    mutex.unlock();
   }
 }
 
