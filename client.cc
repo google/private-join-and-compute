@@ -100,11 +100,15 @@ int ExecuteProtocol() {
           std::move(client_identifiers_and_associated_values.second),
           FLAGS_paillier_modulus_size);
 
+  grpc::ChannelArguments ch_args;
+  ch_args.SetMaxReceiveMessageSize(-1); // consider limiting max message size
+
   // Consider grpc::SslServerCredentials if not running locally.
   std::unique_ptr<PrivateJoinAndComputeRpc::Stub> stub =
-      PrivateJoinAndComputeRpc::NewStub(::grpc::CreateChannel(
-          FLAGS_port, ::grpc::experimental::LocalCredentials(
-                          grpc_local_connect_type::LOCAL_TCP)));
+      PrivateJoinAndComputeRpc::NewStub(::grpc::CreateCustomChannel(
+          FLAGS_port,
+          ::grpc::experimental::LocalCredentials(grpc_local_connect_type::LOCAL_TCP),
+          ch_args));
   InvokeServerHandleClientMessageSink invoke_server_handle_message_sink(
       std::move(stub));
 
