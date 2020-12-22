@@ -20,7 +20,7 @@
 #include <memory>
 #include <utility>
 
-#include "gflags/gflags.h"
+#define GLOG_NO_ABBREVIATED_SEVERITIES
 #include "glog/logging.h"
 #include "crypto/big_num.h"
 #include "crypto/context.h"
@@ -30,11 +30,14 @@
 #include "absl/container/node_hash_map.h"
 #include "absl/memory/memory.h"
 
-DEFINE_int32(generator_try_count, 1000,
-             "The number of times to iteratively try to find a generator for a "
-             "safe prime starting from the candidate, 2.");
 
 namespace private_join_and_compute {
+
+namespace {
+// The number of times to iteratively try to find a generator for a safe prime
+// starting from the candidate, 2.
+constexpr int32_t kGeneratorTryCount = 1000;
+}  // namespace
 
 // A class representing a table of BigNums.
 // The column length of the table is fixed and given in the constructor.
@@ -84,7 +87,7 @@ BigNum GetGeneratorForSafePrime(Context* ctx, const BigNum& p) {
   CHECK(p.IsSafePrime());
   BigNum q = (p - ctx->One()) / ctx->Two();
   BigNum g = ctx->CreateBigNum(2);
-  for (int i = 0; i < FLAGS_generator_try_count; i++) {
+  for (int32_t i = 0; i < kGeneratorTryCount; i++) {
     if (g.ModSqr(p).IsOne() || g.ModExp(q, p).IsOne()) {
       g = g + ctx->One();
     } else {
@@ -93,7 +96,7 @@ BigNum GetGeneratorForSafePrime(Context* ctx, const BigNum& p) {
   }
   // Just in case IsSafePrime is not correct.
   LOG(FATAL) << "Either try_count is insufficient or p is not a safe prime."
-             << " generator_try_count: " << FLAGS_generator_try_count;
+             << " generator_try_count: " << kGeneratorTryCount;
 }
 
 // Returns a BigNum, g, that is a generator for Zn*, where n is the product

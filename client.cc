@@ -17,10 +17,7 @@
 #include <memory>
 #include <string>
 
-#define GLOG_NO_ABBREVIATED_SEVERITIES
-#include "glog/logging.h"
-#include "gflags/gflags.h"
-
+#include "absl/flags/parse.h"
 #include "include/grpc/grpc_security_constants.h"
 #include "include/grpcpp/channel.h"
 #include "include/grpcpp/client_context.h"
@@ -34,14 +31,16 @@
 #include "private_join_and_compute.pb.h"
 #include "protocol_client.h"
 #include "util/status.inc"
+#include "absl/flags/flag.h"
 #include "absl/memory/memory.h"
 #include "absl/strings/str_cat.h"
 
-DEFINE_string(port, "0.0.0.0:10501", "Port on which to contact server");
-DEFINE_string(client_data_file, "",
-              "The file from which to read the client database.");
-DEFINE_int32(
-    paillier_modulus_size, 1536,
+ABSL_FLAG(std::string, port, "0.0.0.0:10501",
+          "Port on which to contact server");
+ABSL_FLAG(std::string, client_data_file, "",
+          "The file from which to read the client database.");
+ABSL_FLAG(
+    int32_t, paillier_modulus_size, 1536,
     "The bit-length of the modulus to use for Paillier encryption. The modulus "
     "will be the product of two safe primes, each of size "
     "paillier_modulus_size/2.");
@@ -83,7 +82,8 @@ int ExecuteProtocol() {
 
   std::cout << "Client: Loading data..." << std::endl;
   auto maybe_client_identifiers_and_associated_values =
-      ::private_join_and_compute::ReadClientDatasetFromFile(FLAGS_client_data_file, &context);
+      ::private_join_and_compute::ReadClientDatasetFromFile(
+          absl::GetFlag(FLAGS_client_data_file), &context);
   if (!maybe_client_identifiers_and_associated_values.ok()) {
     std::cerr << "Client::ExecuteProtocol: failed "
               << maybe_client_identifiers_and_associated_values.status()
@@ -98,13 +98,13 @@ int ExecuteProtocol() {
       absl::make_unique<::private_join_and_compute::PrivateIntersectionSumProtocolClientImpl>(
           &context, std::move(client_identifiers_and_associated_values.first),
           std::move(client_identifiers_and_associated_values.second),
-          FLAGS_paillier_modulus_size);
+          absl::GetFlag(FLAGS_paillier_modulus_size));
 
   // Consider grpc::SslServerCredentials if not running locally.
   std::unique_ptr<PrivateJoinAndComputeRpc::Stub> stub =
       PrivateJoinAndComputeRpc::NewStub(::grpc::CreateChannel(
-          FLAGS_port, ::grpc::experimental::LocalCredentials(
-                          grpc_local_connect_type::LOCAL_TCP)));
+          absl::GetFlag(FLAGS_port), ::grpc::experimental::LocalCredentials(
+                                         grpc_local_connect_type::LOCAL_TCP)));
   InvokeServerHandleClientMessageSink invoke_server_handle_message_sink(
       std::move(stub));
 
@@ -175,7 +175,7 @@ int ExecuteProtocol() {
 
 int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  absl::ParseCommandLine(argc, argv);
 
   return private_join_and_compute::ExecuteProtocol();
 }

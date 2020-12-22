@@ -14,15 +14,16 @@
  */
 
 #include "crypto/openssl_init.h"
-#include "openssl/base.h"  // For OPENSSL_IS_BORINGSSL.
+
+#include "crypto/openssl.inc"
 
 #if !defined(OPENSSL_IS_BORINGSSL)
 #include <pthread.h>
 
 #include <mutex>  // NOLINT(build/c++11): only using std::call_once, not mutex.
 
+#define GLOG_NO_ABBREVIATED_SEVERITIES
 #include "glog/logging.h"
-#include "crypto/openssl.inc"
 #endif
 
 namespace private_join_and_compute {

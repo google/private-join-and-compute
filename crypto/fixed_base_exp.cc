@@ -28,15 +28,16 @@
 
 #include <vector>
 
-#include "gflags/gflags.h"
+#define GLOG_NO_ABBREVIATED_SEVERITIES
 #include "glog/logging.h"
 #include "crypto/big_num.h"
 #include "crypto/context.h"
 #include "crypto/mont_mul.h"
 #include "util/status.inc"
+#include "absl/flags/flag.h"
 
-DEFINE_bool(two_k_ary_exp, false,
-            "Whether to use 2^k-ary fixed based exponentiation.");
+ABSL_FLAG(bool, two_k_ary_exp, false,
+          "Whether to use 2^k-ary fixed based exponentiation.");
 
 namespace private_join_and_compute {
 
@@ -142,7 +143,7 @@ StatusOr<BigNum> FixedBaseExp::ModExp(const BigNum& exp) const {
 
 std::unique_ptr<FixedBaseExp> FixedBaseExp::GetFixedBaseExp(
     Context* ctx, const BigNum& fixed_base, const BigNum& modulus) {
-  if (FLAGS_two_k_ary_exp) {
+  if (absl::GetFlag(FLAGS_two_k_ary_exp)) {
     return std::unique_ptr<FixedBaseExp>(new FixedBaseExp(
         new internal::TwoKAryFixedBaseExpImpl(ctx, fixed_base, modulus)));
   } else {

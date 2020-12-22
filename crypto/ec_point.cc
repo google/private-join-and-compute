@@ -17,6 +17,7 @@
 
 #include <vector>
 
+#define GLOG_NO_ABBREVIATED_SEVERITIES
 #include "glog/logging.h"
 #include "crypto/big_num.h"
 #include "crypto/context.h"

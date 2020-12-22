@@ -16,6 +16,7 @@
 // Contains all the OpenSSL includes we use.
 
 #include <openssl/aead.h>
+#include <openssl/base.h>
 #include <openssl/bn.h>
 #include <openssl/buffer.h>
 #include <openssl/crypto.h>

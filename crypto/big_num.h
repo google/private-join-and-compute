@@ -21,7 +21,6 @@
 #include <memory>
 #include <string>
 
-#include "gflags/gflags_declare.h"
 #include "crypto/openssl.inc"
 #include "util/status.inc"
 #include "absl/strings/string_view.h"

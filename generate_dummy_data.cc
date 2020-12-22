@@ -16,37 +16,39 @@
 // Tool to generate dummy data for the client and server in Private Join and
 // Compute.
 
-#include "gflags/gflags.h"
-
+#include "absl/flags/parse.h"
 #define GLOG_NO_ABBREVIATED_SEVERITIES
 #include "glog/logging.h"
 #include "data_util.h"
+#include "absl/flags/flag.h"
 
 // Flags defining the size of data to generate for the client and server, bounds
 // on the associated values, and where the write the outputs.
-DEFINE_int64(server_data_size, 100,
-             "Number of dummy identifiers in server database.");
-DEFINE_int64(
-    client_data_size, 100,
+ABSL_FLAG(int64_t, server_data_size, 100,
+          "Number of dummy identifiers in server database.");
+ABSL_FLAG(
+    int64_t, client_data_size, 100,
     "Number of dummy identifiers and associated values in client database.");
-DEFINE_int64(intersection_size, 50,
-             "Number of items in the intersection. Must be less than the "
-             "server and client data sizes.");
-DEFINE_int64(max_associated_value, 100,
-             "Dummy associated values for the client will be between 0 and "
-             "this. Must be nonnegative.");
-DEFINE_string(server_data_file, "",
-              "The file to which to write the server database.");
-DEFINE_string(client_data_file, "",
-              "The file to which to write the client database.");
+ABSL_FLAG(int64_t, intersection_size, 50,
+          "Number of items in the intersection. Must be less than the "
+          "server and client data sizes.");
+ABSL_FLAG(int64_t, max_associated_value, 100,
+          "Dummy associated values for the client will be between 0 and "
+          "this. Must be nonnegative.");
+ABSL_FLAG(std::string, server_data_file, "",
+          "The file to which to write the server database.");
+ABSL_FLAG(std::string, client_data_file, "",
+          "The file to which to write the client database.");
 
 int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  absl::ParseCommandLine(argc, argv);
 
   auto maybe_dummy_data = private_join_and_compute::GenerateRandomDatabases(
-      FLAGS_server_data_size, FLAGS_client_data_size, FLAGS_intersection_size,
-      FLAGS_max_associated_value);
+      absl::GetFlag(FLAGS_server_data_size),
+      absl::GetFlag(FLAGS_client_data_size),
+      absl::GetFlag(FLAGS_intersection_size),
+      absl::GetFlag(FLAGS_max_associated_value));
 
   if (!maybe_dummy_data.ok()) {
     std::cerr << "GenerateDummyData: Error generating the dummy data: "
@@ -60,7 +62,7 @@ int main(int argc, char** argv) {
   int64_t intersection_sum = std::get<2>(dummy_data);
 
   auto server_write_status = private_join_and_compute::WriteServerDatasetToFile(
-      server_identifiers, FLAGS_server_data_file);
+      server_identifiers, absl::GetFlag(FLAGS_server_data_file));
   if (!server_write_status.ok()) {
     std::cerr << "GenerateDummyData: Error writing server dataset: "
               << server_write_status << std::endl;
@@ -69,17 +71,20 @@ int main(int argc, char** argv) {
 
   auto client_write_status = private_join_and_compute::WriteClientDatasetToFile(
       client_identifiers_and_associated_values.first,
-      client_identifiers_and_associated_values.second, FLAGS_client_data_file);
+      client_identifiers_and_associated_values.second,
+      absl::GetFlag(FLAGS_client_data_file));
   if (!client_write_status.ok()) {
     std::cerr << "GenerateDummyData: Error writing client dataset: "
               << client_write_status << std::endl;
     return 1;
   }
 
-  std::cout << "Generated Server dataset of size " << FLAGS_client_data_size
-            << ", Client dataset of size " << FLAGS_client_data_size
+  std::cout << "Generated Server dataset of size "
+            << absl::GetFlag(FLAGS_client_data_size)
+            << ", Client dataset of size "
+            << absl::GetFlag(FLAGS_client_data_size) << std::endl;
+  std::cout << "Intersection size = " << absl::GetFlag(FLAGS_intersection_size)
             << std::endl;
-  std::cout << "Intersection size = " << FLAGS_intersection_size << std::endl;
   std::cout << "Intersection sum = " << intersection_sum << std::endl;
 
   return 0;

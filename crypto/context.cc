@@ -20,6 +20,7 @@
 #include <algorithm>
 #include <cmath>
 
+#define GLOG_NO_ABBREVIATED_SEVERITIES
 #include "glog/logging.h"
 #include "crypto/openssl_init.h"
 #include "absl/strings/str_cat.h"

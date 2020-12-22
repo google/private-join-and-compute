@@ -18,11 +18,7 @@
 #include <string>
 #include <thread>  // NOLINT
 
-
-#define GLOG_NO_ABBREVIATED_SEVERITIES
-#include "glog/logging.h"
-#include "gflags/gflags.h"
-
+#include "absl/flags/parse.h"
 #include "include/grpc/grpc_security_constants.h"
 #include "include/grpcpp/grpcpp.h"
 #include "include/grpcpp/security/server_credentials.h"
@@ -34,16 +30,17 @@
 #include "private_join_and_compute.grpc.pb.h"
 #include "private_join_and_compute_rpc_impl.h"
 #include "protocol_server.h"
+#include "absl/flags/flag.h"
 #include "absl/memory/memory.h"
 
-DEFINE_string(port, "0.0.0.0:10501", "Port on which to listen");
-DEFINE_string(server_data_file, "",
-              "The file from which to read the server database.");
+ABSL_FLAG(std::string, port, "0.0.0.0:10501", "Port on which to listen");
+ABSL_FLAG(std::string, server_data_file, "",
+          "The file from which to read the server database.");
 
 int RunServer() {
   std::cout << "Server: loading data... " << std::endl;
-  auto maybe_server_identifiers =
-      ::private_join_and_compute::ReadServerDatasetFromFile(FLAGS_server_data_file);
+  auto maybe_server_identifiers = ::private_join_and_compute::ReadServerDatasetFromFile(
+      absl::GetFlag(FLAGS_server_data_file));
   if (!maybe_server_identifiers.ok()) {
     std::cerr << "RunServer: failed " << maybe_server_identifiers.status()
               << std::endl;
@@ -58,7 +55,7 @@ int RunServer() {
 
   ::grpc::ServerBuilder builder;
   // Consider grpc::SslServerCredentials if not running locally.
-  builder.AddListeningPort(FLAGS_port,
+  builder.AddListeningPort(absl::GetFlag(FLAGS_port),
                            ::grpc::experimental::LocalServerCredentials(
                                grpc_local_connect_type::LOCAL_TCP));
   builder.RegisterService(&service);
@@ -67,7 +64,8 @@ int RunServer() {
   // Run the server on a background thread.
   std::thread grpc_server_thread(
       [](::grpc::Server* grpc_server_ptr) {
-        std::cout << "Server: listening on " << FLAGS_port << std::endl;
+        std::cout << "Server: listening on " << absl::GetFlag(FLAGS_port)
+                  << std::endl;
         grpc_server_ptr->Wait();
       },
       grpc_server.get());
@@ -86,7 +84,7 @@ int RunServer() {
 
 int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  absl::ParseCommandLine(argc, argv);
 
   return RunServer();
 }
