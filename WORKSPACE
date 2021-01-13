@@ -68,6 +68,22 @@ http_archive(
     ],
 )
 
+# gtest.
+git_repository(
+    name = "com_github_google_googletest",
+    commit = "703bd9caab50b139428cea1aaff9974ebee5742e",  # tag = "release-1.10.0"
+    remote = "https://github.com/google/googletest.git",
+    shallow_since = "1570114335 -0400",
+)
+
+# Protobuf
+git_repository(
+    name = "com_google_protobuf",
+    remote = "https://github.com/protocolbuffers/protobuf.git",
+    commit = "9647a7c2356a9529754c07235a2877ee676c2fd0",
+    shallow_since = "1609366209 -0800",
+)
+
 load("@com_github_grpc_grpc//bazel:grpc_deps.bzl", "grpc_deps")
 
 # Includes boringssl, and other dependencies.

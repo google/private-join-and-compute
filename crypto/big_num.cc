@@ -27,6 +27,23 @@
 
 namespace private_join_and_compute {
 
+namespace {
+
+// Utility class for decimal string conversion.
+class BnString {
+ public:
+  explicit BnString(char* bn_char) : bn_char_(bn_char) {}
+
+  ~BnString() { OPENSSL_free(bn_char_); }
+
+  std::string ToString() { return std::string(bn_char_); }
+
+ private:
+  char* const bn_char_;
+};
+
+}  // namespace
+
 BigNum::BigNum(const BigNum& other)
     : bn_(BignumPtr(CHECK_NOTNULL(BN_dup(other.bn_.get())))),
       bn_ctx_(other.bn_ctx_) {}
@@ -88,6 +105,10 @@ StatusOr<uint64_t> BigNum::ToIntValue() const {
     return InvalidArgumentError("BigNum has more than 64 bits.");
   }
   return val;
+}
+
+std::string BigNum::ToDecimalString() const {
+  return BnString(BN_bn2dec(GetConstBignumPtr())).ToString();
 }
 
 int BigNum::BitLength() const { return BN_num_bits(bn_.get()); }

@@ -37,6 +37,21 @@
   }                                                                   \
   lhs = std::move(statusor).value()
 
+// Helper macro that checks if the given expression evaluates to a
+// Status with Status OK. If not,  returns the error status. Example:
+//   RETURN_IF_ERROR(expression);
+#define RETURN_IF_ERROR(expr)                                              \
+  PRIVACY_BLINDERS_RETURN_IF_ERROR_IMPL_(                                  \
+      PRIVACY_BLINDERS_STATUS_MACROS_IMPL_CONCAT_(status_value, __LINE__), \
+      expr)
+
+// Internal helper.
+#define PRIVACY_BLINDERS_RETURN_IF_ERROR_IMPL_(status, expr) \
+  auto status = (expr);                                      \
+  if (ABSL_PREDICT_FALSE(!status.ok())) {                    \
+    return status;                                           \
+  }
+
 // Internal helper for concatenating macro values.
 #define PRIVACY_BLINDERS_STATUS_MACROS_IMPL_CONCAT_INNER_(x, y) x##y
 #define PRIVACY_BLINDERS_STATUS_MACROS_IMPL_CONCAT_(x, y) \

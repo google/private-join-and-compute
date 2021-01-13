@@ -16,8 +16,6 @@
 #ifndef OPEN_SOURCE_PRIVATE_JOIN_AND_COMPUTE_RPC_IMPL_H_
 #define OPEN_SOURCE_PRIVATE_JOIN_AND_COMPUTE_RPC_IMPL_H_
 
-#define GLOG_NO_ABBREVIATED_SEVERITIES
-#include "glog/logging.h"
 #include "include/grpcpp/grpcpp.h"
 #include "include/grpcpp/server_context.h"
 #include "include/grpcpp/support/status.h"

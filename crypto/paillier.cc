@@ -416,7 +416,6 @@ StatusOr<BigNum> PublicPaillier::EncryptUsingGeneratorAndRand(
   return c.ModMul(g_n_to_r, modulus_);
 }
 
-
 StatusOr<BigNum> PublicPaillier::EncryptWithRand(const BigNum& m,
                                                  const BigNum& r) const {
   if (r.Gcd(n_) != ctx_->One()) {

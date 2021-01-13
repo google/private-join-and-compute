@@ -14,6 +14,8 @@
 
 # Build file for util folder in open-source Private Join and Compute.
 
+load("@com_github_grpc_grpc//bazel:grpc_build_system.bzl", "grpc_proto_library")
+
 package(
     default_visibility = ["//visibility:public"],
     features = [
@@ -23,13 +25,12 @@ package(
 )
 
 cc_library(
-    name = "status",
-    srcs = glob(
-        ["*.cc"],
-    ),
-    hdrs = glob(["*.h"]),
+    name = "status_includes",
+    hdrs = [
+        "status.inc",
+        "status_macros.h",
+    ],
     deps = [
-        "@com_github_glog_glog//:glog",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
         "@com_google_protobuf//:protobuf_lite",
@@ -37,12 +38,101 @@ cc_library(
 )
 
 cc_library(
-    name = "status_includes",
-    hdrs = ["status.inc"],
+    name = "status_testing_includes",
+    hdrs = [
+        "status_matchers.h",
+        "status_testing.h",
+        "status_testing.inc",
+    ],
     deps = [
-        ":status",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
+        ":status_includes",
+        "@com_github_google_googletest//:gtest",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "file",
+    srcs = [
+        "file.cc",
+        "file_posix.cc",
+    ],
+    hdrs = [
+        "file.h",
+    ],
+    deps = [
+        ":status_includes",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "file_test",
+    size = "small",
+    srcs = [
+        "file_test.cc",
+    ],
+    deps = [
+        ":file",
+        "@com_github_google_googletest//:gtest_main",
+    ],
+)
+
+grpc_proto_library(
+    name = "file_test_proto",
+    srcs = ["file_test.proto"],
+)
+
+cc_library(
+    name = "proto_util",
+    hdrs = ["proto_util.h"],
+    deps = [
+        "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf_lite",
+    ],
+)
+
+cc_test(
+    name = "proto_util_test",
+    size = "medium",
+    srcs = ["proto_util_test.cc"],
+    deps = [
+        ":file_test_proto",
+        ":proto_util",
+        "@com_github_google_googletest//:gtest_main",
+    ],
+)
+
+cc_library(
+    name = "recordio",
+    srcs = [
+        "recordio.cc",
+    ],
+    hdrs = ["recordio.h"],
+    deps = [
+        ":file",
+        ":status_includes",
+        "@com_github_glog_glog//:glog",
+        "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/status",
+        "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/synchronization",
+        "@com_google_protobuf//:protobuf_lite",
+    ],
+)
+
+cc_test(
+    name = "recordio_test",
+    srcs = ["recordio_test.cc"],
+    deps = [
+        ":file_test_proto",
+        ":proto_util",
+        ":recordio",
+        ":status_includes",
+        ":status_testing_includes",
+        "//crypto:bn_util",
+        "@com_github_google_googletest//:gtest_main",
+        "@com_google_absl//absl/random",
+        "@com_google_absl//absl/strings",
     ],
 )

@@ -19,6 +19,7 @@
 #include <stdint.h>
 
 #include <memory>
+#include <ostream>
 #include <string>
 
 #include "crypto/openssl.inc"
@@ -56,6 +57,9 @@ class ABSL_MUST_USE_RESULT BigNum {
   // Converts this BigNum to a uint64_t value. Returns an INVALID_ARGUMENT
   // error code if the value of *this is larger than 64 bits.
   StatusOr<uint64_t> ToIntValue() const;
+
+  // Returns a string representation of the BigNum as a decimal number.
+  std::string ToDecimalString() const;
 
   // Returns the bit length of this BigNum.
   int BitLength() const;
@@ -238,6 +242,10 @@ inline BigNum& operator%=(BigNum& a, const BigNum& b) { return a = a % b; }
 inline BigNum& operator>>=(BigNum& a, int n) { return a = a >> n; }
 
 inline BigNum& operator<<=(BigNum& a, int n) { return a = a << n; }
+
+inline std::ostream& operator<<(std::ostream& strm, const BigNum& a) {
+  return strm << "BigNum(" << a.ToDecimalString() << ")";
+}
 
 }  // namespace private_join_and_compute
 
