@@ -140,6 +140,7 @@ cc_library(
     ],
     deps = [
         ":bn_util",
+        ":ec_commutative_cipher",
         ":ec_util",
         "//util:status_includes",
         "@com_github_glog_glog//:glog",

@@ -25,6 +25,7 @@
 #include "crypto/ec_group.h"
 #include "crypto/ec_point.h"
 #include "util/status.inc"
+#include "crypto/ec_commutative_cipher.h"
 #include "absl/strings/string_view.h"
 
 namespace private_join_and_compute {
@@ -47,7 +48,10 @@ class ECPointUtil {
   StatusOr<std::string> GetRandomCurvePoint();
 
   // Hashes the given string to the curve.
-  StatusOr<std::string> HashToCurve(absl::string_view input);
+  //
+  // Suggested default hash_type is ECCommutativeCipher::HashType::Sha256.
+  StatusOr<std::string> HashToCurve(absl::string_view input,
+                                    ECCommutativeCipher::HashType hash_type);
 
   // Checks if a string represents a curve point.
   // May give a false negative if an internal error occurs.

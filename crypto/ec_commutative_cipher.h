@@ -87,7 +87,8 @@ namespace private_join_and_compute {
 
 class ECCommutativeCipher {
  public:
-  // The hash function used by the ECCommutativeCipher.
+  // The hash function used by the ECCommutativeCipher in order to hash strings
+  // to EC curve points. The suggested default is the SHA256 option.
   enum HashType {
     SHA256,
     SHA512,

@@ -23,6 +23,7 @@
 #include "crypto/ec_group.h"
 #include "crypto/ec_point.h"
 #include "util/status.inc"
+#include "crypto/ec_commutative_cipher.h"
 #include "absl/strings/string_view.h"
 
 namespace private_join_and_compute {
@@ -43,9 +44,21 @@ StatusOr<std::string> ECPointUtil::GetRandomCurvePoint() {
   return point.ToBytesCompressed();
 }
 
-StatusOr<std::string> ECPointUtil::HashToCurve(absl::string_view input) {
-  ASSIGN_OR_RETURN(ECPoint point, group_.GetPointByHashingToCurveSha512(input));
-  return point.ToBytesCompressed();
+StatusOr<std::string> ECPointUtil::HashToCurve(
+    absl::string_view input, ECCommutativeCipher::HashType hash_type) {
+  if (hash_type == ECCommutativeCipher::HashType::SHA512) {
+    ASSIGN_OR_RETURN(ECPoint point,
+                     group_.GetPointByHashingToCurveSha512(input));
+    return point.ToBytesCompressed();
+  }
+
+  if (hash_type == ECCommutativeCipher::HashType::SHA256) {
+    ASSIGN_OR_RETURN(ECPoint point,
+                     group_.GetPointByHashingToCurveSha256(input));
+    return point.ToBytesCompressed();
+  }
+
+  return InvalidArgumentError("Invalid hash type.");
 }
 
 bool ECPointUtil::IsCurvePoint(absl::string_view input) {
