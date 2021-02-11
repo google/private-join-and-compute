@@ -224,3 +224,20 @@ cc_library(
         "@com_google_absl//absl/strings",
     ],
 )
+
+cc_library(
+    name = "shanks_discrete_log",
+    srcs = [
+        "shanks_discrete_log.cc",
+    ],
+    hdrs = [
+        "shanks_discrete_log.h",
+    ],
+    deps = [
+        ":bn_util",
+        ":ec_util",
+        ":elgamal",
+        "//util:status_includes",
+        "@com_google_absl//absl/strings",
+    ],
+)
