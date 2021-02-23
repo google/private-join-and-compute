@@ -20,13 +20,13 @@
 #include <string>
 
 #include "absl/base/port.h"
+#include "absl/strings/string_view.h"
 #include "crypto/big_num.h"
 #include "crypto/context.h"
+#include "crypto/ec_commutative_cipher.h"
 #include "crypto/ec_group.h"
 #include "crypto/ec_point.h"
 #include "util/status.inc"
-#include "crypto/ec_commutative_cipher.h"
-#include "absl/strings/string_view.h"
 
 namespace private_join_and_compute {
 

@@ -108,8 +108,8 @@ StatusOr<std::string> ECCommutativeCipher::Decrypt(
   return decrypted_point.ToBytesCompressed();
 }
 
-::private_join_and_compute::StatusOr<ECPoint> ECCommutativeCipher::HashToTheCurveInternal(
-    absl::string_view plaintext) {
+::private_join_and_compute::StatusOr<ECPoint>
+ECCommutativeCipher::HashToTheCurveInternal(absl::string_view plaintext) {
   StatusOr<ECPoint> status_or_point;
   if (hash_type_ == SHA512) {
     status_or_point = group_.GetPointByHashingToCurveSha512(plaintext);
@@ -121,8 +121,8 @@ StatusOr<std::string> ECCommutativeCipher::Decrypt(
   return status_or_point;
 }
 
-::private_join_and_compute::StatusOr<std::string> ECCommutativeCipher::HashToTheCurve(
-    absl::string_view plaintext) {
+::private_join_and_compute::StatusOr<std::string>
+ECCommutativeCipher::HashToTheCurve(absl::string_view plaintext) {
   ASSIGN_OR_RETURN(ECPoint point, HashToTheCurveInternal(plaintext));
   return point.ToBytesCompressed();
 }

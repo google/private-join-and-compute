@@ -19,12 +19,12 @@
 #include <utility>
 
 #define GLOG_NO_ABBREVIATED_SEVERITIES
-#include "glog/logging.h"
-#include "crypto/ec_point.h"
-#include "crypto/openssl.inc"
-#include "util/status.inc"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
+#include "crypto/ec_point.h"
+#include "crypto/openssl.inc"
+#include "glog/logging.h"
+#include "util/status.inc"
 
 namespace private_join_and_compute {
 

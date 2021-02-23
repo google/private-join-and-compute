@@ -22,10 +22,10 @@
 #include <string>
 
 #define GLOG_NO_ABBREVIATED_SEVERITIES
-#include "glog/logging.h"
+#include "absl/strings/string_view.h"
 #include "crypto/big_num.h"
 #include "crypto/openssl.inc"
-#include "absl/strings/string_view.h"
+#include "glog/logging.h"
 
 #define CRYPTO_CHECK(expr) CHECK(expr) << OpenSSLErrorString();
 

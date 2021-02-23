@@ -18,9 +18,9 @@
 
 #include <string>
 
+#include "absl/strings/string_view.h"
 #include "crypto/elgamal.h"
 #include "util/status.inc"
-#include "absl/strings/string_view.h"
 
 // Defines functions to generate ElGamal public/private keys, and
 // to encrypt/decrypt messages using those keys.

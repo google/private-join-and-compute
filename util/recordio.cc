@@ -24,15 +24,15 @@
 #include <vector>
 
 #define GLOG_NO_ABBREVIATED_SEVERITIES
-#include "glog/logging.h"
-#include "src/google/protobuf/io/coded_stream.h"
-#include "src/google/protobuf/io/zero_copy_stream_impl_lite.h"
-#include "util/status.inc"
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
+#include "glog/logging.h"
+#include "src/google/protobuf/io/coded_stream.h"
+#include "src/google/protobuf/io/zero_copy_stream_impl_lite.h"
+#include "util/status.inc"
 
 namespace private_join_and_compute {
 
@@ -73,7 +73,7 @@ StatusOr<uint32_t> ExtractVarint32(File* file) {
   }
 
   google::protobuf::io::ArrayInputStream arrayInputStream(bytes_read.data(),
-                                                bytes_read.size());
+                                                          bytes_read.size());
   google::protobuf::io::CodedInputStream codedInputStream(&arrayInputStream);
   uint32_t result;
   codedInputStream.ReadVarint32(&result);
@@ -307,9 +307,11 @@ class RecordWriterImpl : public RecordWriter {
   Status Write(absl::string_view raw_data) final {
     std::string delimited_output;
     auto string_output =
-        absl::make_unique<google::protobuf::io::StringOutputStream>(&delimited_output);
+        absl::make_unique<google::protobuf::io::StringOutputStream>(
+            &delimited_output);
     auto coded_output =
-        absl::make_unique<google::protobuf::io::CodedOutputStream>(string_output.get());
+        absl::make_unique<google::protobuf::io::CodedOutputStream>(
+            string_output.get());
 
     // Write the delimited output.
     coded_output->WriteVarint32(raw_data.size());

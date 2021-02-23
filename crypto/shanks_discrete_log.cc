@@ -17,9 +17,9 @@
 
 #include <utility>
 
+#include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
-#include "absl/status/status.h"
 #include "util/status.inc"
 
 namespace private_join_and_compute {
@@ -28,9 +28,11 @@ namespace private_join_and_compute {
 const int ShanksDiscreteLog::kMaxMessageSize = 40;
 
 ShanksDiscreteLog::ShanksDiscreteLog(
-    private_join_and_compute::Context* ctx, const private_join_and_compute::ECGroup* group,
-    std::unique_ptr<private_join_and_compute::ECPoint> generator, int max_message_bits,
-    int precompute_bits, std::map<std::string, int> precomputed_table)
+    private_join_and_compute::Context* ctx,
+    const private_join_and_compute::ECGroup* group,
+    std::unique_ptr<private_join_and_compute::ECPoint> generator,
+    int max_message_bits, int precompute_bits,
+    std::map<std::string, int> precomputed_table)
     : ctx_(ctx),
       generator_(std::move(generator)),
       max_message_bits_(max_message_bits),
@@ -38,8 +40,8 @@ ShanksDiscreteLog::ShanksDiscreteLog(
       precomputed_table_(std::move(precomputed_table)) {}
 
 absl::StatusOr<std::map<std::string, int>> ShanksDiscreteLog::PrecomputeTable(
-    const private_join_and_compute::ECGroup* group, const private_join_and_compute::ECPoint* generator,
-    int precompute_bits) {
+    const private_join_and_compute::ECGroup* group,
+    const private_join_and_compute::ECPoint* generator, int precompute_bits) {
   std::map<std::string, int> table;
   ASSIGN_OR_RETURN(auto point, group->GetPointAtInfinity());
   // Cannot encode point at infinity to bytes.
@@ -52,7 +54,8 @@ absl::StatusOr<std::map<std::string, int>> ShanksDiscreteLog::PrecomputeTable(
 }
 
 absl::StatusOr<std::unique_ptr<ShanksDiscreteLog>> ShanksDiscreteLog::Create(
-    private_join_and_compute::Context* ctx, const private_join_and_compute::ECGroup* group,
+    private_join_and_compute::Context* ctx,
+    const private_join_and_compute::ECGroup* group,
     const private_join_and_compute::ECPoint* generator, int max_message_bits,
     int precompute_bits) {
   if (max_message_bits <= precompute_bits) {
@@ -65,8 +68,8 @@ absl::StatusOr<std::unique_ptr<ShanksDiscreteLog>> ShanksDiscreteLog::Create(
                      kMaxMessageSize, "."));
   }
   ASSIGN_OR_RETURN(auto generator_clone, generator->Clone());
-  auto generator_ptr =
-      absl::make_unique<private_join_and_compute::ECPoint>(std::move(generator_clone));
+  auto generator_ptr = absl::make_unique<private_join_and_compute::ECPoint>(
+      std::move(generator_clone));
   ASSIGN_OR_RETURN(auto table,
                    PrecomputeTable(group, generator, precompute_bits));
   return absl::WrapUnique<ShanksDiscreteLog>(new ShanksDiscreteLog(

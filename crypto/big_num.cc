@@ -19,11 +19,11 @@
 #include <vector>
 
 #define GLOG_NO_ABBREVIATED_SEVERITIES
-#include "glog/logging.h"
+#include "absl/strings/string_view.h"
 #include "crypto/context.h"
 #include "crypto/openssl.inc"
+#include "glog/logging.h"
 #include "util/status.inc"
-#include "absl/strings/string_view.h"
 
 namespace private_join_and_compute {
 

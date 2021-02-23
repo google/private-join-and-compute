@@ -17,6 +17,7 @@
 #define OPEN_SOURCE_PRIVATE_INTERSECTION_SUM_SERVER_IMPL_H_
 
 #include "crypto/context.h"
+#include "crypto/ec_commutative_cipher.h"
 #include "crypto/paillier.h"
 #include "match.pb.h"
 #include "message_sink.h"
@@ -24,7 +25,6 @@
 #include "private_join_and_compute.pb.h"
 #include "protocol_server.h"
 #include "util/status.inc"
-#include "crypto/ec_commutative_cipher.h"
 
 namespace private_join_and_compute {
 
@@ -34,8 +34,8 @@ namespace private_join_and_compute {
 // only supply set elements as its inputs.
 class PrivateIntersectionSumProtocolServerImpl : public ProtocolServer {
  public:
-  PrivateIntersectionSumProtocolServerImpl(::private_join_and_compute::Context* ctx,
-                                           std::vector<std::string> inputs)
+  PrivateIntersectionSumProtocolServerImpl(
+      ::private_join_and_compute::Context* ctx, std::vector<std::string> inputs)
       : ctx_(ctx), inputs_(std::move(inputs)) {}
 
   ~PrivateIntersectionSumProtocolServerImpl() override = default;

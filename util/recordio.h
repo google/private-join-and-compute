@@ -19,14 +19,6 @@
 // RecordWriter can be arbitrary binary data, but usually they will be
 // serialized protobufs.
 //
-// copybara:strip_begin(internal comment)
-// Note that this library is not in any way compatible with the Google3 RecordIo
-// class, but rather uses the suggested proto-serialization described in
-// https://developers.google.com/protocol-buffers/docs/techniques#streaming
-// This encoding is also compatible with Java parseDelimitedFrom and
-// writeDelimitedTo.
-// copybara:strip_end
-//
 // RecordReader reads files written in the above format, and is also compatible
 // with files written using the Java version of parseDelimitedFrom and
 // writeDelimitedTo.
@@ -45,10 +37,10 @@
 #include <string>
 #include <vector>
 
-#include "util/file.h"
-#include "util/status.inc"
 #include "absl/memory/memory.h"
 #include "absl/strings/string_view.h"
+#include "util/file.h"
+#include "util/status.inc"
 
 namespace private_join_and_compute {
 

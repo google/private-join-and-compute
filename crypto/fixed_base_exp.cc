@@ -29,12 +29,12 @@
 #include <vector>
 
 #define GLOG_NO_ABBREVIATED_SEVERITIES
-#include "glog/logging.h"
+#include "absl/flags/flag.h"
 #include "crypto/big_num.h"
 #include "crypto/context.h"
 #include "crypto/mont_mul.h"
+#include "glog/logging.h"
 #include "util/status.inc"
-#include "absl/flags/flag.h"
 
 ABSL_FLAG(bool, two_k_ary_exp, false,
           "Whether to use 2^k-ary fixed based exponentiation.");

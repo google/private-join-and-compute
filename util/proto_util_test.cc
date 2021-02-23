@@ -15,9 +15,10 @@
 
 #include "util/proto_util.h"
 
-#include "util/file_test.pb.h"
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+
+#include "util/file_test.pb.h"
 
 namespace private_join_and_compute {
 

@@ -21,10 +21,10 @@
 
 #include <string>
 
+#include "absl/strings/string_view.h"
 #include "crypto/context.h"
 #include "match.pb.h"
 #include "util/status.inc"
-#include "absl/strings/string_view.h"
 
 namespace private_join_and_compute {
 

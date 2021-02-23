@@ -20,10 +20,10 @@
 #ifndef CRYPTO_FIXED_BASE_H_
 #define CRYPTO_FIXED_BASE_H_
 
+#include "absl/flags/declare.h"
 #include "crypto/big_num.h"
 #include "crypto/context.h"
 #include "util/status.inc"
-#include "absl/flags/declare.h"
 
 // Declared for test-only.
 ABSL_DECLARE_FLAG(bool, two_k_ary_exp);

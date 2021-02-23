@@ -21,11 +21,11 @@
 #include <random>
 #include <string>
 
-#include "crypto/context.h"
-#include "util/status.inc"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_replace.h"
+#include "crypto/context.h"
+#include "util/status.inc"
 
 namespace private_join_and_compute {
 namespace {

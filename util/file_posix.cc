@@ -17,9 +17,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "absl/strings/str_cat.h"
 #include "util/file.h"
 #include "util/status.inc"
-#include "absl/strings/str_cat.h"
 
 namespace private_join_and_compute {
 namespace {

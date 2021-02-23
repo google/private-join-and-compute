@@ -21,15 +21,14 @@
 #include <utility>
 
 #define GLOG_NO_ABBREVIATED_SEVERITIES
-#include "glog/logging.h"
+#include "absl/container/node_hash_map.h"
+#include "absl/memory/memory.h"
 #include "crypto/big_num.h"
 #include "crypto/context.h"
 #include "crypto/fixed_base_exp.h"
 #include "crypto/two_modulus_crt.h"
+#include "glog/logging.h"
 #include "util/status.inc"
-#include "absl/container/node_hash_map.h"
-#include "absl/memory/memory.h"
-
 
 namespace private_join_and_compute {
 

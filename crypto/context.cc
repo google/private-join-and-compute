@@ -21,10 +21,10 @@
 #include <cmath>
 
 #define GLOG_NO_ABBREVIATED_SEVERITIES
-#include "glog/logging.h"
-#include "crypto/openssl_init.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
+#include "crypto/openssl_init.h"
+#include "glog/logging.h"
 #if defined(OS_NACL)
 #include "privacy/blinders/cpp/nacl_context.h"
 #endif

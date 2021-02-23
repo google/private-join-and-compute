@@ -19,11 +19,11 @@
 #include <memory>
 #include <string>
 
+#include "absl/strings/string_view.h"
 #include "crypto/big_num.h"
 #include "crypto/context.h"
 #include "crypto/openssl.inc"
 #include "util/status.inc"
-#include "absl/strings/string_view.h"
 
 namespace private_join_and_compute {
 

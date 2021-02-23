@@ -13,12 +13,6 @@
  * limitations under the License.
  */
 
-// copybara:strip_begin(internal comment)
-// Abstract File class for different file systems. The implementation in
-// file_posix.cc is used on NaCl, WASM and Open source, and the implementation
-// in file_google3.cc is used on standard google3.
-// copybara:strip_end
-
 #ifndef INTERNAL_UTIL_FILE_H_
 #define INTERNAL_UTIL_FILE_H_
 

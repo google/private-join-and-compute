@@ -15,9 +15,10 @@
 
 #include "util/file.h"
 
-#include "util/status.inc"
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+
+#include "util/status.inc"
 
 namespace private_join_and_compute {
 namespace {

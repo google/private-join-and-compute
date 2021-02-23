@@ -29,11 +29,11 @@
 
 #include <map>
 
+#include "absl/status/statusor.h"
 #include "crypto/big_num.h"
 #include "crypto/ec_group.h"
 #include "crypto/ec_point.h"
 #include "crypto/elgamal.h"
-#include "absl/status/statusor.h"
 
 namespace private_join_and_compute {
 
@@ -57,7 +57,8 @@ class ShanksDiscreteLog {
   // or precompute_bits is strictly greater than max_message_bits.
   // Returns INTERNAL on internal cryptographic errors.
   static absl::StatusOr<std::unique_ptr<ShanksDiscreteLog>> Create(
-      private_join_and_compute::Context* ctx, const private_join_and_compute::ECGroup* group,
+      private_join_and_compute::Context* ctx,
+      const private_join_and_compute::ECGroup* group,
       const private_join_and_compute::ECPoint* generator, int max_message_bits,
       int precompute_bits);
 
@@ -68,22 +69,25 @@ class ShanksDiscreteLog {
   // GetDiscreteLog returns INVALID_ARGUMENT when point = g^x where x has
   // strictly more than max_message_bits_ bits. Also, returns INTERNAL
   // on internal cryptographic errors.
-  absl::StatusOr<int64_t> GetDiscreteLog(const private_join_and_compute::ECPoint& point);
+  absl::StatusOr<int64_t> GetDiscreteLog(
+      const private_join_and_compute::ECPoint& point);
 
   // Maxmium message size in bits.
   static const int kMaxMessageSize;
 
  private:
-  ShanksDiscreteLog(private_join_and_compute::Context* ctx, const private_join_and_compute::ECGroup* group,
-                    std::unique_ptr<private_join_and_compute::ECPoint> generator,
-                    int max_message_bits, int precompute_bits,
-                    std::map<std::string, int> precomputed_table);
+  ShanksDiscreteLog(
+      private_join_and_compute::Context* ctx,
+      const private_join_and_compute::ECGroup* group,
+      std::unique_ptr<private_join_and_compute::ECPoint> generator,
+      int max_message_bits, int precompute_bits,
+      std::map<std::string, int> precomputed_table);
 
   // Constructs a map such that the pair (g^i, i) appears
   // for all i = 0, ..., 2^(precompute_bits).
   static absl::StatusOr<std::map<std::string, int>> PrecomputeTable(
-      const private_join_and_compute::ECGroup* group, const private_join_and_compute::ECPoint* generator,
-      int precompute_bits);
+      const private_join_and_compute::ECGroup* group,
+      const private_join_and_compute::ECPoint* generator, int precompute_bits);
 
   private_join_and_compute::Context* const ctx_;
   const std::unique_ptr<private_join_and_compute::ECPoint> generator_;

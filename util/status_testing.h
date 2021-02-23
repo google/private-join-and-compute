@@ -32,8 +32,9 @@
 #ifndef UTIL_STATUS_TESTING_H_
 #define UTIL_STATUS_TESTING_H_
 
-#include "util/status.inc"
 #include <gmock/gmock.h>
+
+#include "util/status.inc"
 
 #ifndef GTEST_HAS_STATUS_MATCHERS
 

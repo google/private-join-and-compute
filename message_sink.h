@@ -16,9 +16,9 @@
 #ifndef OPEN_SOURCE_MESSAGE_SINK_H_
 #define OPEN_SOURCE_MESSAGE_SINK_H_
 
+#include "absl/memory/memory.h"
 #include "private_join_and_compute.pb.h"
 #include "util/status.inc"
-#include "absl/memory/memory.h"
 
 namespace private_join_and_compute {
 

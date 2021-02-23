@@ -18,9 +18,9 @@
 
 #include "absl/flags/parse.h"
 #define GLOG_NO_ABBREVIATED_SEVERITIES
-#include "glog/logging.h"
-#include "data_util.h"
 #include "absl/flags/flag.h"
+#include "data_util.h"
+#include "glog/logging.h"
 
 // Flags defining the size of data to generate for the client and server, bounds
 // on the associated values, and where the write the outputs.

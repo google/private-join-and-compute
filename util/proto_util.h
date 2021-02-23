@@ -21,8 +21,8 @@
 #include <sstream>
 #include <string>
 
-#include "src/google/protobuf/message_lite.h"
 #include "absl/strings/string_view.h"
+#include "src/google/protobuf/message_lite.h"
 
 namespace private_join_and_compute {
 
@@ -41,7 +41,8 @@ inline ProtoType ProtoUtils::FromString(absl::string_view raw_data) {
   return record;
 }
 
-inline std::string ProtoUtils::ToString(const google::protobuf::MessageLite& record) {
+inline std::string ProtoUtils::ToString(
+    const google::protobuf::MessageLite& record) {
   std::ostringstream record_str_stream;
   record.SerializeToOstream(&record_str_stream);
   return record_str_stream.str();

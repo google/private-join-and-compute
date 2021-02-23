@@ -17,7 +17,12 @@
 #include <memory>
 #include <string>
 
+#include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
+#include "absl/memory/memory.h"
+#include "absl/strings/str_cat.h"
+#include "client_impl.h"
+#include "data_util.h"
 #include "include/grpc/grpc_security_constants.h"
 #include "include/grpcpp/channel.h"
 #include "include/grpcpp/client_context.h"
@@ -25,15 +30,10 @@
 #include "include/grpcpp/grpcpp.h"
 #include "include/grpcpp/security/credentials.h"
 #include "include/grpcpp/support/status.h"
-#include "data_util.h"
-#include "client_impl.h"
 #include "private_join_and_compute.grpc.pb.h"
 #include "private_join_and_compute.pb.h"
 #include "protocol_client.h"
 #include "util/status.inc"
-#include "absl/flags/flag.h"
-#include "absl/memory/memory.h"
-#include "absl/strings/str_cat.h"
 
 ABSL_FLAG(std::string, port, "0.0.0.0:10501",
           "Port on which to contact server");
@@ -95,7 +95,8 @@ int ExecuteProtocol() {
 
   std::cout << "Client: Generating keys..." << std::endl;
   std::unique_ptr<::private_join_and_compute::ProtocolClient> client =
-      absl::make_unique<::private_join_and_compute::PrivateIntersectionSumProtocolClientImpl>(
+      absl::make_unique<
+          ::private_join_and_compute::PrivateIntersectionSumProtocolClientImpl>(
           &context, std::move(client_identifiers_and_associated_values.first),
           std::move(client_identifiers_and_associated_values.second),
           absl::GetFlag(FLAGS_paillier_modulus_size));

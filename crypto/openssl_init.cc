@@ -72,9 +72,9 @@ static OpenSSLInit openssl_init;
 
 void CryptoNewThreadID(CRYPTO_THREADID* tid) {
 #if defined(OS_NACL)  // pthread_t is a pointer type in native client.
-    CRYPTO_THREADID_set_pointer(tid, pthread_self());
+  CRYPTO_THREADID_set_pointer(tid, pthread_self());
 #else
-    CRYPTO_THREADID_set_numeric(tid, static_cast<uint64_t>(pthread_self()));
+  CRYPTO_THREADID_set_numeric(tid, static_cast<uint64_t>(pthread_self()));
 #endif
 }
 

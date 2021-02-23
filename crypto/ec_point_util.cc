@@ -18,13 +18,13 @@
 #include <memory>
 #include <string>
 
+#include "absl/strings/string_view.h"
 #include "crypto/big_num.h"
 #include "crypto/context.h"
+#include "crypto/ec_commutative_cipher.h"
 #include "crypto/ec_group.h"
 #include "crypto/ec_point.h"
 #include "util/status.inc"
-#include "crypto/ec_commutative_cipher.h"
-#include "absl/strings/string_view.h"
 
 namespace private_join_and_compute {
 
@@ -33,8 +33,7 @@ ECPointUtil::ECPointUtil(std::unique_ptr<Context> context, ECGroup group)
 
 StatusOr<std::unique_ptr<ECPointUtil>> ECPointUtil::Create(int curve_id) {
   std::unique_ptr<Context> context(new Context());
-  ASSIGN_OR_RETURN(ECGroup group,
-                            ECGroup::Create(curve_id, context.get()));
+  ASSIGN_OR_RETURN(ECGroup group, ECGroup::Create(curve_id, context.get()));
   return std::unique_ptr<ECPointUtil>(
       new ECPointUtil(std::move(context), std::move(group)));
 }

@@ -17,10 +17,10 @@
 
 #include <algorithm>
 
+#include "absl/memory/memory.h"
+#include "crypto/ec_commutative_cipher.h"
 #include "crypto/paillier.h"
 #include "util/status.inc"
-#include "crypto/ec_commutative_cipher.h"
-#include "absl/memory/memory.h"
 
 using ::private_join_and_compute::BigNum;
 using ::private_join_and_compute::ECCommutativeCipher;

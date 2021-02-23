@@ -18,20 +18,20 @@
 #include <string>
 #include <thread>  // NOLINT
 
+#include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
+#include "absl/memory/memory.h"
+#include "data_util.h"
 #include "include/grpc/grpc_security_constants.h"
 #include "include/grpcpp/grpcpp.h"
 #include "include/grpcpp/security/server_credentials.h"
 #include "include/grpcpp/server_builder.h"
 #include "include/grpcpp/server_context.h"
 #include "include/grpcpp/support/status.h"
-#include "data_util.h"
-#include "server_impl.h"
 #include "private_join_and_compute.grpc.pb.h"
 #include "private_join_and_compute_rpc_impl.h"
 #include "protocol_server.h"
-#include "absl/flags/flag.h"
-#include "absl/memory/memory.h"
+#include "server_impl.h"
 
 ABSL_FLAG(std::string, port, "0.0.0.0:10501", "Port on which to listen");
 ABSL_FLAG(std::string, server_data_file, "",
@@ -39,8 +39,9 @@ ABSL_FLAG(std::string, server_data_file, "",
 
 int RunServer() {
   std::cout << "Server: loading data... " << std::endl;
-  auto maybe_server_identifiers = ::private_join_and_compute::ReadServerDatasetFromFile(
-      absl::GetFlag(FLAGS_server_data_file));
+  auto maybe_server_identifiers =
+      ::private_join_and_compute::ReadServerDatasetFromFile(
+          absl::GetFlag(FLAGS_server_data_file));
   if (!maybe_server_identifiers.ok()) {
     std::cerr << "RunServer: failed " << maybe_server_identifiers.status()
               << std::endl;
@@ -49,9 +50,11 @@ int RunServer() {
 
   ::private_join_and_compute::Context context;
   std::unique_ptr<::private_join_and_compute::ProtocolServer> server =
-      absl::make_unique<::private_join_and_compute::PrivateIntersectionSumProtocolServerImpl>(
+      absl::make_unique<
+          ::private_join_and_compute::PrivateIntersectionSumProtocolServerImpl>(
           &context, std::move(maybe_server_identifiers.value()));
-  ::private_join_and_compute::PrivateJoinAndComputeRpcImpl service(std::move(server));
+  ::private_join_and_compute::PrivateJoinAndComputeRpcImpl service(
+      std::move(server));
 
   ::grpc::ServerBuilder builder;
   // Consider grpc::SslServerCredentials if not running locally.

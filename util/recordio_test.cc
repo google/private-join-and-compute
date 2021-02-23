@@ -15,18 +15,19 @@
 
 #include "util/recordio.h"
 
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
+
 #include <fstream>
 
+#include "absl/random/random.h"
+#include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "crypto/context.h"
 #include "util/file_test.pb.h"
 #include "util/proto_util.h"
 #include "util/status.inc"
 #include "util/status_testing.inc"
-#include <gmock/gmock.h>
-#include <gtest/gtest.h>
-#include "absl/random/random.h"
-#include "absl/strings/str_cat.h"
-#include "absl/strings/string_view.h"
 
 namespace private_join_and_compute {
 namespace {
@@ -68,8 +69,8 @@ TestProto GetRecord(const std::string& id) {
 
 void ExpectInternalErrorWithSubstring(const Status& status,
                                       const std::string& substring) {
-  EXPECT_THAT(status,
-              StatusIs(private_join_and_compute::StatusCode::kInternal, HasSubstr(substring)));
+  EXPECT_THAT(status, StatusIs(private_join_and_compute::StatusCode::kInternal,
+                               HasSubstr(substring)));
 }
 
 TEST(FileTest, WriteRecordThenReadTest) {

@@ -32,8 +32,9 @@
 #ifndef UTIL_STATUS_MATCHERS_H_
 #define UTIL_STATUS_MATCHERS_H_
 
-#include "util/status.inc"
 #include <gmock/gmock.h>
+
+#include "util/status.inc"
 
 namespace private_join_and_compute {
 namespace testing {
@@ -45,15 +46,6 @@ using ::testing::status::IsOkAndHolds;
 using ::testing::status::StatusIs;
 
 #else  // GTEST_HAS_STATUS_MATCHERS
-
-// copybara:strip_begin(Remove sensitive comments)
-//
-// This is partially copied from the code in
-// google3/testing/base/public/gmock_utils/status-matchers.h
-// but is somewhat simplified to only include the things we need for the PJC
-// library.
-//
-// copybara:strip_end
 
 namespace internal {
 
@@ -135,16 +127,9 @@ inline internal::StatusIsPoly StatusIs(
     ::testing::Matcher<StatusCode>&& code,
     ::testing::Matcher<const std::string&>&& message) {
   return internal::StatusIsPoly(
-      std::forward<::testing::Matcher<StatusCode>>(code),
-      std::forward<::testing::Matcher<const std::string&>>(message));
+      std::forward< ::testing::Matcher<StatusCode> >(code),
+      std::forward< ::testing::Matcher<const std::string&> >(message));
 }
-
-// copybara:strip_begin(Remove sensitive comments)
-//
-// This is partially copied from the code in
-// third_party/absl/status/statusor_test.cc
-//
-// copybara:strip_end
 
 // Monomorphic implementation of matcher IsOkAndHolds(m).  StatusOrType is a
 // reference to StatusOr<T>.
