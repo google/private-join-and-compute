@@ -71,11 +71,7 @@ static std::once_flag init_flag;
 static OpenSSLInit openssl_init;
 
 void CryptoNewThreadID(CRYPTO_THREADID* tid) {
-#if defined(OS_NACL)  // pthread_t is a pointer type in native client.
-  CRYPTO_THREADID_set_pointer(tid, pthread_self());
-#else
   CRYPTO_THREADID_set_numeric(tid, static_cast<uint64_t>(pthread_self()));
-#endif
 }
 
 // See crypto/threads/mmtest.c for usage in OpenSSL library.

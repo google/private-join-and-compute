@@ -23,6 +23,8 @@
 
 #include "absl/strings/string_view.h"
 #include "src/google/protobuf/message_lite.h"
+#include "util/recordio.h"
+#include "util/status.inc"
 
 namespace private_join_and_compute {
 
@@ -32,6 +34,12 @@ class ProtoUtils {
   static ProtoType FromString(absl::string_view raw_data);
 
   static std::string ToString(const google::protobuf::MessageLite& record);
+
+  template <typename ProtoType>
+  static StatusOr<ProtoType> ReadProtoFromFile(absl::string_view filename);
+
+  static Status WriteProtoToFile(const google::protobuf::MessageLite& record,
+                                 absl::string_view filename);
 };
 
 template <typename ProtoType>
@@ -48,6 +56,24 @@ inline std::string ProtoUtils::ToString(
   return record_str_stream.str();
 }
 
+template <typename ProtoType>
+inline StatusOr<ProtoType> ProtoUtils::ReadProtoFromFile(
+    absl::string_view filename) {
+  std::unique_ptr<RecordReader> reader(RecordReader::GetRecordReader());
+  RETURN_IF_ERROR(reader->Open(filename));
+  std::string raw_record;
+  RETURN_IF_ERROR(reader->Read(&raw_record));
+  RETURN_IF_ERROR(reader->Close());
+  return ProtoUtils::FromString<ProtoType>(raw_record);
+}
+
+inline Status ProtoUtils::WriteProtoToFile(
+    const google::protobuf::MessageLite& record, absl::string_view filename) {
+  std::unique_ptr<RecordWriter> writer(RecordWriter::Get());
+  RETURN_IF_ERROR(writer->Open(filename));
+  RETURN_IF_ERROR(writer->Write(ProtoUtils::ToString(record)));
+  return writer->Close();
+}
 }  // namespace private_join_and_compute
 
 #endif  // INTERNAL_UTIL_PROTO_UTIL_H_

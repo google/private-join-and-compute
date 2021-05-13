@@ -25,9 +25,6 @@
 #include "absl/strings/string_view.h"
 #include "crypto/openssl_init.h"
 #include "glog/logging.h"
-#if defined(OS_NACL)
-#include "privacy/blinders/cpp/nacl_context.h"
-#endif
 
 namespace private_join_and_compute {
 
@@ -44,9 +41,6 @@ Context::Context()
       one_bn_(CreateBigNum(1)),
       two_bn_(CreateBigNum(2)),
       three_bn_(CreateBigNum(3)) {
-#if defined(OS_NACL)
-  nacl::SeedOpenSSLRand();
-#endif
   OpenSSLInit();
   CHECK(RAND_status()) << "OpenSSL PRNG is not properly seeded.";
   HMAC_CTX_init(&hmac_ctx_);

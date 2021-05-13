@@ -87,6 +87,8 @@ cc_library(
     name = "proto_util",
     hdrs = ["proto_util.h"],
     deps = [
+        ":recordio",
+        ":status_includes",
         "@com_google_absl//absl/strings",
         "@com_google_protobuf//:protobuf_lite",
     ],
@@ -99,6 +101,7 @@ cc_test(
     deps = [
         ":file_test_proto",
         ":proto_util",
+        ":status_testing_includes",
         "@com_github_google_googletest//:gtest_main",
     ],
 )
