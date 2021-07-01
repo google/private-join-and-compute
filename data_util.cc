@@ -20,6 +20,7 @@
 #include <limits>
 #include <random>
 #include <string>
+#include <ctype.h>
 
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
@@ -65,7 +66,7 @@ void SplitCSVLineWithDelimiter(char* line, char delimiter,
 
   for (; line < end_of_line; line++) {
     // Skip leading whitespace, unless said whitespace is the delimiter.
-    while (std::isspace(*line) && *line != delimiter) ++line;
+    while (::isspace(*line) && *line != delimiter) ++line;
 
     if (*line == '"' && delimiter == ',') {  // Quoted value...
       start = ++line;
@@ -88,7 +89,7 @@ void SplitCSVLineWithDelimiter(char* line, char delimiter,
       if (!line) line = end_of_line;
       // Skip all trailing whitespace, unless said whitespace is the delimiter.
       for (end = line; end > start; --end) {
-        if (!std::isspace(end[-1]) || end[-1] == delimiter) break;
+        if (!::isspace(end[-1]) || end[-1] == delimiter) break;
       }
     }
     const bool need_another_column =
