@@ -18,6 +18,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <filesystem>
 #include <string>
 
 #include "util/file_test.pb.h"
@@ -39,7 +40,8 @@ TEST(ProtoUtilsTest, ConvertsToAndFrom) {
 }
 
 TEST(ProtoUtilsTest, ReadWriteToFile) {
-  std::string filename = (::testing::TempDir() + "proto_file");
+  std::filesystem::path temp_dir(::testing::TempDir());
+  std::string filename = (temp_dir / "proto_file").string();
 
   TestProto expected_test_proto;
   expected_test_proto.set_record("data");

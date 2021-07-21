@@ -40,6 +40,9 @@ class ProtoUtils {
 
   static Status WriteProtoToFile(const google::protobuf::MessageLite& record,
                                  absl::string_view filename);
+  template <typename ProtoType>
+  static Status WriteRecordsToFile(absl::string_view file,
+                                   const std::vector<ProtoType>& records);
 };
 
 template <typename ProtoType>
@@ -72,6 +75,17 @@ inline Status ProtoUtils::WriteProtoToFile(
   std::unique_ptr<RecordWriter> writer(RecordWriter::Get());
   RETURN_IF_ERROR(writer->Open(filename));
   RETURN_IF_ERROR(writer->Write(ProtoUtils::ToString(record)));
+  return writer->Close();
+}
+
+template <typename ProtoType>
+inline Status ProtoUtils::WriteRecordsToFile(
+    absl::string_view file, const std::vector<ProtoType>& records) {
+  std::unique_ptr<RecordWriter> writer(RecordWriter::Get());
+  RETURN_IF_ERROR(writer->Open(file));
+  for (const auto& record : records) {
+    RETURN_IF_ERROR(writer->Write(ProtoUtils::ToString(record)));
+  }
   return writer->Close();
 }
 }  // namespace private_join_and_compute
