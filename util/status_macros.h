@@ -24,6 +24,7 @@
 // StatusOr with Status OK, and if so assigns the value to the value on the left
 // hand side (lhs), otherwise returns the error status. Example:
 //   ASSIGN_OR_RETURN(lhs, rexpression);
+#ifndef ASSIGN_OR_RETURN
 #define ASSIGN_OR_RETURN(lhs, rexpr)                                          \
   PRIVACY_BLINDERS_ASSIGN_OR_RETURN_IMPL_(                                    \
       PRIVACY_BLINDERS_STATUS_MACROS_IMPL_CONCAT_(status_or_value, __LINE__), \
@@ -35,11 +36,13 @@
   if (ABSL_PREDICT_FALSE(!statusor.ok())) {                           \
     return std::move(statusor).status();                              \
   }                                                                   \
-  lhs = std::move(statusor).value()
+  lhs = *std::move(statusor)
+#endif  // ASSIGN_OR_RETURN
 
 // Helper macro that checks if the given expression evaluates to a
 // Status with Status OK. If not,  returns the error status. Example:
 //   RETURN_IF_ERROR(expression);
+#ifndef RETURN_IF_ERROR
 #define RETURN_IF_ERROR(expr)                                              \
   PRIVACY_BLINDERS_RETURN_IF_ERROR_IMPL_(                                  \
       PRIVACY_BLINDERS_STATUS_MACROS_IMPL_CONCAT_(status_value, __LINE__), \
@@ -51,6 +54,7 @@
   if (ABSL_PREDICT_FALSE(!status.ok())) {                    \
     return status;                                           \
   }
+#endif  // RETURN_IF_ERROR
 
 // Internal helper for concatenating macro values.
 #define PRIVACY_BLINDERS_STATUS_MACROS_IMPL_CONCAT_INNER_(x, y) x##y
