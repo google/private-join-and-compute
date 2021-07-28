@@ -38,37 +38,40 @@
 
 #ifndef GTEST_HAS_STATUS_MATCHERS
 
-#define ASSERT_OK(expr)             \
-  PRIVACY_BLINDERS_ASSERT_OK_IMPL_( \
-      PRIVACY_BLINDERS_STATUS_TESTING_IMPL_CONCAT_(_status, __LINE__), expr)
+#define ASSERT_OK(expr)                                                        \
+  PRIVATE_JOIN_AND_COMPUTE_ASSERT_OK_IMPL_(                                    \
+      PRIVATE_JOIN_AND_COMPUTE_STATUS_TESTING_IMPL_CONCAT_(_status, __LINE__), \
+      expr)
 
-#define PRIVACY_BLINDERS_ASSERT_OK_IMPL_(status, expr) \
-  auto status = (expr);                                \
+#define PRIVATE_JOIN_AND_COMPUTE_ASSERT_OK_IMPL_(status, expr) \
+  auto status = (expr);                                        \
   ASSERT_THAT(status.ok(), ::testing::Eq(true));
 
-#define EXPECT_OK(expr)             \
-  PRIVACY_BLINDERS_EXPECT_OK_IMPL_( \
-      PRIVACY_BLINDERS_STATUS_TESTING_IMPL_CONCAT_(_status, __LINE__), expr)
+#define EXPECT_OK(expr)                                                        \
+  PRIVATE_JOIN_AND_COMPUTE_EXPECT_OK_IMPL_(                                    \
+      PRIVATE_JOIN_AND_COMPUTE_STATUS_TESTING_IMPL_CONCAT_(_status, __LINE__), \
+      expr)
 
-#define PRIVACY_BLINDERS_EXPECT_OK_IMPL_(status, expr) \
-  auto status = (expr);                                \
+#define PRIVATE_JOIN_AND_COMPUTE_EXPECT_OK_IMPL_(status, expr) \
+  auto status = (expr);                                        \
   EXPECT_THAT(status.ok(), ::testing::Eq(true));
 
-#define ASSERT_OK_AND_ASSIGN(lhs, rexpr)                             \
-  PRIVACY_BLINDERS_ASSERT_OK_AND_ASSIGN_IMPL_(                       \
-      PRIVACY_BLINDERS_STATUS_TESTING_IMPL_CONCAT_(_status_or_value, \
-                                                   __LINE__),        \
+#define ASSERT_OK_AND_ASSIGN(lhs, rexpr)                                     \
+  PRIVATE_JOIN_AND_COMPUTE_ASSERT_OK_AND_ASSIGN_IMPL_(                       \
+      PRIVATE_JOIN_AND_COMPUTE_STATUS_TESTING_IMPL_CONCAT_(_status_or_value, \
+                                                           __LINE__),        \
       lhs, rexpr)
 
-#define PRIVACY_BLINDERS_ASSERT_OK_AND_ASSIGN_IMPL_(statusor, lhs, rexpr) \
-  auto statusor = (rexpr);                                                \
-  ASSERT_THAT(statusor.ok(), ::testing::Eq(true));                        \
+#define PRIVATE_JOIN_AND_COMPUTE_ASSERT_OK_AND_ASSIGN_IMPL_(statusor, lhs, \
+                                                            rexpr)         \
+  auto statusor = (rexpr);                                                 \
+  ASSERT_THAT(statusor.ok(), ::testing::Eq(true));                         \
   lhs = std::move(statusor).value()
 
 // Internal helper for concatenating macro values.
-#define PRIVACY_BLINDERS_STATUS_TESTING_IMPL_CONCAT_INNER_(x, y) x##y
-#define PRIVACY_BLINDERS_STATUS_TESTING_IMPL_CONCAT_(x, y) \
-  PRIVACY_BLINDERS_STATUS_TESTING_IMPL_CONCAT_INNER_(x, y)
+#define PRIVATE_JOIN_AND_COMPUTE_STATUS_TESTING_IMPL_CONCAT_INNER_(x, y) x##y
+#define PRIVATE_JOIN_AND_COMPUTE_STATUS_TESTING_IMPL_CONCAT_(x, y) \
+  PRIVATE_JOIN_AND_COMPUTE_STATUS_TESTING_IMPL_CONCAT_INNER_(x, y)
 
 #endif  // GTEST_HAS_STATUS_MATCHERS
 

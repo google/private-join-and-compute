@@ -139,3 +139,43 @@ cc_test(
         "@com_google_absl//absl/strings",
     ],
 )
+
+cc_library(
+    name = "global_parameters",
+    hdrs = ["global_parameters.h"],
+    deps = [
+        "//crypto:ec_commutative_cipher",
+        "//crypto:openssl_includes",
+    ],
+)
+
+cc_library(
+    name = "process_record_file_util",
+    hdrs = ["process_record_file_util.h"],
+    deps = [
+        ":global_parameters",
+        ":proto_util",
+        ":recordio",
+        ":status_includes",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+grpc_proto_library(
+    name = "test_proto",
+    srcs = ["test.proto"],
+)
+
+cc_test(
+    name = "process_record_file_util_test",
+    srcs = ["process_record_file_util_test.cc"],
+    deps = [
+        ":global_parameters",
+        ":process_record_file_util",
+        ":proto_util",
+        ":status_testing_includes",
+        ":test_proto",
+        "@com_github_google_googletest//:gtest_main",
+        "@com_google_absl//absl/strings",
+    ],
+)

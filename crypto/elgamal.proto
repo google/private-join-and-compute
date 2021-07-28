@@ -1,0 +1,85 @@
+/*
+ * Copyright 2019 Google Inc.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// This file specifies formats of the public key, secret key, and ciphertext of
+// the ElGamal encryption scheme, over an Elliptic Curve or over a
+// multiplicative integer group.
+
+syntax = "proto2";
+
+package private_join_and_compute;
+
+// Public key for ElGamal encryption scheme. For ElGamal over integers, all the
+// fields are serialized BigNums; for ElGamal over an Elliptic Curve, g and y
+// are serialized ECPoints, p is not set.
+//
+// g is the generator of a cyclic group.
+// y = g^x for a random x, where x is the secret key.
+//
+// To encrypt a message m:
+//     u = g^r for a random r;
+//     e = m * y^r;
+// Ciphertext = (u, e).
+//
+// To encrypt a small message m in exponential ElGamal encryption scheme:
+//     u = g^r for a random r;
+//     e = g^m * y^r;
+// Ciphertext = (u, e).
+//
+// Note: The exponential ElGamal encryption scheme is an additively homomorphic
+// encryption scheme, and it only works for small messages.
+message ElGamalPublicKey {
+  optional bytes p = 1;  // modulus of the integer group
+  optional bytes g = 2;
+  optional bytes y = 3;
+}
+
+// Secret key (or secret key share) for ElGamal encryption scheme. x is a
+// serialized BigNum.
+//
+// To decrypt a ciphertext (u, e):
+//     m = e * (u^x)^{-1}.
+//
+// To decrypt a ciphertext (u, e) in exponential ElGamal encryption scheme:
+//     m = log_g (e * (u^x)^{-1}).
+//
+// In a 2-out-of-2 threshold ElGamal encryption scheme, for secret key shares
+// x_1 and x_2, the ElGamal secret key is x = x_1 + x_2, satisfying y = g^x for
+// public key (g, y).
+//
+// To jointly decrypt a ciphertext (u, e):
+// Each party computes (u^{x_i})^{-1};
+//     m = e * (u^{x_1})^{-1} * (u^{x_2})^{-1}, or
+//     m = log_g (e * (u^{x_1})^{-1} * (u^{x_2})^{-1}) in exponential ElGamal.
+message ElGamalSecretKey {
+  optional bytes x = 1;
+}
+
+// Ciphertext of ElGamal encryption scheme. For ElGamal over integers, all the
+// fields are serialized BigNums; for ElGamal over an Elliptic Curve, all the
+// fields are serialized ECPoints.
+//
+// For public key (g, y), message m, and randomness r:
+//     u = g^r;
+//     e = m * y^r.
+//
+// In exponential ElGamal encryption scheme, for public key (g, y), small
+// message m, and randomness r:
+//     u = g^r;
+//     e = g^m * y^r.
+message ElGamalCiphertext {
+  optional bytes u = 1;
+  optional bytes e = 2;
+}
