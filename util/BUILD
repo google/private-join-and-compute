@@ -188,7 +188,7 @@ cc_library(
         "//crypto:bn_util",
         "//crypto:ec_util",
         "//crypto:elgamal",
-        "//crypto:elgamal_cc_proto",
+        "//crypto:elgamal_proto",
     ],
 )
 
@@ -203,7 +203,7 @@ cc_library(
         ":status_includes",
         "//crypto:bn_util",
         "//crypto:ec_util",
-        "//crypto:elgamal_cc_proto",
+        "//crypto:elgamal_proto",
     ],
 )
 
@@ -216,7 +216,7 @@ cc_library(
         ":recordio",
         ":status_includes",
         "//crypto:bn_util",
-        "//crypto:ec_key_cc_proto",
+        "//crypto:ec_key_proto",
         "//crypto:ec_util",
         "@com_google_absl//absl/strings",
     ],
@@ -244,7 +244,7 @@ cc_test(
         "//crypto:bn_util",
         "//crypto:ec_util",
         "//crypto:elgamal",
-        "//crypto:elgamal_cc_proto",
+        "//crypto:elgamal_proto",
         "@com_github_google_googletest//:gtest_main",
     ],
 )
@@ -258,7 +258,7 @@ cc_test(
         ":proto_util",
         ":status_testing_includes",
         "//crypto:bn_util",
-        "//crypto:ec_key_cc_proto",
+        "//crypto:ec_key_proto",
         "//crypto:ec_util",
         "@com_github_google_googletest//:gtest_main",
     ],
