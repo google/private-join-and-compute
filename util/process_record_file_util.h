@@ -22,7 +22,7 @@
 #include <string>
 
 #include "absl/strings/string_view.h"
-#include "privacy/blinders/cpp/util/process_record_file_parameters.h"
+#include "util/process_record_file_parameters.h"
 #include "util/proto_util.h"
 #include "util/recordio.h"
 #include "util/status.inc"

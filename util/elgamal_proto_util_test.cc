@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "privacy/blinders/cpp/util/elgamal_proto_util.h"
+#include "util/elgamal_proto_util.h"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>

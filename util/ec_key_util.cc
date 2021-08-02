@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "privacy/blinders/cpp/util/ec_key_util.h"
+#include "util/ec_key_util.h"
 
 #include "absl/strings/str_cat.h"
 #include "crypto/ec_group.h"

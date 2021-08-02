@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "privacy/blinders/cpp/util/elgamal_key_util.h"
+#include "util/elgamal_key_util.h"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -26,7 +26,7 @@
 #include "crypto/elgamal.h"
 #include "crypto/elgamal.pb.h"
 #include "crypto/openssl.inc"
-#include "privacy/blinders/cpp/util/elgamal_proto_util.h"
+#include "util/elgamal_proto_util.h"
 #include "util/proto_util.h"
 #include "util/status_testing.inc"
 

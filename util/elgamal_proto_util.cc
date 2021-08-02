@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "privacy/blinders/cpp/util/elgamal_proto_util.h"
+#include "util/elgamal_proto_util.h"
 
 namespace private_join_and_compute::elgamal_proto_util {
 

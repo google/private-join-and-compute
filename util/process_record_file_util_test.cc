@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "privacy/blinders/cpp/util/process_record_file_util.h"
+#include "util/process_record_file_util.h"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -23,8 +23,8 @@
 
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
-#include "privacy/blinders/cpp/util/process_record_file_parameters.h"
-#include "privacy/blinders/cpp/util/proto/test.pb.h"
+#include "util/process_record_file_parameters.h"
+#include "util/proto/test.pb.h"
 #include "util/proto_util.h"
 #include "util/status_testing.inc"
 

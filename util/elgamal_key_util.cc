@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "privacy/blinders/cpp/util/elgamal_key_util.h"
+#include "util/elgamal_key_util.h"
 
 #include <memory>
 #include <string>
@@ -22,7 +22,7 @@
 #include "crypto/context.h"
 #include "crypto/ec_point.h"
 #include "crypto/elgamal.pb.h"
-#include "privacy/blinders/cpp/util/elgamal_proto_util.h"
+#include "util/elgamal_proto_util.h"
 #include "util/proto_util.h"
 #include "util/recordio.h"
 #include "util/status.inc"
