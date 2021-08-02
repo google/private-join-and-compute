@@ -21,7 +21,7 @@ package private_join_and_compute;
 
 option java_package = "privacy.blinders";
 option java_outer_classname = "EcKey";
-option java_api_version = 2;
+
 
 message EcKeyProto {
   // Named curve id
