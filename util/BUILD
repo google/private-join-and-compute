@@ -141,8 +141,8 @@ cc_test(
 )
 
 cc_library(
-    name = "global_parameters",
-    hdrs = ["global_parameters.h"],
+    name = "process_record_file_util_parameters",
+    hdrs = ["process_record_file_util_parameters.h"],
     deps = [
         "//crypto:ec_commutative_cipher",
         "//crypto:openssl_includes",
@@ -153,7 +153,7 @@ cc_library(
     name = "process_record_file_util",
     hdrs = ["process_record_file_util.h"],
     deps = [
-        ":global_parameters",
+        ":process_record_file_parameters",
         ":proto_util",
         ":recordio",
         ":status_includes",
@@ -170,12 +170,96 @@ cc_test(
     name = "process_record_file_util_test",
     srcs = ["process_record_file_util_test.cc"],
     deps = [
-        ":global_parameters",
+        ":process_record_file_parameters",
         ":process_record_file_util",
         ":proto_util",
         ":status_testing_includes",
         ":test_proto",
         "@com_github_google_googletest//:gtest_main",
         "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "elgamal_proto_util",
+    srcs = ["elgamal_proto_util.cc"],
+    hdrs = ["elgamal_proto_util.h"],
+    deps = [
+        "//crypto:bn_util",
+        "//crypto:ec_util",
+        "//crypto:elgamal",
+        "//crypto:elgamal_cc_proto",
+    ],
+)
+
+cc_library(
+    name = "elgamal_key_util",
+    srcs = ["elgamal_key_util.cc"],
+    hdrs = ["elgamal_key_util.h"],
+    deps = [
+        ":elgamal_proto_util",
+        ":proto_util",
+        ":recordio",
+        ":status_includes",
+        "//crypto:bn_util",
+        "//crypto:ec_util",
+        "//crypto:elgamal_cc_proto",
+    ],
+)
+
+cc_library(
+    name = "ec_key_util",
+    srcs = ["ec_key_util.cc"],
+    hdrs = ["ec_key_util.h"],
+    deps = [
+        ":proto_util",
+        ":recordio",
+        ":status_includes",
+        "//crypto:bn_util",
+        "//crypto:ec_key_cc_proto",
+        "//crypto:ec_util",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "elgamal_proto_util_test",
+    srcs = ["elgamal_proto_util_test.cc"],
+    deps = [
+        ":elgamal_proto_util",
+        ":status_testing_includes",
+        "@com_github_google_googletest//:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "elgamal_key_util_test",
+    srcs = ["elgamal_key_util_test.cc"],
+    deps = [
+        ":elgamal_key_util",
+        ":elgamal_proto_util",
+        ":openssl_includes",
+        ":proto_util",
+        ":status_testing_includes",
+        "//crypto:bn_util",
+        "//crypto:ec_util",
+        "//crypto:elgamal",
+        "//crypto:elgamal_cc_proto",
+        "@com_github_google_googletest//:gtest_main",
+    ],
+)
+
+cc_test(
+    name = "ec_key_util_test",
+    srcs = ["ec_key_util_test.cc"],
+    deps = [
+        ":ec_key_util",
+        ":openssl_includes",
+        ":proto_util",
+        ":status_testing_includes",
+        "//crypto:bn_util",
+        "//crypto:ec_key_cc_proto",
+        "//crypto:ec_util",
+        "@com_github_google_googletest//:gtest_main",
     ],
 )

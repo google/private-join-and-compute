@@ -241,3 +241,13 @@ cc_library(
         "@com_google_absl//absl/strings",
     ],
 )
+
+grpc_proto_library(
+    name = "ec_key_proto",
+    srcs = ["ec_key.proto"],
+)
+
+grpc_proto_library(
+    name = "elgamal_proto",
+    srcs = ["elgamal.proto"],
+)
