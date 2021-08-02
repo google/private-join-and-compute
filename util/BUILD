@@ -141,8 +141,8 @@ cc_test(
 )
 
 cc_library(
-    name = "process_record_file_util_parameters",
-    hdrs = ["process_record_file_util_parameters.h"],
+    name = "process_record_file_parameters",
+    hdrs = ["process_record_file_parameters.h"],
     deps = [
         "//crypto:ec_commutative_cipher",
         "//crypto:openssl_includes",
