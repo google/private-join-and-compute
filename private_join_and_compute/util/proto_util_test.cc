@@ -18,7 +18,6 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include <filesystem>
 #include <string>
 
 #include "private_join_and_compute/util/file_test.pb.h"
