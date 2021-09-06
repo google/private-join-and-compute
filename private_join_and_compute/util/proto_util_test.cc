@@ -52,6 +52,26 @@ TEST(ProtoUtilsTest, ReadWriteToFile) {
   EXPECT_EQ(actual_test_proto.dummy(), expected_test_proto.dummy());
 }
 
+TEST(ProtoUtilsTest, ReadWriteManyToFile) {
+  std::string filename = ::testing::TempDir() + "/proto_file";
+
+  TestProto expected_test_proto;
+  expected_test_proto.set_record("data");
+  expected_test_proto.set_dummy("dummy");
+
+  std::vector<TestProto> test_vector = {
+      expected_test_proto, expected_test_proto, expected_test_proto};
+
+  ASSERT_TRUE(ProtoUtils::WriteRecordsToFile(filename, test_vector).ok());
+  ASSERT_OK_AND_ASSIGN(std::vector<TestProto> result,
+                       ProtoUtils::ReadProtosFromFile<TestProto>(filename));
+  EXPECT_EQ(result.size(), test_vector.size());
+  for (const TestProto& result_element : result) {
+    EXPECT_EQ(result_element.record(), expected_test_proto.record());
+    EXPECT_EQ(result_element.dummy(), expected_test_proto.dummy());
+  }
+}
+
 }  // namespace
 
 }  // namespace private_join_and_compute

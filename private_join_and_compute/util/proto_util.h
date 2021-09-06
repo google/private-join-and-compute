@@ -38,6 +38,10 @@ class ProtoUtils {
   template <typename ProtoType>
   static StatusOr<ProtoType> ReadProtoFromFile(absl::string_view filename);
 
+  template <typename ProtoType>
+  static StatusOr<std::vector<ProtoType>> ReadProtosFromFile(
+      absl::string_view filename);
+
   static Status WriteProtoToFile(const google::protobuf::MessageLite& record,
                                  absl::string_view filename);
   template <typename ProtoType>
@@ -68,6 +72,23 @@ inline StatusOr<ProtoType> ProtoUtils::ReadProtoFromFile(
   RETURN_IF_ERROR(reader->Read(&raw_record));
   RETURN_IF_ERROR(reader->Close());
   return ProtoUtils::FromString<ProtoType>(raw_record);
+}
+
+template <typename ProtoType>
+inline StatusOr<std::vector<ProtoType>> ProtoUtils::ReadProtosFromFile(
+    absl::string_view filename) {
+  std::vector<ProtoType> result;
+  std::unique_ptr<RecordReader> reader(RecordReader::GetRecordReader());
+  RETURN_IF_ERROR(reader->Open(filename));
+  std::string raw_record;
+  ASSIGN_OR_RETURN(bool has_more, reader->HasMore());
+  while (has_more) {
+    RETURN_IF_ERROR(reader->Read(&raw_record));
+    result.push_back(ProtoUtils::FromString<ProtoType>(raw_record));
+    ASSIGN_OR_RETURN(has_more, reader->HasMore());
+  }
+  RETURN_IF_ERROR(reader->Close());
+  return std::move(result);
 }
 
 inline Status ProtoUtils::WriteProtoToFile(
