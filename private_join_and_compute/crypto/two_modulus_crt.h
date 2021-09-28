@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Google Inc.
+ * Copyright 2019 Google LLC.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,8 +16,8 @@
 // Computes Chinese remainder theorem for two coprimes (i.e., relatively
 // primes).
 
-#ifndef CRYPTO_TWO_MODULUS_CRT_H_
-#define CRYPTO_TWO_MODULUS_CRT_H_
+#ifndef PRIVATE_JOIN_AND_COMPUTE_CRYPTO_TWO_MODULUS_CRT_H_
+#define PRIVATE_JOIN_AND_COMPUTE_CRYPTO_TWO_MODULUS_CRT_H_
 
 #include "private_join_and_compute/crypto/big_num.h"
 
@@ -49,4 +49,4 @@ class TwoModulusCrt {
 
 }  // namespace private_join_and_compute
 
-#endif  // CRYPTO_TWO_MODULUS_CRT_H_
+#endif  // PRIVATE_JOIN_AND_COMPUTE_CRYPTO_TWO_MODULUS_CRT_H_

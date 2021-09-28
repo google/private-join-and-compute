@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Google Inc.
+ * Copyright 2019 Google LLC.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef OPEN_SOURCE_PRIVATE_INTERSECTION_SUM_CLIENT_IMPL_H_
-#define OPEN_SOURCE_PRIVATE_INTERSECTION_SUM_CLIENT_IMPL_H_
+#ifndef PRIVATE_JOIN_AND_COMPUTE_PRIVATE_INTERSECTION_SUM_CLIENT_IMPL_H_
+#define PRIVATE_JOIN_AND_COMPUTE_PRIVATE_INTERSECTION_SUM_CLIENT_IMPL_H_
 
 #include "private_join_and_compute/crypto/context.h"
 #include "private_join_and_compute/crypto/ec_commutative_cipher.h"
@@ -104,4 +104,4 @@ class PrivateIntersectionSumProtocolClientImpl : public ProtocolClient {
 
 }  // namespace private_join_and_compute
 
-#endif  // OPEN_SOURCE_PRIVATE_INTERSECTION_SUM_CLIENT_IMPL_H_
+#endif  // PRIVATE_JOIN_AND_COMPUTE_PRIVATE_INTERSECTION_SUM_CLIENT_IMPL_H_

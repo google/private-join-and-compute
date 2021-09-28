@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Google Inc.
+ * Copyright 2019 Google LLC.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef UTIL_EC_KEY_UTIL_H_
-#define UTIL_EC_KEY_UTIL_H_
+#ifndef PRIVATE_JOIN_AND_COMPUTE_UTIL_EC_KEY_UTIL_H_
+#define PRIVATE_JOIN_AND_COMPUTE_UTIL_EC_KEY_UTIL_H_
 
 #include "private_join_and_compute/crypto/big_num.h"
 #include "private_join_and_compute/crypto/context.h"
@@ -34,4 +34,4 @@ StatusOr<BigNum> DeserializeEcKey(Context* context, int curve_id,
 
 }  // namespace private_join_and_compute::ec_key_util
 
-#endif  // UTIL_EC_KEY_UTIL_H_
+#endif  // PRIVATE_JOIN_AND_COMPUTE_UTIL_EC_KEY_UTIL_H_

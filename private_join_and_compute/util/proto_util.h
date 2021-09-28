@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Google Inc.
+ * Copyright 2019 Google LLC.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,8 +15,8 @@
 
 // Protocol buffer related static utility functions.
 
-#ifndef INTERNAL_UTIL_PROTO_UTIL_H_
-#define INTERNAL_UTIL_PROTO_UTIL_H_
+#ifndef PRIVATE_JOIN_AND_COMPUTE_INTERNAL_UTIL_PROTO_UTIL_H_
+#define PRIVATE_JOIN_AND_COMPUTE_INTERNAL_UTIL_PROTO_UTIL_H_
 
 #include <sstream>
 #include <string>
@@ -111,4 +111,4 @@ inline Status ProtoUtils::WriteRecordsToFile(
 }
 }  // namespace private_join_and_compute
 
-#endif  // INTERNAL_UTIL_PROTO_UTIL_H_
+#endif  // PRIVATE_JOIN_AND_COMPUTE_INTERNAL_UTIL_PROTO_UTIL_H_

@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Google Inc.
+ * Copyright 2019 Google LLC.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -51,8 +51,8 @@
 //   |// where only Bob knows i->j   |          |                              |
 //   +-------------------------------+          +------------------------------+
 
-#ifndef CRYPTO_PAILLIER_H_
-#define CRYPTO_PAILLIER_H_
+#ifndef PRIVATE_JOIN_AND_COMPUTE_CRYPTO_PAILLIER_H_
+#define PRIVATE_JOIN_AND_COMPUTE_CRYPTO_PAILLIER_H_
 
 #include <memory>
 #include <string>
@@ -316,4 +316,4 @@ class PrivatePaillierWithRand {
 
 }  // namespace private_join_and_compute
 
-#endif  // CRYPTO_PAILLIER_H_
+#endif  // PRIVATE_JOIN_AND_COMPUTE_CRYPTO_PAILLIER_H_

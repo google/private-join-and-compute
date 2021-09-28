@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Google Inc.
+ * Copyright 2019 Google LLC.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,8 +16,8 @@
 // Helper functions that enable conversion between ElGamal structs and protocol
 // buffer messsages.
 
-#ifndef UTIL_ELGAMAL_PROTO_UTIL_H_
-#define UTIL_ELGAMAL_PROTO_UTIL_H_
+#ifndef PRIVATE_JOIN_AND_COMPUTE_UTIL_ELGAMAL_PROTO_UTIL_H_
+#define PRIVATE_JOIN_AND_COMPUTE_UTIL_ELGAMAL_PROTO_UTIL_H_
 
 #include "private_join_and_compute/crypto/context.h"
 #include "private_join_and_compute/crypto/ec_group.h"
@@ -59,4 +59,4 @@ StatusOr<elgamal::Ciphertext> DeserializeCiphertext(
 
 }  // namespace private_join_and_compute::elgamal_proto_util
 
-#endif  // UTIL_ELGAMAL_PROTO_UTIL_H_
+#endif  // PRIVATE_JOIN_AND_COMPUTE_UTIL_ELGAMAL_PROTO_UTIL_H_

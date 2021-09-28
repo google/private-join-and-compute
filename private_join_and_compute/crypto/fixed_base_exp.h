@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Google Inc.
+ * Copyright 2019 Google LLC.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +17,8 @@
 // based on a modulus. This class delegates the modular exponentiation
 // operation to one of its subclasses.
 
-#ifndef CRYPTO_FIXED_BASE_H_
-#define CRYPTO_FIXED_BASE_H_
+#ifndef PRIVATE_JOIN_AND_COMPUTE_CRYPTO_FIXED_BASE_H_
+#define PRIVATE_JOIN_AND_COMPUTE_CRYPTO_FIXED_BASE_H_
 
 #include "absl/flags/declare.h"
 #include "private_join_and_compute/crypto/big_num.h"
@@ -57,4 +57,4 @@ class FixedBaseExp {
 
 }  // namespace private_join_and_compute
 
-#endif  // CRYPTO_FIXED_BASE_H_
+#endif  // PRIVATE_JOIN_AND_COMPUTE_CRYPTO_FIXED_BASE_H_

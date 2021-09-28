@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Google Inc.
+ * Copyright 2019 Google LLC.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -22,8 +22,8 @@
 // BigNum's ModExp using OpenSSL BN_mod_exp would probably be faster since it
 // also uses Montgomery modular multiplication under the hood.
 
-#ifndef CRYPTO_MONT_MUL_H_
-#define CRYPTO_MONT_MUL_H_
+#ifndef PRIVATE_JOIN_AND_COMPUTE_CRYPTO_MONT_MUL_H_
+#define PRIVATE_JOIN_AND_COMPUTE_CRYPTO_MONT_MUL_H_
 
 #include <cstdint>
 #include <memory>
@@ -143,4 +143,4 @@ class MontContext {
 
 }  // namespace private_join_and_compute
 
-#endif  // CRYPTO_MONT_MUL_H_
+#endif  // PRIVATE_JOIN_AND_COMPUTE_CRYPTO_MONT_MUL_H_

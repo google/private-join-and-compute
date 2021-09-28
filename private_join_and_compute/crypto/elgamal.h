@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Google Inc.
+ * Copyright 2019 Google LLC.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -33,8 +33,8 @@
 //
 // [1] https://en.wikipedia.org/wiki/ElGamal_encryption
 
-#ifndef CRYPTO_ELGAMAL_H_
-#define CRYPTO_ELGAMAL_H_
+#ifndef PRIVATE_JOIN_AND_COMPUTE_CRYPTO_ELGAMAL_H_
+#define PRIVATE_JOIN_AND_COMPUTE_CRYPTO_ELGAMAL_H_
 
 #include <vector>
 
@@ -162,4 +162,4 @@ class ElGamalDecrypter {
 
 }  // namespace private_join_and_compute
 
-#endif  // CRYPTO_ELGAMAL_H_
+#endif  // PRIVATE_JOIN_AND_COMPUTE_CRYPTO_ELGAMAL_H_

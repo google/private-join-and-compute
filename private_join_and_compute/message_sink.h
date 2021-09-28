@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Google Inc.
+ * Copyright 2019 Google LLC.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef OPEN_SOURCE_MESSAGE_SINK_H_
-#define OPEN_SOURCE_MESSAGE_SINK_H_
+#ifndef PRIVATE_JOIN_AND_COMPUTE_MESSAGE_SINK_H_
+#define PRIVATE_JOIN_AND_COMPUTE_MESSAGE_SINK_H_
 
 #include "absl/memory/memory.h"
 #include "private_join_and_compute/private_join_and_compute.pb.h"
@@ -57,4 +57,4 @@ class DummyMessageSink : public MessageSink<T> {
 
 }  // namespace private_join_and_compute
 
-#endif  // OPEN_SOURCE_MESSAGE_SINK_H_
+#endif  // PRIVATE_JOIN_AND_COMPUTE_MESSAGE_SINK_H_

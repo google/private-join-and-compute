@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Google Inc.
+ * Copyright 2019 Google LLC.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -29,8 +29,8 @@
  * limitations under the License.
  */
 
-#ifndef UTIL_STATUS_TESTING_H_
-#define UTIL_STATUS_TESTING_H_
+#ifndef PRIVATE_JOIN_AND_COMPUTE_UTIL_STATUS_TESTING_H_
+#define PRIVATE_JOIN_AND_COMPUTE_UTIL_STATUS_TESTING_H_
 
 #include <gmock/gmock.h>
 
@@ -75,4 +75,4 @@
 
 #endif  // GTEST_HAS_STATUS_MATCHERS
 
-#endif  // UTIL_STATUS_TESTING_H_
+#endif  // PRIVATE_JOIN_AND_COMPUTE_UTIL_STATUS_TESTING_H_
