@@ -56,7 +56,7 @@ the Private Join and Compute library and dependencies using Bazel:
 
 ```bash
 cd private-join-and-compute
-bazel build --cxxopt='-std=c++17' //private_join_and_compute/:all
+bazel build //private_join_and_compute:all
 ```
 
 (All the following instructions must be run from inside the

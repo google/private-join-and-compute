@@ -1,0 +1,10 @@
+# Options for compiling PJC code.
+# Include these in dependent workspaces by using the --bazelrc flag, or by
+# adding import %pjc_workspace%/bazel.rc to the .bazelrc file in the
+# dependent workspace.
+
+build -c opt
+build --cxxopt='-std=c++17'
+
+test -c opt
+test --cxxopt='-std=c++17'
