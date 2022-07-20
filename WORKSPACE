@@ -21,10 +21,10 @@ load("//bazel:pjc_deps.bzl", "pjc_deps")
 # must be included separately, since we need to load transitive deps of grpc.
 http_archive(
     name = "com_github_grpc_grpc",
-    sha256 = "acf247ec3a52edaee5dee28644a4e485c5e5badf46bdb24a80ca1d76cb8f1174",
-    strip_prefix = "grpc-1.37.1",
+    strip_prefix = "grpc-1.48.0",
+    sha256 = "9b1f348b15a7637f5191e4e673194549384f2eccf01fcef7cc1515864d71b424",
     urls = [
-        "https://github.com/grpc/grpc/archive/v1.37.1.tar.gz",
+        "https://github.com/grpc/grpc/archive/v1.48.0.tar.gz",
     ],
 )
 
