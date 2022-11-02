@@ -16,12 +16,13 @@
 #include "private_join_and_compute/server_impl.h"
 
 #include <algorithm>
-
+#include <iostream>
+#include <fstream>
 #include "absl/memory/memory.h"
 #include "private_join_and_compute/crypto/ec_commutative_cipher.h"
 #include "private_join_and_compute/crypto/paillier.h"
 #include "private_join_and_compute/util/status.inc"
-
+#include <time.h>
 using ::private_join_and_compute::BigNum;
 using ::private_join_and_compute::ECCommutativeCipher;
 using ::private_join_and_compute::PublicPaillier;
@@ -30,6 +31,8 @@ namespace private_join_and_compute {
 
 StatusOr<PrivateIntersectionSumServerMessage::ServerRoundOne>
 PrivateIntersectionSumProtocolServerImpl::EncryptSet() {
+  clock_t x,y;
+  x = clock();
   if (ec_cipher_ != nullptr) {
     return InvalidArgumentError("Attempted to call EncryptSet twice.");
   }
@@ -51,7 +54,8 @@ PrivateIntersectionSumProtocolServerImpl::EncryptSet() {
     }
     *encrypted->mutable_element() = encrypted_element.value();
   }
-
+  y=clock()-x;
+  printf ("Round 1:enc:hope  %d (%f seconds).\n",y,((float)y)/CLOCKS_PER_SEC);
   return result;
 }
 
@@ -70,6 +74,8 @@ PrivateIntersectionSumProtocolServerImpl::ComputeIntersection(
 
   // First, we re-encrypt the client party's set, so that we can compare with
   // the re-encrypted set received from the client.
+  clock_t u,v;
+  u = clock();
   for (const EncryptedElement& element :
        client_message.encrypted_set().elements()) {
     EncryptedElement reencrypted;
@@ -81,6 +87,9 @@ PrivateIntersectionSumProtocolServerImpl::ComputeIntersection(
     *reencrypted.mutable_element() = reenc.value();
     client_set.push_back(reencrypted);
   }
+  v=clock()-u;
+  printf ("Round 1:reenc:hope  %d (%f seconds).\n",v,((float)v)/CLOCKS_PER_SEC);
+
   for (const EncryptedElement& element :
        client_message.reencrypted_set().elements()) {
     server_set.push_back(element);
@@ -139,9 +148,17 @@ Status PrivateIntersectionSumProtocolServerImpl::Handle(
       request.private_intersection_sum_client_message();
 
   ServerMessage server_message;
-
+  clock_t t,t1,t2,t0;
+  //fstream my_file;
+  //my_file.open("data/p1000q1000.txt", ios::out);
   if (client_message.has_start_protocol_request()) {
     // Handle a protocol start message.
+    //time
+    //clock_t t,t1,t2,t3;
+    t = clock();
+    //t = clock() - t;
+    //printf ("It took me %d clicks (%f seconds).\n",t,((float)t)/CLOCKS_PER_SEC);
+
     auto maybe_server_round_one = EncryptSet();
     if (!maybe_server_round_one.ok()) {
       return maybe_server_round_one.status();
@@ -149,10 +166,23 @@ Status PrivateIntersectionSumProtocolServerImpl::Handle(
     *(server_message.mutable_private_intersection_sum_server_message()
           ->mutable_server_round_one()) =
         std::move(maybe_server_round_one.value());
+    //time
+    t1 = clock() - t;
+    //using namespace std;
+    //fstream my_file;
+    //my_file.open("data/p1000q1000.txt", ios::out);
+    //my_file << (((float)t1)/CLOCKS_PER_SEC);
+    printf ("Round 1: Encryption  %d (%f seconds).\n",t1,((float)t1)/CLOCKS_PER_SEC);
+
+
   } else if (client_message.has_client_round_one()) {
     // Handle the client round 1 message.
+    t0 = clock();
     auto maybe_server_round_two =
         ComputeIntersection(client_message.client_round_one());
+    //time
+    //t2 = clock() - t0;
+    //printf ("Round 2: Intersection  %d (%f seconds).\n",t2,((float)t2)/CLOCKS_PER_SEC);
     if (!maybe_server_round_two.ok()) {
       return maybe_server_round_two.status();
     }
@@ -161,6 +191,11 @@ Status PrivateIntersectionSumProtocolServerImpl::Handle(
         std::move(maybe_server_round_two.value());
     // Mark the protocol as finished here.
     protocol_finished_ = true;
+    t2 = clock() - t0;
+    printf ("Round 2: Intersection  %d (%f seconds).\n",t2,((float)t2)/CLOCKS_PER_SEC);
+    //time
+    //t3 = clock() - t2;
+    //printf ("Round 3  %d (%f seconds).\n",t3,((float)t3)/CLOCKS_PER_SEC);
   } else {
     return InvalidArgumentError(
         "PrivateIntersectionSumProtocolServerImpl: Received a client message "

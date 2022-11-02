@@ -79,6 +79,9 @@ class InvokeServerHandleClientMessageSink : public MessageSink<ClientMessage> {
 
 int ExecuteProtocol() {
   ::private_join_and_compute::Context context;
+  //////
+  clock_t t,t1,t2,t3, t4, t5, t7, t8;
+  t = clock();
 
   std::cout << "Client: Loading data..." << std::endl;
   auto maybe_client_identifiers_and_associated_values =
@@ -92,7 +95,8 @@ int ExecuteProtocol() {
   }
   auto client_identifiers_and_associated_values =
       std::move(maybe_client_identifiers_and_associated_values.value());
-
+  ////
+  t1 = clock();
   std::cout << "Client: Generating keys..." << std::endl;
   std::unique_ptr<::private_join_and_compute::ProtocolClient> client =
       absl::make_unique<
@@ -100,6 +104,9 @@ int ExecuteProtocol() {
           &context, std::move(client_identifiers_and_associated_values.first),
           std::move(client_identifiers_and_associated_values.second),
           absl::GetFlag(FLAGS_paillier_modulus_size));
+  //////////
+  t2 = clock() - t1;
+  printf ("*****Gen Keys:  %d (%f seconds).\n",t2,((float)t2)/CLOCKS_PER_SEC);
 
   // Consider grpc::SslServerCredentials if not running locally.
   std::unique_ptr<PrivateJoinAndComputeRpc::Stub> stub =
@@ -110,12 +117,16 @@ int ExecuteProtocol() {
       std::move(stub));
 
   // Execute StartProtocol and wait for response from ServerRoundOne.
+
   std::cout
       << "Client: Starting the protocol." << std::endl
       << "Client: Waiting for response and encrypted set from the server..."
       << std::endl;
+  t7 = clock();
   auto start_protocol_status =
       client->StartProtocol(&invoke_server_handle_message_sink);
+  t8 = clock() - t7;
+  printf ("*****EncQ:  %d (%f seconds).\n",t8,((float)t8)/CLOCKS_PER_SEC);
   if (!start_protocol_status.ok()) {
     std::cerr << "Client::ExecuteProtocol: failed to StartProtocol: "
               << start_protocol_status << std::endl;
@@ -123,7 +134,8 @@ int ExecuteProtocol() {
   }
   ServerMessage server_round_one =
       invoke_server_handle_message_sink.last_server_response();
-
+  /////
+  t4 = clock();
   // Execute ClientRoundOne, and wait for response from ServerRoundTwo.
   std::cout
       << "Client: Received encrypted set from the server, double encrypting..."
@@ -139,6 +151,10 @@ int ExecuteProtocol() {
               << client_round_one_status << std::endl;
     return 1;
   }
+  //////////
+  t5 = clock() - t4;
+  printf ("*****double enc:  %d (%f seconds).\n",t5,((float)t5)/CLOCKS_PER_SEC);
+
 
   // Execute ServerRoundTwo.
   std::cout << "Client: Sending double encrypted server data and "
@@ -162,6 +178,9 @@ int ExecuteProtocol() {
 
   // Output the result.
   auto client_print_output_status = client->PrintOutput();
+  ////
+  t3 = clock() - t;
+  printf ("*****total:  %d (%f seconds).\n",t3,((float)t3)/CLOCKS_PER_SEC);
   if (!client_print_output_status.ok()) {
     std::cerr << "Client::ExecuteProtocol: failed to PrintOutput: "
               << client_print_output_status << std::endl;
