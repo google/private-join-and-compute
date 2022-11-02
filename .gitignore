@@ -1,4 +1,0 @@
-# Bazel generated symlinks
-bazel-*
-# Mac files
-.DS_Store
