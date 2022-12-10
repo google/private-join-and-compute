@@ -33,7 +33,7 @@ cc_library(
     deps = [
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/status:statusor",
-        "@com_google_protobuf//:protobuf_lite",
+        "@com_github_protocolbuffers_protobuf//:protobuf_lite",
     ],
 )
 
@@ -90,7 +90,7 @@ cc_library(
         ":recordio",
         ":status_includes",
         "@com_google_absl//absl/strings",
-        "@com_google_protobuf//:protobuf_lite",
+        "@com_github_protocolbuffers_protobuf//:protobuf_lite",
     ],
 )
 
@@ -120,7 +120,7 @@ cc_library(
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",
         "@com_google_absl//absl/synchronization",
-        "@com_google_protobuf//:protobuf_lite",
+        "@com_github_protocolbuffers_protobuf//:protobuf_lite",
     ],
 )
 
