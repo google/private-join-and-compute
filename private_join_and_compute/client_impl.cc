@@ -17,12 +17,11 @@
 
 #include <algorithm>
 #include <iterator>
-
+#include <time.h>
 #include "absl/memory/memory.h"
 
 namespace private_join_and_compute {
-
-PrivateIntersectionSumProtocolClientImpl::
+    PrivateIntersectionSumProtocolClientImpl::
     PrivateIntersectionSumProtocolClientImpl(
         Context* ctx, const std::vector<std::string>& elements,
         const std::vector<BigNum>& values, int32_t modulus_size)
@@ -42,11 +41,14 @@ PrivateIntersectionSumProtocolClientImpl::ReEncryptSet(
     const PrivateIntersectionSumServerMessage::ServerRoundOne& message) {
   private_paillier_ = absl::make_unique<PrivatePaillier>(ctx_, p_, q_, 2);
   BigNum pk = p_ * q_;
+  clock_t x,y,u,v;
   PrivateIntersectionSumClientMessage::ClientRoundOne result;
   *result.mutable_public_key() = pk.ToBytes();
+  x = clock();
   for (size_t i = 0; i < elements_.size(); i++) {
     EncryptedElement* element = result.mutable_encrypted_set()->add_elements();
     StatusOr<std::string> encrypted = ec_cipher_->Encrypt(elements_[i]);
+    printf("");
     if (!encrypted.ok()) {
       return encrypted.status();
     }
@@ -57,7 +59,9 @@ PrivateIntersectionSumProtocolClientImpl::ReEncryptSet(
     }
     *element->mutable_associated_data() = value.value().ToBytes();
   }
-
+  y=clock()-x;
+  printf ("Round 1:enc:hope  %d (%f seconds).\n",y,((float)y)/CLOCKS_PER_SEC);
+  u = clock();
   std::vector<EncryptedElement> reencrypted_set;
   for (const EncryptedElement& element : message.encrypted_set().elements()) {
     EncryptedElement reencrypted;
@@ -75,6 +79,8 @@ PrivateIntersectionSumProtocolClientImpl::ReEncryptSet(
   for (const EncryptedElement& element : reencrypted_set) {
     *result.mutable_reencrypted_set()->add_elements() = element;
   }
+  v=clock()-u;
+  printf ("Round 1:reenc:hope  %d (%f seconds).\n",v,((float)v)/CLOCKS_PER_SEC);
 
   return result;
 }
@@ -122,21 +128,38 @@ Status PrivateIntersectionSumProtocolClientImpl::Handle(
   if (server_message.private_intersection_sum_server_message()
           .has_server_round_one()) {
     // Handle the server round one message.
-    ClientMessage client_message;
+    ///////////////////////////////////////
+    clock_t t, t1,t9, t10;
+    //t = clock();
+    ///////////////////////////////////////
 
+    ClientMessage client_message;
+    t = clock();
     auto maybe_client_round_one =
         ReEncryptSet(server_message.private_intersection_sum_server_message()
                          .server_round_one());
     if (!maybe_client_round_one.ok()) {
       return maybe_client_round_one.status();
     }
+    t1 = clock() - t;
+    printf ("Round 2: re-encryption %d (%f seconds).\n",t1,((float)t1)/CLOCKS_PER_SEC);
+    t9=clock();
     *(client_message.mutable_private_intersection_sum_client_message()
           ->mutable_client_round_one()) =
         std::move(maybe_client_round_one.value());
+    ///////////////////////////////////////
+    t10 = clock() - t9;
+    printf ("Round 2: encryption %d (%f seconds).\n",t9,((float)t9)/CLOCKS_PER_SEC);
+    ///////////////////////////////////////
     return client_message_sink->Send(client_message);
   } else if (server_message.private_intersection_sum_server_message()
                  .has_server_round_two()) {
     // Handle the server round two message.
+    /////////////////////
+    clock_t t2, t3;
+    t2 = clock();
+    ////////////////////
+
     auto maybe_result =
         DecryptSum(server_message.private_intersection_sum_server_message()
                        .server_round_two());
@@ -147,6 +170,11 @@ Status PrivateIntersectionSumProtocolClientImpl::Handle(
         std::move(maybe_result.value());
     // Mark the protocol as finished here.
     protocol_finished_ = true;
+
+    ///////////////////////////////////////
+    t3 = clock() - t2;
+    printf ("Round 3: output  %d (%f seconds).\n",t3,((float)t3)/CLOCKS_PER_SEC);
+    ///////////////////////////////////////
     return OkStatus();
   }
   // If none of the previous cases matched, we received the wrong kind of
