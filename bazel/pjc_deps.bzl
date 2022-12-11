@@ -22,9 +22,9 @@ def pjc_deps():
     if "com_github_google_glog" not in native.existing_rules():
         http_archive(
             name = "com_github_google_glog",
-            sha256 = "21bc744fb7f2fa701ee8db339ded7dce4f975d0d55837a97be7d46e8382dea5a",
-            strip_prefix = "glog-0.5.0",
-            url = "https://github.com/google/glog/archive/v0.5.0.zip",
+            sha256 = "44fdfe7e9590e73ee3b92519c2f166b20301f3e0f8092fc6d03e540de95a3be4",
+            strip_prefix = "glog-b33e3bad4c46c8a6345525fd822af355e5ef9446",
+            urls = ["https://github.com/google/glog/archive/b33e3bad4c46c8a6345525fd822af355e5ef9446.zip"],
         )
 
     if "com_github_gflags_gflags" not in native.existing_rules():
