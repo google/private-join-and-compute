@@ -14,6 +14,8 @@
 
 load("@com_github_grpc_grpc//bazel:grpc_build_system.bzl", "grpc_proto_library")
 
+package(default_visibility = ["//visibility:public"])
+
 grpc_proto_library(
     name = "match_proto",
     srcs = ["match.proto"],
@@ -69,7 +71,6 @@ cc_library(
         "//private_join_and_compute/crypto:ec_commutative_cipher",
         "//private_join_and_compute/crypto:paillier",
         "//private_join_and_compute/util:status_includes",
-        "@com_google_absl//absl/memory",
     ],
 )
 
@@ -97,7 +98,6 @@ cc_library(
         "//private_join_and_compute/crypto:ec_commutative_cipher",
         "//private_join_and_compute/crypto:paillier",
         "//private_join_and_compute/util:status_includes",
-        "@com_google_absl//absl/memory",
     ],
 )
 
@@ -109,7 +109,7 @@ cc_library(
         ":match_proto",
         "//private_join_and_compute/crypto:bn_util",
         "//private_join_and_compute/util:status_includes",
-        "@com_google_absl//absl/memory",
+        "@com_google_absl//absl/container:btree",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -119,10 +119,10 @@ cc_binary(
     srcs = ["generate_dummy_data.cc"],
     deps = [
         ":data_util",
-        "@com_github_google_glog//:glog",
         "@com_google_absl//absl/base",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/flags:parse",
+        "@com_google_absl//absl/log",
     ],
 )
 
@@ -148,13 +148,11 @@ cc_binary(
         ":private_join_and_compute_rpc_impl",
         ":protocol_server",
         ":server_impl",
-        "@com_github_google_glog//:glog",
         "@com_github_grpc_grpc//:grpc",
         "@com_github_grpc_grpc//:grpc++",
         "@com_google_absl//absl/base",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/flags:parse",
-        "@com_google_absl//absl/memory",
     ],
 )
 
@@ -166,13 +164,11 @@ cc_binary(
         ":data_util",
         ":private_join_and_compute_proto",
         ":protocol_client",
-        "@com_github_google_glog//:glog",
         "@com_github_grpc_grpc//:grpc",
         "@com_github_grpc_grpc//:grpc++",
         "@com_google_absl//absl/base",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/flags:parse",
-        "@com_google_absl//absl/memory",
         "@com_google_absl//absl/strings",
     ],
 )

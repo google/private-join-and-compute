@@ -19,11 +19,11 @@
 
 #include <memory>
 #include <utility>
+#include <vector>
 
-#define GLOG_NO_ABBREVIATED_SEVERITIES
 #include "absl/container/node_hash_map.h"
-#include "absl/memory/memory.h"
-#include "glog/logging.h"
+#include "absl/log/check.h"
+#include "absl/log/log.h"
 #include "private_join_and_compute/crypto/big_num.h"
 #include "private_join_and_compute/crypto/context.h"
 #include "private_join_and_compute/crypto/fixed_base_exp.h"
@@ -133,7 +133,7 @@ std::vector<BigNum> GetPrecomp(Context* ctx, const BigNum& num,
   std::vector<BigNum> precomp;
   precomp.push_back(ctx->CreateBigNum(1));
   for (int i = 1; i <= s; i++) {
-    BigNum i_inv = ctx->CreateBigNum(i).ModInverse(modulus);
+    BigNum i_inv = ctx->CreateBigNum(i).ModInverse(modulus).value();
     BigNum i_inv_n = i_inv.ModMul(num, modulus);
     precomp.push_back(precomp.back().ModMul(i_inv_n, modulus));
   }
@@ -158,7 +158,7 @@ std::unique_ptr<BigNumTable> GetDecryptPrecomp(
   //       -+
   std::unique_ptr<BigNumTable> precomp_table(new BigNumTable(s + 1));
   for (int k = 2; k <= s; k++) {
-    BigNum k_inverse = ctx->CreateBigNum(k).ModInverse(powers[s]);
+    BigNum k_inverse = ctx->CreateBigNum(k).ModInverse(powers[s]).value();
     precomp_table->Insert(k, s, k_inverse.ModMul(precomp[k - 1], powers[s]));
     for (int j = s - 1; j >= k; j--) {
       precomp_table->Insert(k, j, precomp_table->Get(k, j + 1).Mod(powers[j]));
@@ -238,8 +238,8 @@ class PrimeCrypto {
         s_(s),
         powers_(GetPowers(ctx, p, s)),
         precomp_(GetPrecomp(ctx, n_, powers_[s + 1], s)),
-        lambda_inv_(p_phi_.ModInverse(powers_[s_])),
-        other_prime_inv_(other_prime.ModInverse(powers_[s])),
+        lambda_inv_(p_phi_.ModInverse(powers_[s_]).value()),
+        other_prime_inv_(other_prime.ModInverse(powers_[s]).value()),
         decrypt_precomp_(GetDecryptPrecomp(ctx, precomp_, powers_, s)),
         g_p_(GetGeneratorOfPrimePowersFromSafePrime(ctx, p)),
         fbe_(FixedBaseExp::GetFixedBaseExp(
@@ -487,11 +487,11 @@ PrivatePaillierWithRand::PrivatePaillierWithRand(
     : ctx_(private_paillier->ctx_), private_paillier_(private_paillier) {
   const BigNum& p = private_paillier_->p_crypto_->GetPToExp(1);
   const BigNum& q = private_paillier_->q_crypto_->GetPToExp(1);
-  two_mod_crt_rand_ = absl::make_unique<TwoModulusCrt>(p, q);
-  p_crypto_ = absl::make_unique<PrimeCryptoWithRand>(
-      private_paillier_->p_crypto_.get());
-  q_crypto_ = absl::make_unique<PrimeCryptoWithRand>(
-      private_paillier_->q_crypto_.get());
+  two_mod_crt_rand_ = std::make_unique<TwoModulusCrt>(p, q);
+  p_crypto_ =
+      std::make_unique<PrimeCryptoWithRand>(private_paillier_->p_crypto_.get());
+  q_crypto_ =
+      std::make_unique<PrimeCryptoWithRand>(private_paillier_->q_crypto_.get());
 }
 
 PrivatePaillierWithRand::~PrivatePaillierWithRand() = default;

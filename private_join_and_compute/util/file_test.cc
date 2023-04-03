@@ -18,6 +18,9 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <memory>
+#include <string>
+
 #include "private_join_and_compute/util/status.inc"
 
 namespace private_join_and_compute {

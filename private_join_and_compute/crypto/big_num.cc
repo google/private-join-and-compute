@@ -16,11 +16,11 @@
 #include "private_join_and_compute/crypto/big_num.h"
 
 #include <cmath>
-#include <vector>
+#include <string>
+#include <utility>
 
-#define GLOG_NO_ABBREVIATED_SEVERITIES
+#include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
-#include "glog/logging.h"
 #include "private_join_and_compute/crypto/context.h"
 #include "private_join_and_compute/crypto/openssl.inc"
 #include "private_join_and_compute/util/status.inc"
@@ -45,11 +45,12 @@ class BnString {
 }  // namespace
 
 BigNum::BigNum(const BigNum& other)
-    : bn_(BignumPtr(CHECK_NOTNULL(BN_dup(other.bn_.get())))),
-      bn_ctx_(other.bn_ctx_) {}
+    : bn_(BignumPtr(BN_dup(other.bn_.get()))), bn_ctx_(other.bn_ctx_) {}
 
 BigNum& BigNum::operator=(const BigNum& other) {
-  bn_ = BignumPtr(CHECK_NOTNULL(BN_dup(other.bn_.get())));
+  BIGNUM* temp = BN_dup(other.bn_.get());
+  CHECK_NE(temp, nullptr);
+  bn_ = BignumPtr(temp);
   bn_ctx_ = other.bn_ctx_;
   return *this;
 }
@@ -80,7 +81,9 @@ BigNum::BigNum(BN_CTX* bn_ctx, const unsigned char* bytes, int length)
 }
 
 BigNum::BigNum(BN_CTX* bn_ctx) {
-  bn_ = BignumPtr(CHECK_NOTNULL(BN_new()));
+  BIGNUM* temp = BN_new();
+  CHECK_NE(temp, nullptr);
+  bn_ = BignumPtr(temp);
   bn_ctx_ = bn_ctx;
 }
 
@@ -94,9 +97,10 @@ const BIGNUM* BigNum::GetConstBignumPtr() const { return bn_.get(); }
 std::string BigNum::ToBytes() const {
   CHECK(IsNonNegative()) << "Cannot serialize a negative BigNum.";
   int length = BN_num_bytes(bn_.get());
-  std::vector<unsigned char> bytes(length);
-  BN_bn2bin(bn_.get(), bytes.data());
-  return std::string(reinterpret_cast<char*>(bytes.data()), bytes.size());
+
+  std::string bytes(length, 0);
+  BN_bn2bin(bn_.get(), reinterpret_cast<unsigned char*>(bytes.data()));
+  return bytes;
 }
 
 StatusOr<uint64_t> BigNum::ToIntValue() const {
@@ -169,7 +173,9 @@ BigNum BigNum::Sub(const BigNum& val) const {
 
 BigNum BigNum::Div(const BigNum& val) const {
   BigNum r(bn_ctx_);
-  BignumPtr rem(CHECK_NOTNULL(BN_new()));
+  BIGNUM* temp = BN_new();
+  CHECK_NE(temp, nullptr);
+  BignumPtr rem(temp);
   CRYPTO_CHECK(
       1 == BN_div(r.bn_.get(), rem.get(), bn_.get(), val.bn_.get(), bn_ctx_));
   CHECK(BN_is_zero(rem.get())) << "Use DivAndTruncate() instead of Div() if "
@@ -179,7 +185,9 @@ BigNum BigNum::Div(const BigNum& val) const {
 
 BigNum BigNum::DivAndTruncate(const BigNum& val) const {
   BigNum r(bn_ctx_);
-  BignumPtr rem(CHECK_NOTNULL(BN_new()));
+  BIGNUM* temp = BN_new();
+  CHECK_NE(temp, nullptr);
+  BignumPtr rem(temp);
   CRYPTO_CHECK(
       1 == BN_div(r.bn_.get(), rem.get(), bn_.get(), val.bn_.get(), bn_ctx_));
   return r;
@@ -238,10 +246,12 @@ BigNum BigNum::ModSqr(const BigNum& m) const {
   return r;
 }
 
-BigNum BigNum::ModInverse(const BigNum& m) const {
+StatusOr<BigNum> BigNum::ModInverse(const BigNum& m) const {
   BigNum r(bn_ctx_);
-  CRYPTO_CHECK(nullptr !=
-               BN_mod_inverse(r.bn_.get(), bn_.get(), m.bn_.get(), bn_ctx_));
+  if (nullptr == BN_mod_inverse(r.bn_.get(), bn_.get(), m.bn_.get(), bn_ctx_)) {
+    return InvalidArgumentError(
+        absl::StrCat("BigNum::ModInverse failed: ", OpenSSLErrorString()));
+  }
   return r;
 }
 

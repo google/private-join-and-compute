@@ -15,6 +15,9 @@
 
 #include "private_join_and_compute/util/elgamal_proto_util.h"
 
+#include <memory>
+#include <utility>
+
 namespace private_join_and_compute::elgamal_proto_util {
 
 StatusOr<ElGamalPublicKey> SerializePublicKey(

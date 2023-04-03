@@ -115,7 +115,7 @@ cc_library(
     deps = [
         ":file",
         ":status_includes",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
         "@com_google_absl//absl/memory",
         "@com_google_absl//absl/status",
         "@com_google_absl//absl/strings",

@@ -18,6 +18,7 @@
 #include "private_join_and_compute/util/file.h"
 
 #include <sstream>
+#include <string>
 
 namespace private_join_and_compute {
 namespace internal {

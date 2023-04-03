@@ -15,11 +15,11 @@
 
 #include "private_join_and_compute/crypto/ec_point.h"
 
+#include <string>
+#include <utility>
 #include <vector>
 
-#define GLOG_NO_ABBREVIATED_SEVERITIES
 #include "absl/strings/str_cat.h"
-#include "glog/logging.h"
 #include "private_join_and_compute/crypto/big_num.h"
 #include "private_join_and_compute/crypto/context.h"
 #include "private_join_and_compute/crypto/openssl.inc"
@@ -29,7 +29,7 @@ namespace private_join_and_compute {
 
 ECPoint::ECPoint(const EC_GROUP* group, BN_CTX* bn_ctx)
     : bn_ctx_(bn_ctx), group_(group) {
-  point_ = ECPointPtr(CHECK_NOTNULL(EC_POINT_new(group_)));
+  point_ = ECPointPtr(EC_POINT_new(group_));
 }
 
 ECPoint::ECPoint(const EC_GROUP* group, BN_CTX* bn_ctx, const BigNum& x,

@@ -16,9 +16,11 @@
 #include "private_join_and_compute/crypto/mont_mul.h"
 
 #include <algorithm>
+#include <string>
+#include <utility>
+#include <vector>
 
-#define GLOG_NO_ABBREVIATED_SEVERITIES
-#include "glog/logging.h"
+#include "absl/log/check.h"
 #include "private_join_and_compute/crypto/openssl.inc"
 
 namespace private_join_and_compute {
@@ -26,12 +28,12 @@ namespace private_join_and_compute {
 MontBigNum::MontBigNum(const MontBigNum& other)
     : ctx_(other.ctx_),
       mont_ctx_(other.mont_ctx_),
-      bn_(BigNum::BignumPtr(CHECK_NOTNULL(BN_dup(other.bn_.get())))) {}
+      bn_(BigNum::BignumPtr(BN_dup(other.bn_.get()))) {}
 
 MontBigNum& MontBigNum::operator=(const MontBigNum& other) {
   ctx_ = other.ctx_;
   mont_ctx_ = other.mont_ctx_;
-  bn_ = BigNum::BignumPtr(CHECK_NOTNULL(BN_dup(other.bn_.get())));
+  bn_ = BigNum::BignumPtr(BN_dup(other.bn_.get()));
   return *this;
 }
 
@@ -48,7 +50,7 @@ MontBigNum& MontBigNum::operator=(MontBigNum&& other) {
 // The reinterpret_cast is necessary to accept a string_view.
 MontBigNum::MontBigNum(Context* ctx, BN_MONT_CTX* mont_ctx,
                        absl::string_view bytes)
-    : MontBigNum(ctx, mont_ctx, BigNum::BignumPtr(CHECK_NOTNULL(BN_new()))) {
+    : MontBigNum(ctx, mont_ctx, BigNum::BignumPtr(BN_new())) {
   CRYPTO_CHECK(nullptr !=
                BN_bin2bn(reinterpret_cast<const unsigned char*>(bytes.data()),
                          bytes.size(), bn_.get()));
@@ -93,7 +95,9 @@ std::string MontBigNum::ToBytes() const {
 }
 
 BigNum MontBigNum::ToBigNum() const {
-  auto bn_ptr = BigNum::BignumPtr(CHECK_NOTNULL(BN_new()));
+  BIGNUM* temp = BN_new();
+  CHECK_NE(temp, nullptr);
+  auto bn_ptr = BigNum::BignumPtr(temp);
   CRYPTO_CHECK(1 == BN_from_montgomery(bn_ptr.get(), bn_.get(), mont_ctx_,
                                        ctx_->GetBnCtx()));
   return ctx_->CreateBigNum(std::move(bn_ptr));
@@ -105,7 +109,8 @@ MontBigNum::MontBigNum(Context* ctx, BN_MONT_CTX* mont_ctx,
 
 MontBigNum MontContext::CreateMontBigNum(const BigNum& big_num) {
   CHECK(big_num < modulus_);
-  BIGNUM* bn = CHECK_NOTNULL(BN_dup(big_num.GetConstBignumPtr()));
+  BIGNUM* bn = BN_dup(big_num.GetConstBignumPtr());
+  CHECK_NE(bn, nullptr);
   CRYPTO_CHECK(1 ==
                BN_to_montgomery(bn, bn, mont_ctx_.get(), ctx_->GetBnCtx()));
   return MontBigNum(ctx_, mont_ctx_.get(), BigNum::BignumPtr(bn));
@@ -116,9 +121,7 @@ MontBigNum MontContext::CreateMontBigNum(absl::string_view bytes) {
 }
 
 MontContext::MontContext(Context* ctx, const BigNum& modulus)
-    : modulus_(modulus),
-      ctx_(ctx),
-      mont_ctx_(MontCtxPtr(CHECK_NOTNULL(BN_MONT_CTX_new()))) {
+    : modulus_(modulus), ctx_(ctx), mont_ctx_(MontCtxPtr(BN_MONT_CTX_new())) {
   CRYPTO_CHECK(1 == BN_MONT_CTX_set(mont_ctx_.get(),
                                     modulus.GetConstBignumPtr(),
                                     ctx_->GetBnCtx()));

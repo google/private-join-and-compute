@@ -22,8 +22,7 @@
 
 #include <mutex>  // NOLINT(build/c++11): only using std::call_once, not mutex.
 
-#define GLOG_NO_ABBREVIATED_SEVERITIES
-#include "glog/logging.h"
+#include "absl/log/check.h"
 #endif
 
 namespace private_join_and_compute {

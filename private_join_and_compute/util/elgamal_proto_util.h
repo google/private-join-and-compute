@@ -19,6 +19,8 @@
 #ifndef PRIVATE_JOIN_AND_COMPUTE_UTIL_ELGAMAL_PROTO_UTIL_H_
 #define PRIVATE_JOIN_AND_COMPUTE_UTIL_ELGAMAL_PROTO_UTIL_H_
 
+#include <memory>
+
 #include "private_join_and_compute/crypto/context.h"
 #include "private_join_and_compute/crypto/ec_group.h"
 #include "private_join_and_compute/crypto/elgamal.h"

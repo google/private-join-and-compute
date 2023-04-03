@@ -15,12 +15,13 @@
 
 #include <iostream>
 #include <memory>
+#include <ostream>
 #include <string>
 #include <thread>  // NOLINT
+#include <utility>
 
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
-#include "absl/memory/memory.h"
 #include "include/grpc/grpc_security_constants.h"
 #include "include/grpcpp/grpcpp.h"
 #include "include/grpcpp/security/server_credentials.h"
@@ -50,7 +51,7 @@ int RunServer() {
 
   ::private_join_and_compute::Context context;
   std::unique_ptr<::private_join_and_compute::ProtocolServer> server =
-      absl::make_unique<
+      std::make_unique<
           ::private_join_and_compute::PrivateIntersectionSumProtocolServerImpl>(
           &context, std::move(maybe_server_identifiers.value()));
   ::private_join_and_compute::PrivateJoinAndComputeRpcImpl service(
@@ -86,7 +87,6 @@ int RunServer() {
 }
 
 int main(int argc, char** argv) {
-  google::InitGoogleLogging(argv[0]);
   absl::ParseCommandLine(argc, argv);
 
   return RunServer();

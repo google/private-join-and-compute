@@ -14,4 +14,4 @@
 
 licenses(["notice"])  # Apache v2
 
-package(default_visibility = ["//:__subpackages__"])
+package(default_visibility = ["//visibility:public"])

@@ -20,6 +20,8 @@
 #ifndef PRIVATE_JOIN_AND_COMPUTE_CRYPTO_FIXED_BASE_H_
 #define PRIVATE_JOIN_AND_COMPUTE_CRYPTO_FIXED_BASE_H_
 
+#include <memory>
+
 #include "absl/flags/declare.h"
 #include "private_join_and_compute/crypto/big_num.h"
 #include "private_join_and_compute/crypto/context.h"

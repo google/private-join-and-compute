@@ -33,7 +33,7 @@ cc_library(
     deps = [
         ":openssl_includes",
         "@boringssl//:ssl",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
     ],
 )
 
@@ -51,9 +51,9 @@ cc_library(
         ":openssl_includes",
         ":openssl_init",
         "//private_join_and_compute/util:status_includes",
-        "@com_github_google_glog//:glog",
-        "@com_google_absl//absl/base",
         "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -69,8 +69,8 @@ cc_library(
     deps = [
         ":bn_util",
         ":openssl_includes",
-        "@com_github_google_glog//:glog",
-        "@com_google_absl//absl/base",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -89,8 +89,8 @@ cc_library(
         ":bn_util",
         ":openssl_includes",
         "//private_join_and_compute/util:status_includes",
-        "@com_github_google_glog//:glog",
-        "@com_google_absl//absl/base",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -107,7 +107,7 @@ cc_library(
         ":bn_util",
         ":ec_util",
         "//private_join_and_compute/util:status_includes",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
         "@com_google_absl//absl/memory",
     ],
 )
@@ -125,7 +125,7 @@ cc_library(
         ":ec_util",
         ":elgamal",
         "//private_join_and_compute/util:status_includes",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -143,7 +143,7 @@ cc_library(
         ":ec_commutative_cipher",
         ":ec_util",
         "//private_join_and_compute/util:status_includes",
-        "@com_github_google_glog//:glog",
+        "@com_google_absl//absl/log",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -161,8 +161,8 @@ cc_library(
         ":ec_util",
         ":elgamal",
         "//private_join_and_compute/util:status_includes",
-        "@com_github_google_glog//:glog",
-        "@com_google_absl//absl/base",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -179,9 +179,42 @@ cc_library(
         ":bn_util",
         ":mont_mul",
         "//private_join_and_compute/util:status_includes",
-        "@com_github_google_glog//:glog",
         "@com_google_absl//absl/base",
+        "@com_google_absl//absl/log",
         "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "simultaneous_fixed_bases_exp",
+    srcs = [
+        "simultaneous_fixed_bases_exp.cc",
+    ],
+    hdrs = [
+        "simultaneous_fixed_bases_exp.h",
+    ],
+    deps = [
+        ":bn_util",
+        ":ec_util",
+        ":elgamal",
+        ":mont_mul",
+        ":paillier",
+        "//private_join_and_compute/util:status_includes",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "simultaneous_fixed_bases_exp_test",
+    srcs = [
+        "simultaneous_fixed_bases_exp_test.cc",
+    ],
+    deps = [
+        ":elgamal",
+        ":simultaneous_fixed_bases_exp",
+        "//private_join_and_compute/util:status_includes",
+        "//private_join_and_compute/util:status_testing_includes",
+        "@com_github_google_googletest//:gtest_main",
     ],
 )
 
@@ -218,9 +251,9 @@ cc_library(
         ":paillier_proto",
         ":two_modulus_crt",
         "//private_join_and_compute/util:status_includes",
-        "@com_github_google_glog//:glog",
-        "@com_google_absl//absl/base",
         "@com_google_absl//absl/container:node_hash_map",
+        "@com_google_absl//absl/log",
+        "@com_google_absl//absl/log:check",
         "@com_google_absl//absl/strings",
     ],
 )
@@ -239,6 +272,76 @@ cc_library(
         ":elgamal",
         "//private_join_and_compute/util:status_includes",
         "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_library(
+    name = "camenisch_shoup",
+    srcs = [
+        "camenisch_shoup.cc",
+    ],
+    hdrs = [
+        "camenisch_shoup.h",
+    ],
+    deps = [
+        ":bn_util",
+        ":fixed_base_exp",
+        "//private_join_and_compute/crypto/proto:big_num_cc_proto",
+        "//private_join_and_compute/crypto/proto:camenisch_shoup_cc_proto",
+        "//private_join_and_compute/crypto/proto:proto_util",
+        "//private_join_and_compute/util:status_includes",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "camenisch_shoup_test",
+    srcs = [
+        "camenisch_shoup_test.cc",
+    ],
+    deps = [
+        ":bn_util",
+        ":camenisch_shoup",
+        "//private_join_and_compute/crypto/proto:camenisch_shoup_cc_proto",
+        "//private_join_and_compute/crypto/proto:proto_util",
+        "//private_join_and_compute/util:status_includes",
+        "//private_join_and_compute/util:status_testing_includes",
+        "@com_github_google_googletest//:gtest_main",
+    ],
+)
+
+cc_library(
+    name = "pedersen_over_zn",
+    srcs = [
+        "pedersen_over_zn.cc",
+    ],
+    hdrs = [
+        "pedersen_over_zn.h",
+    ],
+    deps = [
+        ":bn_util",
+        ":simultaneous_fixed_bases_exp",
+        "//private_join_and_compute/crypto/proto:big_num_cc_proto",
+        "//private_join_and_compute/crypto/proto:pedersen_cc_proto",
+        "//private_join_and_compute/crypto/proto:proto_util",
+        "//private_join_and_compute/util:status_includes",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "pedersen_over_zn_test",
+    size = "medium",
+    srcs = ["pedersen_over_zn_test.cc"],
+    tags = ["requires-net:external"],
+    deps = [
+        ":bn_util",
+        ":pedersen_over_zn",
+        "//private_join_and_compute/crypto/proto:pedersen_cc_proto",
+        "//private_join_and_compute/crypto/proto:proto_util",
+        "//private_join_and_compute/util:status_includes",
+        "//private_join_and_compute/util:status_testing_includes",
+        "@com_github_google_googletest//:gtest_main",
     ],
 )
 

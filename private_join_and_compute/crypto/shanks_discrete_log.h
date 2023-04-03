@@ -28,6 +28,8 @@
 #define CRYPTO_SHANKS_DISCRETE_LOG_H_
 
 #include <map>
+#include <memory>
+#include <string>
 
 #include "absl/status/statusor.h"
 #include "private_join_and_compute/crypto/big_num.h"

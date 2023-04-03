@@ -19,6 +19,9 @@
 #include <gtest/gtest.h>
 
 #include <fstream>
+#include <memory>
+#include <string>
+#include <vector>
 
 #include "absl/random/random.h"
 #include "absl/strings/str_cat.h"
@@ -40,11 +43,11 @@ using testing::IsOkAndHolds;
 using testing::StatusIs;
 using ::testing::TempDir;
 
-std::string GetTestPBWithDummyAsStr(const std::string& data,
-                                    const std::string& dummy) {
+std::string GetTestPBWithDummyAsStr(absl::string_view data,
+                                    absl::string_view dummy) {
   TestProto test_proto;
-  test_proto.set_record(data);
-  test_proto.set_dummy(dummy);
+  test_proto.set_record(std::string(data));
+  test_proto.set_dummy(std::string(dummy));
   return ProtoUtils::ToString(test_proto);
 }
 
@@ -61,14 +64,14 @@ void ExpectFileContainsRecords(absl::string_view filename,
   EXPECT_THAT(ids_read, ElementsAreArray(expected_ids));
 }
 
-TestProto GetRecord(const std::string& id) {
+TestProto GetRecord(absl::string_view id) {
   TestProto record;
-  record.set_record(id);
+  record.set_record(std::string(id));
   return record;
 }
 
 void ExpectInternalErrorWithSubstring(const Status& status,
-                                      const std::string& substring) {
+                                      absl::string_view substring) {
   EXPECT_THAT(status, StatusIs(private_join_and_compute::StatusCode::kInternal,
                                HasSubstr(substring)));
 }

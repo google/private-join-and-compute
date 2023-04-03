@@ -21,15 +21,15 @@
 #include <memory>
 #include <queue>
 #include <string>
+#include <utility>
 #include <vector>
 
-#define GLOG_NO_ABBREVIATED_SEVERITIES
+#include "absl/log/log.h"
 #include "absl/status/status.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
-#include "glog/logging.h"
 #include "private_join_and_compute/util/status.inc"
 #include "src/google/protobuf/io/coded_stream.h"
 #include "src/google/protobuf/io/zero_copy_stream_impl_lite.h"
@@ -176,7 +176,7 @@ class MultiSortedReaderImpl : public MultiSortedReader<T> {
     if (!readers_.empty()) {
       return InternalError("There are files not closed, call Close() first.");
     }
-    key_ = absl::make_unique<std::function<T(absl::string_view)>>(key);
+    key_ = std::make_unique<std::function<T(absl::string_view)>>(key);
     for (size_t i = 0; i < filenames.size(); ++i) {
       this->readers_.push_back(std::unique_ptr<RecordReader>(get_reader_()));
       auto open_status = this->readers_.back()->Open(filenames[i]);
@@ -307,10 +307,10 @@ class RecordWriterImpl : public RecordWriter {
   Status Write(absl::string_view raw_data) final {
     std::string delimited_output;
     auto string_output =
-        absl::make_unique<google::protobuf::io::StringOutputStream>(
+        std::make_unique<google::protobuf::io::StringOutputStream>(
             &delimited_output);
     auto coded_output =
-        absl::make_unique<google::protobuf::io::CodedOutputStream>(
+        std::make_unique<google::protobuf::io::CodedOutputStream>(
             string_output.get());
 
     // Write the delimited output.
@@ -387,7 +387,7 @@ MultiSortedReader<std::string>* MultiSortedReader<std::string>::Get(
     const std::function<RecordReader*()>& get_reader) {
   return new MultiSortedReaderImpl<std::string>(
       get_reader,
-      absl::make_unique<std::function<std::string(absl::string_view)>>(
+      std::make_unique<std::function<std::string(absl::string_view)>>(
           [](absl::string_view s) { return std::string(s); }));
 }
 
@@ -395,7 +395,7 @@ template <>
 MultiSortedReader<int64_t>* MultiSortedReader<int64_t>::Get(
     const std::function<RecordReader*()>& get_reader) {
   return new MultiSortedReaderImpl<int64_t>(
-      get_reader, absl::make_unique<std::function<int64_t(absl::string_view)>>(
+      get_reader, std::make_unique<std::function<int64_t(absl::string_view)>>(
                       [](absl::string_view s) { return 0; }));
 }
 
@@ -542,7 +542,7 @@ class ShardingWriterImpl : public ShardingWriter<T> {
 template <typename T>
 std::unique_ptr<ShardingWriter<T>> ShardingWriter<T>::Get(
     const std::function<T(absl::string_view)>& get_key, int32_t max_bytes) {
-  return absl::make_unique<ShardingWriterImpl<T>>(get_key, max_bytes);
+  return std::make_unique<ShardingWriterImpl<T>>(get_key, max_bytes);
 }
 
 // Test only.
@@ -550,8 +550,8 @@ template <typename T>
 std::unique_ptr<ShardingWriter<T>> ShardingWriter<T>::Get(
     const std::function<T(absl::string_view)>& get_key, int32_t max_bytes,
     std::unique_ptr<RecordWriter> record_writer) {
-  return absl::make_unique<ShardingWriterImpl<T>>(get_key, max_bytes,
-                                                  std::move(record_writer));
+  return std::make_unique<ShardingWriterImpl<T>>(get_key, max_bytes,
+                                                 std::move(record_writer));
 }
 
 template class ShardingWriter<int64_t>;

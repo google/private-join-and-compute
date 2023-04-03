@@ -41,6 +41,13 @@ class ABSL_MUST_USE_RESULT BigNum {
     void operator()(BIGNUM* bn) { BN_clear_free(bn); }
   };
 
+  // Deletes a BN_MONT_CTX.
+  class BnMontCtxDeleter {
+   public:
+    void operator()(BN_MONT_CTX* ctx) { BN_MONT_CTX_free(ctx); }
+  };
+  typedef std::unique_ptr<BN_MONT_CTX, BnMontCtxDeleter> BnMontCtxPtr;
+
   // Copies the given BigNum.
   BigNum(const BigNum& other);
   BigNum& operator=(const BigNum& other);
@@ -145,8 +152,9 @@ class ABSL_MUST_USE_RESULT BigNum {
   BigNum ModSqr(const BigNum& m) const;
 
   // Returns a BigNum whose value is (*this ^ -1 mod m).
-  // Causes a check failure if the operation fails.
-  BigNum ModInverse(const BigNum& m) const;
+  // Returns a status error if the operation fails, for example if the inverse
+  // doesn't exist.
+  StatusOr<BigNum> ModInverse(const BigNum& m) const;
 
   // Returns r such that r ^ 2 == *this mod p.
   // Causes a check failure if the operation fails.

@@ -16,10 +16,12 @@
 // Tool to generate dummy data for the client and server in Private Join and
 // Compute.
 
-#include "absl/flags/parse.h"
-#define GLOG_NO_ABBREVIATED_SEVERITIES
+#include <iostream>
+#include <ostream>
+#include <utility>
+
 #include "absl/flags/flag.h"
-#include "glog/logging.h"
+#include "absl/flags/parse.h"
 #include "private_join_and_compute/data_util.h"
 
 // Flags defining the size of data to generate for the client and server, bounds
@@ -41,7 +43,6 @@ ABSL_FLAG(std::string, client_data_file, "",
           "The file to which to write the client database.");
 
 int main(int argc, char** argv) {
-  google::InitGoogleLogging(argv[0]);
   absl::ParseCommandLine(argc, argv);
 
   auto maybe_dummy_data = private_join_and_compute::GenerateRandomDatabases(

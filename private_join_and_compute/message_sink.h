@@ -16,7 +16,8 @@
 #ifndef PRIVATE_JOIN_AND_COMPUTE_MESSAGE_SINK_H_
 #define PRIVATE_JOIN_AND_COMPUTE_MESSAGE_SINK_H_
 
-#include "absl/memory/memory.h"
+#include <memory>
+
 #include "private_join_and_compute/private_join_and_compute.pb.h"
 #include "private_join_and_compute/util/status.inc"
 
@@ -44,7 +45,7 @@ class DummyMessageSink : public MessageSink<T> {
 
   // Simply copies the message.
   Status Send(const T& message) override {
-    last_message_ = absl::make_unique<T>(message);
+    last_message_ = std::make_unique<T>(message);
     return OkStatus();
   }
 

@@ -16,6 +16,11 @@
 #ifndef PRIVATE_JOIN_AND_COMPUTE_PRIVATE_INTERSECTION_SUM_SERVER_IMPL_H_
 #define PRIVATE_JOIN_AND_COMPUTE_PRIVATE_INTERSECTION_SUM_SERVER_IMPL_H_
 
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
 #include "private_join_and_compute/crypto/context.h"
 #include "private_join_and_compute/crypto/ec_commutative_cipher.h"
 #include "private_join_and_compute/crypto/paillier.h"

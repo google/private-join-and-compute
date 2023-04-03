@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <functional>
 #include <future>  // NOLINT
+#include <memory>
 #include <string>
 
 #include "absl/strings/string_view.h"

@@ -16,7 +16,14 @@
 #include "private_join_and_compute/client_impl.h"
 
 #include <algorithm>
+#include <iostream>
 #include <iterator>
+#include <memory>
+#include <ostream>
+#include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
 
 #include "absl/memory/memory.h"
 
@@ -40,7 +47,7 @@ PrivateIntersectionSumProtocolClientImpl::
 StatusOr<PrivateIntersectionSumClientMessage::ClientRoundOne>
 PrivateIntersectionSumProtocolClientImpl::ReEncryptSet(
     const PrivateIntersectionSumServerMessage::ServerRoundOne& message) {
-  private_paillier_ = absl::make_unique<PrivatePaillier>(ctx_, p_, q_, 2);
+  private_paillier_ = std::make_unique<PrivatePaillier>(ctx_, p_, q_, 2);
   BigNum pk = p_ * q_;
   PrivateIntersectionSumClientMessage::ClientRoundOne result;
   *result.mutable_public_key() = pk.ToBytes();

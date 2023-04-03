@@ -21,9 +21,8 @@
 #include <memory>
 #include <string>
 
-#define GLOG_NO_ABBREVIATED_SEVERITIES
+#include "absl/log/check.h"
 #include "absl/strings/string_view.h"
-#include "glog/logging.h"
 #include "private_join_and_compute/crypto/big_num.h"
 #include "private_join_and_compute/crypto/openssl.inc"
 
@@ -82,6 +81,9 @@ class Context {
   // Hashes a string using SHA-256 to a byte string.
   virtual std::string Sha256String(absl::string_view bytes);
 
+  // Hashes a string using SHA-384 to a byte string.
+  virtual std::string Sha384String(absl::string_view bytes);
+
   // Hashes a string using SHA-512 to a byte string.
   virtual std::string Sha512String(absl::string_view bytes);
 
@@ -108,6 +110,8 @@ class Context {
   // the bias of selecting certain values more often than others when max_value
   // is not a multiple of 2.
   virtual BigNum RandomOracleSha256(absl::string_view x,
+                                    const BigNum& max_value);
+  virtual BigNum RandomOracleSha384(absl::string_view x,
                                     const BigNum& max_value);
   virtual BigNum RandomOracleSha512(absl::string_view x,
                                     const BigNum& max_value);
@@ -170,6 +174,7 @@ class Context {
 
   enum RandomOracleHashType {
     SHA256,
+    SHA384,
     SHA512,
   };
 

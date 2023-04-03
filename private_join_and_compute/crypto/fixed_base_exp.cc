@@ -26,11 +26,11 @@
 
 #include "private_join_and_compute/crypto/fixed_base_exp.h"
 
+#include <memory>
+#include <string>
 #include <vector>
 
-#define GLOG_NO_ABBREVIATED_SEVERITIES
 #include "absl/flags/flag.h"
-#include "glog/logging.h"
 #include "private_join_and_compute/crypto/big_num.h"
 #include "private_join_and_compute/crypto/context.h"
 #include "private_join_and_compute/crypto/mont_mul.h"
