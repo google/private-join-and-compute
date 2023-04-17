@@ -32,6 +32,7 @@
 #include "private_join_and_compute/crypto/pedersen_over_zn.h"
 #include "private_join_and_compute/crypto/proto/big_num.pb.h"
 #include "private_join_and_compute/crypto/proto/camenisch_shoup.pb.h"
+#include "private_join_and_compute/crypto/proto/ec_point.pb.h"
 #include "private_join_and_compute/crypto/proto/pedersen.pb.h"
 #include "private_join_and_compute/crypto/proto/proto_util.h"
 #include "private_join_and_compute/util/status_testing.inc"
@@ -46,9 +47,18 @@ const int kSafePrimeLengthBits = 768;
 const int kChallengeLengthBits = 128;
 const int kSecurityParameter = 128;
 const int kCamenischShoupS = 1;
-const int kCamenischShoupVectorEncryptionLength = 3;
 
-class BbObliviousSignatureTest : public ::testing::Test {
+// Different test cases for combinations of parameters.
+struct BbObliviousSignatureTestCase {
+  std::string name;
+  int num_messages;
+  // should be >= num_messages.
+  int num_pedersen_bases;
+  int camenisch_shoup_vector_encryption_length;
+};
+
+class BbObliviousSignatureTest
+    : public ::testing::TestWithParam<BbObliviousSignatureTestCase> {
  protected:
   static void SetUpTestSuite() {
     Context ctx;
@@ -64,6 +74,12 @@ class BbObliviousSignatureTest : public ::testing::Test {
   }
 
   void SetUp() override {
+    const BbObliviousSignatureTestCase& test_case = GetParam();
+    num_messages_ = test_case.num_messages;
+    num_pedersen_bases_ = test_case.num_pedersen_bases;
+    camenisch_shoup_vector_encryption_length_ =
+        test_case.camenisch_shoup_vector_encryption_length;
+
     ASSERT_OK_AND_ASSIGN(auto ec_group_do_not_use_later,
                          ECGroup::Create(kTestCurveId, &ctx_));
     ec_group_ = std::make_unique<ECGroup>(std::move(ec_group_do_not_use_later));
@@ -79,20 +95,20 @@ class BbObliviousSignatureTest : public ::testing::Test {
         std::make_unique<ECPoint>(ec_group_->GetRandomGenerator().value());
     params_proto_.set_base_g(base_g_->ToBytesCompressed().value());
 
-    // We generate a Pedersen with fixed bases 2^2, 3^2, 5^2 and h=7^2.
-    std::vector<BigNum> bases = {ctx_.CreateBigNum(4), ctx_.CreateBigNum(9),
-                                 ctx_.CreateBigNum(25)};
-    proto::PedersenParameters pedersen_params;
-    pedersen_params.set_n(n.ToBytes());
-    *pedersen_params.mutable_gs() = BigNumVectorToProto(bases);
-    pedersen_params.set_h(ctx_.CreateBigNum(49).ToBytes());
+    // Generate Pedersen Parameters
+    PedersenOverZn::Parameters pedersen_parameters_struct =
+        PedersenOverZn::GenerateParameters(&ctx_, n,
+                                           test_case.num_pedersen_bases);
+    proto::PedersenParameters pedersen_params =
+        PedersenOverZn::ParametersToProto(pedersen_parameters_struct);
 
     *params_proto_.mutable_pedersen_parameters() = pedersen_params;
     ASSERT_OK_AND_ASSIGN(pedersen_,
                          PedersenOverZn::FromProto(&ctx_, pedersen_params));
 
     std::tie(cs_public_key_, cs_private_key_) = GenerateCamenischShoupKeyPair(
-        &ctx_, n, kCamenischShoupS, kCamenischShoupVectorEncryptionLength);
+        &ctx_, n, kCamenischShoupS,
+        test_case.camenisch_shoup_vector_encryption_length);
 
     *params_proto_.mutable_camenisch_shoup_public_key() =
         CamenischShoupPublicKeyToProto(*cs_public_key_);
@@ -114,6 +130,16 @@ class BbObliviousSignatureTest : public ::testing::Test {
 
     k_ = std::make_unique<BigNum>(ctx_.CreateBigNum(private_key_proto_.k()));
     y_ = std::make_unique<BigNum>(ctx_.CreateBigNum(private_key_proto_.y()));
+  }
+
+  // Generates random messages appropriate for a signature request.
+  std::vector<BigNum> GenerateRandomMessages(int num_messages) {
+    std::vector<BigNum> messages;
+    messages.reserve(num_messages);
+    for (int i = 0; i < num_messages; ++i) {
+      messages.push_back(ec_group_->GeneratePrivateKey());
+    }
+    return messages;
   }
 
   // Holds a transcript for a Oblivious Signature request.
@@ -185,6 +211,10 @@ class BbObliviousSignatureTest : public ::testing::Test {
   static std::string* serialized_safe_prime_p_;
   static std::string* serialized_safe_prime_q_;
 
+  int num_messages_;
+  int num_pedersen_bases_;
+  int camenisch_shoup_vector_encryption_length_;
+
   proto::BbObliviousSignatureParameters params_proto_;
 
   Context ctx_;
@@ -210,7 +240,7 @@ class BbObliviousSignatureTest : public ::testing::Test {
 std::string* BbObliviousSignatureTest::serialized_safe_prime_p_ = nullptr;
 std::string* BbObliviousSignatureTest::serialized_safe_prime_q_ = nullptr;
 
-TEST_F(BbObliviousSignatureTest,
+TEST_P(BbObliviousSignatureTest,
        CreateFailsWhenPublicCamenischShoupNotLargeEnough) {
   // Create an "n" with a smaller modulus.
   int small_prime_length_bits = 256;
@@ -226,7 +256,7 @@ TEST_F(BbObliviousSignatureTest,
   std::unique_ptr<PublicCamenischShoup> small_public_camenisch_shoup;
   std::tie(small_cs_public_key, small_cs_private_key) =
       GenerateCamenischShoupKeyPair(&ctx_, small_n, kCamenischShoupS,
-                                    kCamenischShoupVectorEncryptionLength);
+                                    camenisch_shoup_vector_encryption_length_);
 
   *small_params.mutable_camenisch_shoup_public_key() =
       CamenischShoupPublicKeyToProto(*small_cs_public_key);
@@ -242,16 +272,17 @@ TEST_F(BbObliviousSignatureTest,
                        HasSubstr("not large enough")));
 }
 
-TEST_F(BbObliviousSignatureTest, CreateFailsWhenPedersenNotLargeEnough) {
+TEST_P(BbObliviousSignatureTest, CreateFailsWhenPedersenNotLargeEnough) {
   // Create an "n" with a smaller modulus.
   int small_prime_length_bits = 256;
   BigNum p = ctx_.GenerateSafePrime(small_prime_length_bits);
   BigNum q = ctx_.GenerateSafePrime(small_prime_length_bits);
   BigNum small_n = p * q;
 
-  // Change the pedersen params to use the smaller modulus (all other params can
-  // stay the same).
-  params_proto_.mutable_pedersen_parameters()->set_n(small_n.ToBytes());
+  // Change the pedersen params to use the smaller modulus.
+  *params_proto_.mutable_pedersen_parameters() =
+      PedersenOverZn::ParametersToProto(PedersenOverZn::GenerateParameters(
+          &ctx_, small_n, num_pedersen_bases_));
   // Reset the pedersen object with the updated params.
   ASSERT_OK_AND_ASSIGN(
       pedersen_,
@@ -264,9 +295,8 @@ TEST_F(BbObliviousSignatureTest, CreateFailsWhenPedersenNotLargeEnough) {
                        HasSubstr("not large enough")));
 }
 
-TEST_F(BbObliviousSignatureTest, EvaluatesCorrectlyNoProofs) {
-  std::vector<BigNum> messages = {ctx_.CreateBigNum(0), ctx_.CreateBigNum(1),
-                                  ctx_.CreateBigNum(5)};
+TEST_P(BbObliviousSignatureTest, EvaluatesCorrectlyNoProofs) {
+  std::vector<BigNum> messages = GenerateRandomMessages(num_messages_);
   ASSERT_OK_AND_ASSIGN(Transcript transcript, GenerateTranscript(messages));
 
   // Validate results.
@@ -281,8 +311,8 @@ TEST_F(BbObliviousSignatureTest, EvaluatesCorrectlyNoProofs) {
   }
 }
 
-TEST_F(BbObliviousSignatureTest, EvaluatesCorrectlyWithFewerMessagesNoProofs) {
-  std::vector<BigNum> fewer_messages = {ctx_.CreateBigNum(5)};
+TEST_P(BbObliviousSignatureTest, EvaluatesCorrectlyWithFewerMessagesNoProofs) {
+  std::vector<BigNum> fewer_messages = GenerateRandomMessages(1);
   ASSERT_OK_AND_ASSIGN(Transcript transcript,
                        GenerateTranscript(fewer_messages));
 
@@ -298,13 +328,13 @@ TEST_F(BbObliviousSignatureTest, EvaluatesCorrectlyWithFewerMessagesNoProofs) {
   }
 }
 
-TEST_F(BbObliviousSignatureTest, KeysEncryptsVectorOfSecret) {
-  EXPECT_EQ(kCamenischShoupVectorEncryptionLength,
+TEST_P(BbObliviousSignatureTest, KeysEncryptsVectorOfSecret) {
+  EXPECT_EQ(camenisch_shoup_vector_encryption_length_,
             public_key_proto_.encrypted_k_size());
-  EXPECT_EQ(kCamenischShoupVectorEncryptionLength,
+  EXPECT_EQ(camenisch_shoup_vector_encryption_length_,
             public_key_proto_.encrypted_y_size());
 
-  for (int i = 0; i < kCamenischShoupVectorEncryptionLength; ++i) {
+  for (int i = 0; i < camenisch_shoup_vector_encryption_length_; ++i) {
     ASSERT_OK_AND_ASSIGN(CamenischShoupCiphertext encrypted_k_at_i,
                          public_camenisch_shoup_->ParseCiphertextProto(
                              public_key_proto_.encrypted_k(i)));
@@ -316,10 +346,12 @@ TEST_F(BbObliviousSignatureTest, KeysEncryptsVectorOfSecret) {
     ASSERT_OK_AND_ASSIGN(std::vector<BigNum> decrypted_y_at_i,
                          private_camenisch_shoup_->Decrypt(encrypted_y_at_i));
 
-    EXPECT_EQ(decrypted_k_at_i.size(), kCamenischShoupVectorEncryptionLength);
-    EXPECT_EQ(decrypted_y_at_i.size(), kCamenischShoupVectorEncryptionLength);
+    EXPECT_EQ(decrypted_k_at_i.size(),
+              camenisch_shoup_vector_encryption_length_);
+    EXPECT_EQ(decrypted_y_at_i.size(),
+              camenisch_shoup_vector_encryption_length_);
 
-    for (int j = 0; j < kCamenischShoupVectorEncryptionLength; ++j) {
+    for (int j = 0; j < camenisch_shoup_vector_encryption_length_; ++j) {
       // Each should be equal to the secret key at the i'th position, and 0
       // elsewhere.
       if (j != i) {
@@ -333,11 +365,11 @@ TEST_F(BbObliviousSignatureTest, KeysEncryptsVectorOfSecret) {
   }
 }
 
-TEST_F(BbObliviousSignatureTest, GeneratesDistinctYAndK) {
+TEST_P(BbObliviousSignatureTest, GeneratesDistinctYAndK) {
   EXPECT_NE(*k_, *y_);
 }
 
-TEST_F(BbObliviousSignatureTest, GeneratesDifferentKeys) {
+TEST_P(BbObliviousSignatureTest, GeneratesDifferentKeys) {
   proto::BbObliviousSignaturePublicKey other_public_key_proto;
   proto::BbObliviousSignaturePrivateKey other_private_key_proto;
   ASSERT_OK_AND_ASSIGN(
@@ -348,13 +380,27 @@ TEST_F(BbObliviousSignatureTest, GeneratesDifferentKeys) {
   EXPECT_NE(private_key_proto_.y(), other_private_key_proto.y());
 }
 
-// Test for too many messages as input to request is skipped because Pedersen
-// fails when computing the commitment on too many messages.
+TEST_P(BbObliviousSignatureTest, RequestFailsWhenNumMessagesTooLarge) {
+  std::vector<BigNum> messages = GenerateRandomMessages(num_messages_);
+  ASSERT_OK_AND_ASSIGN(Transcript transcript, GenerateTranscript(messages));
 
-TEST_F(BbObliviousSignatureTest,
+  // Change messages to have one extra message (note that the messages vector is
+  // inconsistent with the commitment, which is just for the purposes of this
+  // test).
+  messages.push_back(ctx_.Three());
+
+  // Generating the request should fail.
+  EXPECT_THAT(
+      bb_ob_sig_->GenerateRequestAndProof(
+          messages, transcript.rs, public_key_proto_,
+          *transcript.commit_and_open_messages, *transcript.commit_and_open_rs),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("messages has size")));
+}
+
+TEST_P(BbObliviousSignatureTest,
        RequestFailsWhenRsHasDifferentLengthFromMessages) {
-  std::vector<BigNum> messages = {ctx_.CreateBigNum(0), ctx_.CreateBigNum(1),
-                                  ctx_.CreateBigNum(5)};
+  std::vector<BigNum> messages = GenerateRandomMessages(num_messages_);
   ASSERT_OK_AND_ASSIGN(Transcript transcript, GenerateTranscript(messages));
 
   // Change rs to have one less message, and recommit.
@@ -374,19 +420,18 @@ TEST_F(BbObliviousSignatureTest,
       StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("rs has size")));
 }
 
-TEST_F(BbObliviousSignatureTest, RequestsAreDifferent) {
-  std::vector<BigNum> messages = {ctx_.CreateBigNum(0), ctx_.CreateBigNum(1),
-                                  ctx_.CreateBigNum(5)};
+TEST_P(BbObliviousSignatureTest, RequestsAreDifferent) {
+  std::vector<BigNum> messages = GenerateRandomMessages(num_messages_);
   ASSERT_OK_AND_ASSIGN(Transcript transcript_1, GenerateTranscript(messages));
   ASSERT_OK_AND_ASSIGN(Transcript transcript_2, GenerateTranscript(messages));
 
-  EXPECT_NE(transcript_1.request_proto.encrypted_masked_messages().u(),
-            transcript_2.request_proto.encrypted_masked_messages().u());
+  EXPECT_NE(
+      transcript_1.request_proto.repeated_encrypted_masked_messages(0).u(),
+      transcript_2.request_proto.repeated_encrypted_masked_messages(0).u());
 }
 
-TEST_F(BbObliviousSignatureTest, ResponseFailsWhenNumMessagesIsTooLarge) {
-  std::vector<BigNum> messages = {ctx_.CreateBigNum(0), ctx_.CreateBigNum(1),
-                                  ctx_.CreateBigNum(5)};
+TEST_P(BbObliviousSignatureTest, ResponseFailsWhenNumMessagesIsTooLarge) {
+  std::vector<BigNum> messages = GenerateRandomMessages(num_messages_);
   ASSERT_OK_AND_ASSIGN(Transcript transcript, GenerateTranscript(messages));
 
   transcript.request_proto.set_num_messages(messages.size() + 1);
@@ -401,11 +446,10 @@ TEST_F(BbObliviousSignatureTest, ResponseFailsWhenNumMessagesIsTooLarge) {
       StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("num_messages")));
 }
 
-TEST_F(BbObliviousSignatureTest, ResponsesFromDifferentRequestsAreDifferent) {
+TEST_P(BbObliviousSignatureTest, ResponsesFromDifferentRequestsAreDifferent) {
   // Responses are actually generated deterministically from requests, so this
   // test is implicitly testing that the requests used different randomness.
-  std::vector<BigNum> messages = {ctx_.CreateBigNum(0), ctx_.CreateBigNum(1),
-                                  ctx_.CreateBigNum(5)};
+  std::vector<BigNum> messages = GenerateRandomMessages(num_messages_);
   ASSERT_OK_AND_ASSIGN(Transcript transcript_1, GenerateTranscript(messages));
   ASSERT_OK_AND_ASSIGN(Transcript transcript_2, GenerateTranscript(messages));
 
@@ -419,9 +463,43 @@ TEST_F(BbObliviousSignatureTest, ResponsesFromDifferentRequestsAreDifferent) {
 // Verify Request tests
 ////////////////////////////////////////////////////////////////////////////////
 
-TEST_F(BbObliviousSignatureTest, RequestProofSucceeds) {
-  std::vector<BigNum> messages = {ctx_.CreateBigNum(0), ctx_.CreateBigNum(1),
-                                  ctx_.CreateBigNum(5)};
+TEST_P(BbObliviousSignatureTest,
+       VerifyRequestFailsWhenNumMessagesTooLargeForPedersen) {
+  std::vector<BigNum> messages = GenerateRandomMessages(num_messages_);
+  ASSERT_OK_AND_ASSIGN(Transcript transcript, GenerateTranscript(messages));
+
+  // Modify num_messages to be too large.
+  transcript.request_proto.set_num_messages(num_messages_ + 1);
+
+  EXPECT_THAT(
+      bb_ob_sig_->VerifyRequest(public_key_proto_, transcript.request_proto,
+                                transcript.request_proof_proto,
+                                transcript.commit_and_open_messages->commitment,
+                                transcript.commit_and_open_rs->commitment),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("messages has size")));
+}
+
+TEST_P(BbObliviousSignatureTest,
+       VerifyRequestFailsWithEncryptedMaskedMessagesOfWrongSize) {
+  std::vector<BigNum> messages = GenerateRandomMessages(num_messages_);
+  ASSERT_OK_AND_ASSIGN(Transcript transcript, GenerateTranscript(messages));
+
+  // Remove one of the encrypted_masked_messages.
+  transcript.request_proto.mutable_repeated_encrypted_masked_messages()
+      ->RemoveLast();
+
+  EXPECT_THAT(
+      bb_ob_sig_->VerifyRequest(public_key_proto_, transcript.request_proto,
+                                transcript.request_proof_proto,
+                                transcript.commit_and_open_messages->commitment,
+                                transcript.commit_and_open_rs->commitment),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("number of ciphertexts")));
+}
+
+TEST_P(BbObliviousSignatureTest, RequestProofSucceeds) {
+  std::vector<BigNum> messages = GenerateRandomMessages(num_messages_);
   ASSERT_OK_AND_ASSIGN(Transcript transcript, GenerateTranscript(messages));
 
   EXPECT_OK(
@@ -431,9 +509,8 @@ TEST_F(BbObliviousSignatureTest, RequestProofSucceeds) {
                                 transcript.commit_and_open_rs->commitment));
 }
 
-TEST_F(BbObliviousSignatureTest, RequestChallengeIsBounded) {
-  std::vector<BigNum> messages = {ctx_.CreateBigNum(0), ctx_.CreateBigNum(1),
-                                  ctx_.CreateBigNum(5)};
+TEST_P(BbObliviousSignatureTest, RequestChallengeIsBounded) {
+  std::vector<BigNum> messages = GenerateRandomMessages(num_messages_);
 
   ASSERT_OK_AND_ASSIGN(auto transcript, GenerateTranscript(messages));
 
@@ -441,9 +518,8 @@ TEST_F(BbObliviousSignatureTest, RequestChallengeIsBounded) {
             ctx_.One().Lshift(kChallengeLengthBits));
 }
 
-TEST_F(BbObliviousSignatureTest, RequestChallengeChangesIfRoPrefixIsChanged) {
-  std::vector<BigNum> messages = {ctx_.CreateBigNum(0), ctx_.CreateBigNum(1),
-                                  ctx_.CreateBigNum(5)};
+TEST_P(BbObliviousSignatureTest, RequestChallengeChangesIfRoPrefixIsChanged) {
+  std::vector<BigNum> messages = GenerateRandomMessages(num_messages_);
 
   ASSERT_OK_AND_ASSIGN(auto transcript, GenerateTranscript(messages));
 
@@ -464,34 +540,24 @@ TEST_F(BbObliviousSignatureTest, RequestChallengeChangesIfRoPrefixIsChanged) {
       StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("challenge")));
 }
 
-TEST_F(BbObliviousSignatureTest,
+TEST_P(BbObliviousSignatureTest,
        RequestProofFromDifferentRequestHasDifferentChallenge) {
-  ASSERT_OK_AND_ASSIGN(
-      auto transcript_1,
-      GenerateTranscript(
-          {ctx_.CreateBigNum(0), ctx_.CreateBigNum(1), ctx_.CreateBigNum(5)}));
+  std::vector<BigNum> messages = GenerateRandomMessages(num_messages_);
+  ASSERT_OK_AND_ASSIGN(auto transcript_1, GenerateTranscript(messages));
 
   // Generate a second transcript
-  ASSERT_OK_AND_ASSIGN(
-      auto transcript_2,
-      GenerateTranscript(
-          {ctx_.CreateBigNum(3), ctx_.CreateBigNum(7), ctx_.CreateBigNum(9)}));
+  ASSERT_OK_AND_ASSIGN(auto transcript_2, GenerateTranscript(messages));
 
   EXPECT_NE(transcript_1.request_proof_proto.challenge(),
             transcript_2.request_proof_proto.challenge());
 }
 
-TEST_F(BbObliviousSignatureTest, RquestProofFromDifferentRequestFails) {
-  ASSERT_OK_AND_ASSIGN(
-      auto transcript_1,
-      GenerateTranscript(
-          {ctx_.CreateBigNum(0), ctx_.CreateBigNum(1), ctx_.CreateBigNum(5)}));
+TEST_P(BbObliviousSignatureTest, RquestProofFromDifferentRequestFails) {
+  std::vector<BigNum> messages = GenerateRandomMessages(num_messages_);
+  ASSERT_OK_AND_ASSIGN(auto transcript_1, GenerateTranscript(messages));
 
   // Generate a second transcript
-  ASSERT_OK_AND_ASSIGN(
-      auto transcript_2,
-      GenerateTranscript(
-          {ctx_.CreateBigNum(3), ctx_.CreateBigNum(7), ctx_.CreateBigNum(9)}));
+  ASSERT_OK_AND_ASSIGN(auto transcript_2, GenerateTranscript(messages));
 
   // Use the request proof from the first request to validate the second.
   // Expect the verification to fail.
@@ -504,9 +570,8 @@ TEST_F(BbObliviousSignatureTest, RquestProofFromDifferentRequestFails) {
                        HasSubstr("VerifyRequest: Failed")));
 }
 
-TEST_F(BbObliviousSignatureTest, RequestProofFailsWithCommitAsOfWrongSize) {
-  std::vector<BigNum> messages = {ctx_.CreateBigNum(0), ctx_.CreateBigNum(1),
-                                  ctx_.CreateBigNum(5)};
+TEST_P(BbObliviousSignatureTest, RequestProofFailsWithCommitAsOfWrongSize) {
+  std::vector<BigNum> messages = GenerateRandomMessages(num_messages_);
   ASSERT_OK_AND_ASSIGN(Transcript transcript, GenerateTranscript(messages));
 
   // Remove one of the commit_as.
@@ -522,10 +587,9 @@ TEST_F(BbObliviousSignatureTest, RequestProofFailsWithCommitAsOfWrongSize) {
       StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("commit_as")));
 }
 
-TEST_F(BbObliviousSignatureTest,
+TEST_P(BbObliviousSignatureTest,
        RequestProofFailsWithMaskedDummyMessagesOfWrongSize) {
-  std::vector<BigNum> messages = {ctx_.CreateBigNum(0), ctx_.CreateBigNum(1),
-                                  ctx_.CreateBigNum(5)};
+  std::vector<BigNum> messages = GenerateRandomMessages(num_messages_);
   ASSERT_OK_AND_ASSIGN(Transcript transcript, GenerateTranscript(messages));
 
   // Remove one of the masked_dummy_messages.
@@ -543,10 +607,9 @@ TEST_F(BbObliviousSignatureTest,
                HasSubstr("masked_dummy_messages")));
 }
 
-TEST_F(BbObliviousSignatureTest,
+TEST_P(BbObliviousSignatureTest,
        RequestProofFailsWithMaskedDummyRsOfWrongSize) {
-  std::vector<BigNum> messages = {ctx_.CreateBigNum(0), ctx_.CreateBigNum(1),
-                                  ctx_.CreateBigNum(5)};
+  std::vector<BigNum> messages = GenerateRandomMessages(num_messages_);
   ASSERT_OK_AND_ASSIGN(Transcript transcript, GenerateTranscript(messages));
 
   // Remove one of the masked_dummy_rs.
@@ -564,10 +627,9 @@ TEST_F(BbObliviousSignatureTest,
                HasSubstr("masked_dummy_rs")));
 }
 
-TEST_F(BbObliviousSignatureTest,
+TEST_P(BbObliviousSignatureTest,
        RequestProofFailsWithMaskedDummyAsOfWrongSize) {
-  std::vector<BigNum> messages = {ctx_.CreateBigNum(0), ctx_.CreateBigNum(1),
-                                  ctx_.CreateBigNum(5)};
+  std::vector<BigNum> messages = GenerateRandomMessages(num_messages_);
   ASSERT_OK_AND_ASSIGN(Transcript transcript, GenerateTranscript(messages));
 
   // Remove one of the masked_dummy_as.
@@ -585,10 +647,9 @@ TEST_F(BbObliviousSignatureTest,
                HasSubstr("masked_dummy_as")));
 }
 
-TEST_F(BbObliviousSignatureTest,
+TEST_P(BbObliviousSignatureTest,
        RequestProofFailsWithMaskedDummyBsOfWrongSize) {
-  std::vector<BigNum> messages = {ctx_.CreateBigNum(0), ctx_.CreateBigNum(1),
-                                  ctx_.CreateBigNum(5)};
+  std::vector<BigNum> messages = GenerateRandomMessages(num_messages_);
   ASSERT_OK_AND_ASSIGN(Transcript transcript, GenerateTranscript(messages));
 
   // Remove one of the masked_dummy_bs.
@@ -606,10 +667,9 @@ TEST_F(BbObliviousSignatureTest,
                HasSubstr("masked_dummy_bs")));
 }
 
-TEST_F(BbObliviousSignatureTest,
+TEST_P(BbObliviousSignatureTest,
        RequestProofFailsWithMaskedDummyAlphasOfWrongSize) {
-  std::vector<BigNum> messages = {ctx_.CreateBigNum(0), ctx_.CreateBigNum(1),
-                                  ctx_.CreateBigNum(5)};
+  std::vector<BigNum> messages = GenerateRandomMessages(num_messages_);
   ASSERT_OK_AND_ASSIGN(Transcript transcript, GenerateTranscript(messages));
 
   // Remove one of the masked_dummy_alphas.
@@ -627,10 +687,9 @@ TEST_F(BbObliviousSignatureTest,
                HasSubstr("masked_dummy_alphas")));
 }
 
-TEST_F(BbObliviousSignatureTest,
+TEST_P(BbObliviousSignatureTest,
        RequestProofFailsWithMaskedDummyGammasOfWrongSize) {
-  std::vector<BigNum> messages = {ctx_.CreateBigNum(0), ctx_.CreateBigNum(1),
-                                  ctx_.CreateBigNum(5)};
+  std::vector<BigNum> messages = GenerateRandomMessages(num_messages_);
   ASSERT_OK_AND_ASSIGN(Transcript transcript, GenerateTranscript(messages));
 
   // Remove one of the masked_dummy_gammas.
@@ -648,9 +707,28 @@ TEST_F(BbObliviousSignatureTest,
                HasSubstr("masked_dummy_gammas")));
 }
 
-TEST_F(BbObliviousSignatureTest, RequestProofFailsWithWrongCommitBs) {
-  std::vector<BigNum> messages = {ctx_.CreateBigNum(0), ctx_.CreateBigNum(1),
-                                  ctx_.CreateBigNum(5)};
+TEST_P(BbObliviousSignatureTest,
+       RequestProofFailsWithMaskedDummyEncryptionRandomnessOfWrongSize) {
+  std::vector<BigNum> messages = GenerateRandomMessages(num_messages_);
+  ASSERT_OK_AND_ASSIGN(Transcript transcript, GenerateTranscript(messages));
+
+  // Remove one of the encrypted_masked_messages.
+  transcript.request_proof_proto.mutable_message_2()
+      ->mutable_masked_dummy_encryption_randomness_per_ciphertext()
+      ->mutable_serialized_big_nums()
+      ->RemoveLast();
+
+  EXPECT_THAT(
+      bb_ob_sig_->VerifyRequest(public_key_proto_, transcript.request_proto,
+                                transcript.request_proof_proto,
+                                transcript.commit_and_open_messages->commitment,
+                                transcript.commit_and_open_rs->commitment),
+      StatusIs(absl::StatusCode::kInvalidArgument,
+               HasSubstr("masked_dummy_encryption_randomness")));
+}
+
+TEST_P(BbObliviousSignatureTest, RequestProofFailsWithWrongCommitBs) {
+  std::vector<BigNum> messages = GenerateRandomMessages(num_messages_);
   ASSERT_OK_AND_ASSIGN(Transcript transcript, GenerateTranscript(messages));
   ASSERT_OK_AND_ASSIGN(Transcript transcript_2, GenerateTranscript(messages));
 
@@ -666,9 +744,8 @@ TEST_F(BbObliviousSignatureTest, RequestProofFailsWithWrongCommitBs) {
       StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("Failed")));
 }
 
-TEST_F(BbObliviousSignatureTest, RequestProofFailsWithWrongCommitAlphas) {
-  std::vector<BigNum> messages = {ctx_.CreateBigNum(0), ctx_.CreateBigNum(1),
-                                  ctx_.CreateBigNum(5)};
+TEST_P(BbObliviousSignatureTest, RequestProofFailsWithWrongCommitAlphas) {
+  std::vector<BigNum> messages = GenerateRandomMessages(num_messages_);
   ASSERT_OK_AND_ASSIGN(Transcript transcript, GenerateTranscript(messages));
   ASSERT_OK_AND_ASSIGN(Transcript transcript_2, GenerateTranscript(messages));
 
@@ -684,9 +761,8 @@ TEST_F(BbObliviousSignatureTest, RequestProofFailsWithWrongCommitAlphas) {
       StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("Failed")));
 }
 
-TEST_F(BbObliviousSignatureTest, RequestProofFailsWithWrongCommitGammas) {
-  std::vector<BigNum> messages = {ctx_.CreateBigNum(0), ctx_.CreateBigNum(1),
-                                  ctx_.CreateBigNum(5)};
+TEST_P(BbObliviousSignatureTest, RequestProofFailsWithWrongCommitGammas) {
+  std::vector<BigNum> messages = GenerateRandomMessages(num_messages_);
   ASSERT_OK_AND_ASSIGN(Transcript transcript, GenerateTranscript(messages));
   ASSERT_OK_AND_ASSIGN(Transcript transcript_2, GenerateTranscript(messages));
 
@@ -702,9 +778,8 @@ TEST_F(BbObliviousSignatureTest, RequestProofFailsWithWrongCommitGammas) {
       StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("Failed")));
 }
 
-TEST_F(BbObliviousSignatureTest, RequestProofFailsWithWrongChallenge) {
-  std::vector<BigNum> messages = {ctx_.CreateBigNum(0), ctx_.CreateBigNum(1),
-                                  ctx_.CreateBigNum(5)};
+TEST_P(BbObliviousSignatureTest, RequestProofFailsWithWrongChallenge) {
+  std::vector<BigNum> messages = GenerateRandomMessages(num_messages_);
   ASSERT_OK_AND_ASSIGN(Transcript transcript, GenerateTranscript(messages));
   ASSERT_OK_AND_ASSIGN(Transcript transcript_2, GenerateTranscript(messages));
 
@@ -720,10 +795,9 @@ TEST_F(BbObliviousSignatureTest, RequestProofFailsWithWrongChallenge) {
       StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("Failed")));
 }
 
-TEST_F(BbObliviousSignatureTest,
+TEST_P(BbObliviousSignatureTest,
        RequestProofFailsWithWrongMaskedDummyMessages) {
-  std::vector<BigNum> messages = {ctx_.CreateBigNum(0), ctx_.CreateBigNum(1),
-                                  ctx_.CreateBigNum(5)};
+  std::vector<BigNum> messages = GenerateRandomMessages(num_messages_);
   ASSERT_OK_AND_ASSIGN(Transcript transcript, GenerateTranscript(messages));
   ASSERT_OK_AND_ASSIGN(Transcript transcript_2, GenerateTranscript(messages));
 
@@ -741,9 +815,8 @@ TEST_F(BbObliviousSignatureTest,
       StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("Failed")));
 }
 
-TEST_F(BbObliviousSignatureTest, RequestProofFailsWithWrongMaskedDummyRs) {
-  std::vector<BigNum> messages = {ctx_.CreateBigNum(0), ctx_.CreateBigNum(1),
-                                  ctx_.CreateBigNum(5)};
+TEST_P(BbObliviousSignatureTest, RequestProofFailsWithWrongMaskedDummyRs) {
+  std::vector<BigNum> messages = GenerateRandomMessages(num_messages_);
   ASSERT_OK_AND_ASSIGN(Transcript transcript, GenerateTranscript(messages));
   ASSERT_OK_AND_ASSIGN(Transcript transcript_2, GenerateTranscript(messages));
 
@@ -761,9 +834,8 @@ TEST_F(BbObliviousSignatureTest, RequestProofFailsWithWrongMaskedDummyRs) {
       StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("Failed")));
 }
 
-TEST_F(BbObliviousSignatureTest, RequestProofFailsWithWrongMaskedDummyAs) {
-  std::vector<BigNum> messages = {ctx_.CreateBigNum(0), ctx_.CreateBigNum(1),
-                                  ctx_.CreateBigNum(5)};
+TEST_P(BbObliviousSignatureTest, RequestProofFailsWithWrongMaskedDummyAs) {
+  std::vector<BigNum> messages = GenerateRandomMessages(num_messages_);
   ASSERT_OK_AND_ASSIGN(Transcript transcript, GenerateTranscript(messages));
   ASSERT_OK_AND_ASSIGN(Transcript transcript_2, GenerateTranscript(messages));
 
@@ -781,9 +853,8 @@ TEST_F(BbObliviousSignatureTest, RequestProofFailsWithWrongMaskedDummyAs) {
       StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("Failed")));
 }
 
-TEST_F(BbObliviousSignatureTest, RequestProofFailsWithWrongMaskedDummyBs) {
-  std::vector<BigNum> messages = {ctx_.CreateBigNum(0), ctx_.CreateBigNum(1),
-                                  ctx_.CreateBigNum(5)};
+TEST_P(BbObliviousSignatureTest, RequestProofFailsWithWrongMaskedDummyBs) {
+  std::vector<BigNum> messages = GenerateRandomMessages(num_messages_);
   ASSERT_OK_AND_ASSIGN(Transcript transcript, GenerateTranscript(messages));
   ASSERT_OK_AND_ASSIGN(Transcript transcript_2, GenerateTranscript(messages));
 
@@ -801,9 +872,8 @@ TEST_F(BbObliviousSignatureTest, RequestProofFailsWithWrongMaskedDummyBs) {
       StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("Failed")));
 }
 
-TEST_F(BbObliviousSignatureTest, RequestProofFailsWithWrongMaskedDummyAlphas) {
-  std::vector<BigNum> messages = {ctx_.CreateBigNum(0), ctx_.CreateBigNum(1),
-                                  ctx_.CreateBigNum(5)};
+TEST_P(BbObliviousSignatureTest, RequestProofFailsWithWrongMaskedDummyAlphas) {
+  std::vector<BigNum> messages = GenerateRandomMessages(num_messages_);
   ASSERT_OK_AND_ASSIGN(Transcript transcript, GenerateTranscript(messages));
   ASSERT_OK_AND_ASSIGN(Transcript transcript_2, GenerateTranscript(messages));
 
@@ -821,9 +891,8 @@ TEST_F(BbObliviousSignatureTest, RequestProofFailsWithWrongMaskedDummyAlphas) {
       StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("Failed")));
 }
 
-TEST_F(BbObliviousSignatureTest, RequestProofFailsWithWrongMaskedDummyGammas) {
-  std::vector<BigNum> messages = {ctx_.CreateBigNum(0), ctx_.CreateBigNum(1),
-                                  ctx_.CreateBigNum(5)};
+TEST_P(BbObliviousSignatureTest, RequestProofFailsWithWrongMaskedDummyGammas) {
+  std::vector<BigNum> messages = GenerateRandomMessages(num_messages_);
   ASSERT_OK_AND_ASSIGN(Transcript transcript, GenerateTranscript(messages));
   ASSERT_OK_AND_ASSIGN(Transcript transcript_2, GenerateTranscript(messages));
 
@@ -841,10 +910,9 @@ TEST_F(BbObliviousSignatureTest, RequestProofFailsWithWrongMaskedDummyGammas) {
       StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("Failed")));
 }
 
-TEST_F(BbObliviousSignatureTest,
+TEST_P(BbObliviousSignatureTest,
        RequestProofFailsWithWrongMaskedDummyMessagesOpening) {
-  std::vector<BigNum> messages = {ctx_.CreateBigNum(0), ctx_.CreateBigNum(1),
-                                  ctx_.CreateBigNum(5)};
+  std::vector<BigNum> messages = GenerateRandomMessages(num_messages_);
   ASSERT_OK_AND_ASSIGN(Transcript transcript, GenerateTranscript(messages));
   ASSERT_OK_AND_ASSIGN(Transcript transcript_2, GenerateTranscript(messages));
 
@@ -863,10 +931,9 @@ TEST_F(BbObliviousSignatureTest,
       StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("Failed")));
 }
 
-TEST_F(BbObliviousSignatureTest,
+TEST_P(BbObliviousSignatureTest,
        RequestProofFailsWithWrongMaskedDummyRsOpening) {
-  std::vector<BigNum> messages = {ctx_.CreateBigNum(0), ctx_.CreateBigNum(1),
-                                  ctx_.CreateBigNum(5)};
+  std::vector<BigNum> messages = GenerateRandomMessages(num_messages_);
   ASSERT_OK_AND_ASSIGN(Transcript transcript, GenerateTranscript(messages));
   ASSERT_OK_AND_ASSIGN(Transcript transcript_2, GenerateTranscript(messages));
 
@@ -884,10 +951,9 @@ TEST_F(BbObliviousSignatureTest,
       StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("Failed")));
 }
 
-TEST_F(BbObliviousSignatureTest,
+TEST_P(BbObliviousSignatureTest,
        RequestProofFailsWithWrongMaskedDummyAsOpening) {
-  std::vector<BigNum> messages = {ctx_.CreateBigNum(0), ctx_.CreateBigNum(1),
-                                  ctx_.CreateBigNum(5)};
+  std::vector<BigNum> messages = GenerateRandomMessages(num_messages_);
   ASSERT_OK_AND_ASSIGN(Transcript transcript, GenerateTranscript(messages));
   ASSERT_OK_AND_ASSIGN(Transcript transcript_2, GenerateTranscript(messages));
 
@@ -905,10 +971,9 @@ TEST_F(BbObliviousSignatureTest,
       StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("Failed")));
 }
 
-TEST_F(BbObliviousSignatureTest,
+TEST_P(BbObliviousSignatureTest,
        RequestProofFailsWithWrongMaskedDummyBsOpening) {
-  std::vector<BigNum> messages = {ctx_.CreateBigNum(0), ctx_.CreateBigNum(1),
-                                  ctx_.CreateBigNum(5)};
+  std::vector<BigNum> messages = GenerateRandomMessages(num_messages_);
   ASSERT_OK_AND_ASSIGN(Transcript transcript, GenerateTranscript(messages));
   ASSERT_OK_AND_ASSIGN(Transcript transcript_2, GenerateTranscript(messages));
 
@@ -926,10 +991,9 @@ TEST_F(BbObliviousSignatureTest,
       StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("Failed")));
 }
 
-TEST_F(BbObliviousSignatureTest,
+TEST_P(BbObliviousSignatureTest,
        RequestProofFailsWithWrongMaskedDummyAlphasOpening1) {
-  std::vector<BigNum> messages = {ctx_.CreateBigNum(0), ctx_.CreateBigNum(1),
-                                  ctx_.CreateBigNum(5)};
+  std::vector<BigNum> messages = GenerateRandomMessages(num_messages_);
   ASSERT_OK_AND_ASSIGN(Transcript transcript, GenerateTranscript(messages));
   ASSERT_OK_AND_ASSIGN(Transcript transcript_2, GenerateTranscript(messages));
 
@@ -948,10 +1012,9 @@ TEST_F(BbObliviousSignatureTest,
       StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("Failed")));
 }
 
-TEST_F(BbObliviousSignatureTest,
+TEST_P(BbObliviousSignatureTest,
        RequestProofFailsWithWrongMaskedDummyAlphasOpening2) {
-  std::vector<BigNum> messages = {ctx_.CreateBigNum(0), ctx_.CreateBigNum(1),
-                                  ctx_.CreateBigNum(5)};
+  std::vector<BigNum> messages = GenerateRandomMessages(num_messages_);
   ASSERT_OK_AND_ASSIGN(Transcript transcript, GenerateTranscript(messages));
   ASSERT_OK_AND_ASSIGN(Transcript transcript_2, GenerateTranscript(messages));
 
@@ -970,10 +1033,9 @@ TEST_F(BbObliviousSignatureTest,
       StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("Failed")));
 }
 
-TEST_F(BbObliviousSignatureTest,
+TEST_P(BbObliviousSignatureTest,
        RequestProofFailsWithWrongMaskedDummyGammasOpening1) {
-  std::vector<BigNum> messages = {ctx_.CreateBigNum(0), ctx_.CreateBigNum(1),
-                                  ctx_.CreateBigNum(5)};
+  std::vector<BigNum> messages = GenerateRandomMessages(num_messages_);
   ASSERT_OK_AND_ASSIGN(Transcript transcript, GenerateTranscript(messages));
   ASSERT_OK_AND_ASSIGN(Transcript transcript_2, GenerateTranscript(messages));
 
@@ -992,10 +1054,9 @@ TEST_F(BbObliviousSignatureTest,
       StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("Failed")));
 }
 
-TEST_F(BbObliviousSignatureTest,
+TEST_P(BbObliviousSignatureTest,
        RequestProofFailsWithWrongMaskedDummyGammasOpening2) {
-  std::vector<BigNum> messages = {ctx_.CreateBigNum(0), ctx_.CreateBigNum(1),
-                                  ctx_.CreateBigNum(5)};
+  std::vector<BigNum> messages = GenerateRandomMessages(num_messages_);
   ASSERT_OK_AND_ASSIGN(Transcript transcript, GenerateTranscript(messages));
   ASSERT_OK_AND_ASSIGN(Transcript transcript_2, GenerateTranscript(messages));
 
@@ -1014,19 +1075,18 @@ TEST_F(BbObliviousSignatureTest,
       StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("Failed")));
 }
 
-TEST_F(BbObliviousSignatureTest,
+TEST_P(BbObliviousSignatureTest,
        RequestProofFailsWithWrongMaskedDummyEncryptionRandomness) {
-  std::vector<BigNum> messages = {ctx_.CreateBigNum(0), ctx_.CreateBigNum(1),
-                                  ctx_.CreateBigNum(5)};
+  std::vector<BigNum> messages = GenerateRandomMessages(num_messages_);
   ASSERT_OK_AND_ASSIGN(Transcript transcript, GenerateTranscript(messages));
   ASSERT_OK_AND_ASSIGN(Transcript transcript_2, GenerateTranscript(messages));
 
   // Replace masked_dummy_encryption_randomness in the first transcript with
   // that from the second.
-  transcript.request_proof_proto.mutable_message_2()
-      ->set_masked_dummy_encryption_randomness(
-          transcript_2.request_proof_proto.message_2()
-              .masked_dummy_encryption_randomness());
+  *transcript.request_proof_proto.mutable_message_2()
+       ->mutable_masked_dummy_encryption_randomness_per_ciphertext() =
+      transcript_2.request_proof_proto.message_2()
+          .masked_dummy_encryption_randomness_per_ciphertext();
 
   EXPECT_THAT(
       bb_ob_sig_->VerifyRequest(public_key_proto_, transcript.request_proto,
@@ -1036,7 +1096,7 @@ TEST_F(BbObliviousSignatureTest,
       StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("Failed")));
 }
 
-TEST_F(BbObliviousSignatureTest, RequestProofFailsWithEnormousMessages) {
+TEST_P(BbObliviousSignatureTest, RequestProofFailsWithEnormousMessages) {
   BigNum large_message =
       ec_group_->GetOrder() *
       ec_group_->GetOrder().Lshift(
@@ -1056,9 +1116,8 @@ TEST_F(BbObliviousSignatureTest, RequestProofFailsWithEnormousMessages) {
 // Verify Response tests
 ////////////////////////////////////////////////////////////////////////////////
 
-TEST_F(BbObliviousSignatureTest, ResponseProofSucceeds) {
-  std::vector<BigNum> messages = {ctx_.CreateBigNum(0), ctx_.CreateBigNum(1),
-                                  ctx_.CreateBigNum(5)};
+TEST_P(BbObliviousSignatureTest, ResponseProofSucceeds) {
+  std::vector<BigNum> messages = GenerateRandomMessages(num_messages_);
   ASSERT_OK_AND_ASSIGN(Transcript transcript, GenerateTranscript(messages));
 
   EXPECT_OK(bb_ob_sig_->VerifyResponse(
@@ -1068,9 +1127,8 @@ TEST_F(BbObliviousSignatureTest, ResponseProofSucceeds) {
       transcript.commit_and_open_rs->commitment));
 }
 
-TEST_F(BbObliviousSignatureTest, ResponseChallengeIsBounded) {
-  std::vector<BigNum> messages = {ctx_.CreateBigNum(0), ctx_.CreateBigNum(1),
-                                  ctx_.CreateBigNum(5)};
+TEST_P(BbObliviousSignatureTest, ResponseChallengeIsBounded) {
+  std::vector<BigNum> messages = GenerateRandomMessages(num_messages_);
 
   ASSERT_OK_AND_ASSIGN(auto transcript, GenerateTranscript(messages));
 
@@ -1078,9 +1136,8 @@ TEST_F(BbObliviousSignatureTest, ResponseChallengeIsBounded) {
             ctx_.One().Lshift(kChallengeLengthBits));
 }
 
-TEST_F(BbObliviousSignatureTest, ResponseChallengeChangesIfRoPrefixIsChanged) {
-  std::vector<BigNum> messages = {ctx_.CreateBigNum(0), ctx_.CreateBigNum(1),
-                                  ctx_.CreateBigNum(5)};
+TEST_P(BbObliviousSignatureTest, ResponseChallengeChangesIfRoPrefixIsChanged) {
+  std::vector<BigNum> messages = GenerateRandomMessages(num_messages_);
 
   ASSERT_OK_AND_ASSIGN(auto transcript, GenerateTranscript(messages));
 
@@ -1101,34 +1158,26 @@ TEST_F(BbObliviousSignatureTest, ResponseChallengeChangesIfRoPrefixIsChanged) {
       StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("challenge")));
 }
 
-TEST_F(BbObliviousSignatureTest,
+TEST_P(BbObliviousSignatureTest,
        ResponseProofFromDifferentRequestHasDifferentChallenge) {
-  ASSERT_OK_AND_ASSIGN(
-      auto transcript_1,
-      GenerateTranscript(
-          {ctx_.CreateBigNum(0), ctx_.CreateBigNum(1), ctx_.CreateBigNum(5)}));
+  std::vector<BigNum> messages = GenerateRandomMessages(num_messages_);
+
+  ASSERT_OK_AND_ASSIGN(auto transcript_1, GenerateTranscript(messages));
 
   // Generate a second transcript
-  ASSERT_OK_AND_ASSIGN(
-      auto transcript_2,
-      GenerateTranscript(
-          {ctx_.CreateBigNum(3), ctx_.CreateBigNum(7), ctx_.CreateBigNum(9)}));
+  ASSERT_OK_AND_ASSIGN(auto transcript_2, GenerateTranscript(messages));
 
   EXPECT_NE(transcript_1.response_proof_proto.challenge(),
             transcript_2.response_proof_proto.challenge());
 }
 
-TEST_F(BbObliviousSignatureTest, ResponseProofFromDifferentRequestFails) {
-  ASSERT_OK_AND_ASSIGN(
-      auto transcript_1,
-      GenerateTranscript(
-          {ctx_.CreateBigNum(0), ctx_.CreateBigNum(1), ctx_.CreateBigNum(5)}));
+TEST_P(BbObliviousSignatureTest, ResponseProofFromDifferentRequestFails) {
+  std::vector<BigNum> messages = GenerateRandomMessages(num_messages_);
+
+  ASSERT_OK_AND_ASSIGN(auto transcript_1, GenerateTranscript(messages));
 
   // Generate a second transcript
-  ASSERT_OK_AND_ASSIGN(
-      auto transcript_2,
-      GenerateTranscript(
-          {ctx_.CreateBigNum(3), ctx_.CreateBigNum(7), ctx_.CreateBigNum(9)}));
+  ASSERT_OK_AND_ASSIGN(auto transcript_2, GenerateTranscript(messages));
 
   // Use the response proof from the first request to validate the second.
   // Expect the verification to fail.
@@ -1141,12 +1190,10 @@ TEST_F(BbObliviousSignatureTest, ResponseProofFromDifferentRequestFails) {
                        HasSubstr("VerifyResponse: Failed")));
 }
 
-TEST_F(BbObliviousSignatureTest,
+TEST_P(BbObliviousSignatureTest,
        ResponseProofFailsWithTooFewMaskedSignatureValues) {
-  ASSERT_OK_AND_ASSIGN(
-      auto transcript,
-      GenerateTranscript(
-          {ctx_.CreateBigNum(0), ctx_.CreateBigNum(1), ctx_.CreateBigNum(5)}));
+  std::vector<BigNum> messages = GenerateRandomMessages(num_messages_);
+  ASSERT_OK_AND_ASSIGN(auto transcript, GenerateTranscript(messages));
   // Remove one of the masked_signature_values.
   transcript.response_proto.mutable_masked_signature_values()
       ->mutable_serialized_ec_points()
@@ -1160,11 +1207,9 @@ TEST_F(BbObliviousSignatureTest,
                        HasSubstr("masked_signature_values")));
 }
 
-TEST_F(BbObliviousSignatureTest, ResponseProofFailsWithTooFewMaskedXs) {
-  ASSERT_OK_AND_ASSIGN(
-      auto transcript,
-      GenerateTranscript(
-          {ctx_.CreateBigNum(0), ctx_.CreateBigNum(1), ctx_.CreateBigNum(5)}));
+TEST_P(BbObliviousSignatureTest, ResponseProofFailsWithTooFewMaskedXs) {
+  std::vector<BigNum> messages = GenerateRandomMessages(num_messages_);
+  ASSERT_OK_AND_ASSIGN(auto transcript, GenerateTranscript(messages));
   // Remove one of the masked_xs.
   transcript.response_proof_proto.mutable_message_2()
       ->mutable_masked_dummy_camenisch_shoup_xs()
@@ -1179,11 +1224,9 @@ TEST_F(BbObliviousSignatureTest, ResponseProofFailsWithTooFewMaskedXs) {
                        HasSubstr("masked_dummy_camenisch_shoup_xs")));
 }
 
-TEST_F(BbObliviousSignatureTest, ResponseProofFailsWithTooFewMaskedBetas) {
-  ASSERT_OK_AND_ASSIGN(
-      auto transcript,
-      GenerateTranscript(
-          {ctx_.CreateBigNum(0), ctx_.CreateBigNum(1), ctx_.CreateBigNum(5)}));
+TEST_P(BbObliviousSignatureTest, ResponseProofFailsWithTooFewMaskedBetas) {
+  std::vector<BigNum> messages = GenerateRandomMessages(num_messages_);
+  ASSERT_OK_AND_ASSIGN(auto transcript, GenerateTranscript(messages));
   // Remove one of the masked_betas.
   transcript.response_proof_proto.mutable_message_2()
       ->mutable_masked_dummy_betas()
@@ -1198,17 +1241,13 @@ TEST_F(BbObliviousSignatureTest, ResponseProofFailsWithTooFewMaskedBetas) {
                        HasSubstr("masked_dummy_betas")));
 }
 
-TEST_F(BbObliviousSignatureTest, FailsWithWrongResponseProofCommitBetas) {
-  ASSERT_OK_AND_ASSIGN(
-      auto transcript_1,
-      GenerateTranscript(
-          {ctx_.CreateBigNum(0), ctx_.CreateBigNum(1), ctx_.CreateBigNum(5)}));
+TEST_P(BbObliviousSignatureTest, FailsWithWrongResponseProofCommitBetas) {
+  std::vector<BigNum> messages = GenerateRandomMessages(num_messages_);
+
+  ASSERT_OK_AND_ASSIGN(auto transcript_1, GenerateTranscript(messages));
 
   // Generate a second transcript
-  ASSERT_OK_AND_ASSIGN(
-      auto transcript_2,
-      GenerateTranscript(
-          {ctx_.CreateBigNum(3), ctx_.CreateBigNum(7), ctx_.CreateBigNum(9)}));
+  ASSERT_OK_AND_ASSIGN(auto transcript_2, GenerateTranscript(messages));
 
   // Use the commit_betas in response proof from the first request to
   // validate the second. Expect the verification to fail.
@@ -1224,7 +1263,7 @@ TEST_F(BbObliviousSignatureTest, FailsWithWrongResponseProofCommitBetas) {
                        HasSubstr("VerifyResponse: Failed")));
 }
 
-TEST_F(BbObliviousSignatureTest, ResponseProofFailsWithEnormousBeta) {
+TEST_P(BbObliviousSignatureTest, ResponseProofFailsWithEnormousBeta) {
   BigNum large_message =
       ec_group_->GetOrder() *
       ec_group_->GetOrder().Lshift(
@@ -1244,6 +1283,19 @@ TEST_F(BbObliviousSignatureTest, ResponseProofFailsWithEnormousBeta) {
           transcript.commit_and_open_rs->commitment),
       StatusIs(absl::StatusCode::kInvalidArgument, HasSubstr("larger")));
 }
+
+INSTANTIATE_TEST_SUITE_P(
+    BbObliviousSignatureTests, BbObliviousSignatureTest,
+    ::testing::ValuesIn<BbObliviousSignatureTestCase>({
+        {"pedersen_4_cs_4", /*num_messages=*/4, /*num_pedersen_bases=*/4,
+         /*camenisch_shoup_vector_encryption_length=*/4},
+        {"pedersen_4_cs_2", /*num_messages=*/4, /*num_pedersen_bases=*/4,
+         /*camenisch_shoup_vector_encryption_length=*/2},
+        {"pedersen_4_cs_3", /*num_messages=*/4, /*num_pedersen_bases=*/4,
+         /*camenisch_shoup_vector_encryption_length=*/3},
+    }),
+    [](const ::testing::TestParamInfo<BbObliviousSignatureTest::ParamType>&
+           info) { return info.param.name; });
 
 }  // namespace
 }  // namespace private_join_and_compute

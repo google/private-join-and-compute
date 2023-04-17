@@ -61,8 +61,13 @@ class DyVerifiableRandomFunction {
   // Generates a new public/private keypair for the DY VRF together with a proof
   // that each entry of the commitment is the same key.
   StatusOr<std::tuple<proto::DyVrfPublicKey, proto::DyVrfPrivateKey,
-                      std::unique_ptr<GenerateKeysProof>>>
+                      proto::DyVrfGenerateKeysProof>>
   GenerateKeyPair();
+
+  // Verifies that the public key has a bounded key, and commits to the same key
+  // in each component of the Pedersen batch commitment.
+  Status VerifyGenerateKeysProof(const proto::DyVrfPublicKey& public_key,
+                                 const proto::DyVrfGenerateKeysProof& proof);
 
   // Applies the DY VRF to a given batch of messages.
   StatusOr<std::vector<ECPoint>> Apply(
@@ -185,6 +190,12 @@ class DyVerifiableRandomFunction {
   StatusOr<DyVerifiableRandomFunction::ApplyProof::Message2>
   ParseDyVrfApplyProofMessage2Proto(
       Context* ctx, const proto::DyVrfApplyProof::Message2& message_2_proto);
+
+  // Generates the challenge for the GenerateKeysProof using the Fiat-Shamir
+  // heuristic.
+  StatusOr<BigNum> GenerateChallengeForGenerateKeysProof(
+      const proto::DyVrfGenerateKeysProof::Statement& statement,
+      const proto::DyVrfGenerateKeysProof::Message1& message_1);
 
   proto::DyVrfParameters parameters_proto_;
   Context* context_;

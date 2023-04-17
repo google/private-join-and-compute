@@ -71,7 +71,8 @@ class BbObliviousSignature {
  public:
   // Creates an object for producing Boneh-Boyen signatures. Fails if the
   // provided pointers are nullptr, or if the Pedersen commitment scheme is
-  // inconsistent with the Camenisch-Shoup encryption scheme.
+  // inconsistent with the Camenisch-Shoup encryption scheme. The max number
+  // of messages in a batch will be the Pedersen Batch size.
   static StatusOr<std::unique_ptr<BbObliviousSignature>> Create(
       proto::BbObliviousSignatureParameters parameters_proto, Context* ctx,
       ECGroup* ec_group, PublicCamenischShoup* public_camenisch_shoup,

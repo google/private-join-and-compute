@@ -54,9 +54,8 @@ DyVerifiableRandomFunction::Create(proto::DyVrfParameters parameters_proto,
       pedersen));
 }
 
-StatusOr<
-    std::tuple<proto::DyVrfPublicKey, proto::DyVrfPrivateKey,
-               std::unique_ptr<DyVerifiableRandomFunction::GenerateKeysProof>>>
+StatusOr<std::tuple<proto::DyVrfPublicKey, proto::DyVrfPrivateKey,
+                    proto::DyVrfGenerateKeysProof>>
 DyVerifiableRandomFunction::GenerateKeyPair() {
   // Generate a fresh key, and commit to it with respect to each Pedersen
   // generator.
@@ -67,22 +66,184 @@ DyVerifiableRandomFunction::GenerateKeyPair() {
                    pedersen_->Commit(std::vector<BigNum>(num_copies, key)));
 
   DyVerifiableRandomFunction::PublicKey public_key{
-      std::move(commit_and_open_key.commitment)  // commit_key
+      commit_and_open_key.commitment  // commit_key
   };
   DyVerifiableRandomFunction::PrivateKey private_key{
-      std::move(key),                         // key
-      std::move(commit_and_open_key.opening)  // open_key
+      key,                         // key
+      commit_and_open_key.opening  // open_key
   };
-
-  std::unique_ptr<GenerateKeysProof> empty_proof = nullptr;
 
   proto::DyVrfPublicKey public_key_proto = DyVrfPublicKeyToProto(public_key);
   proto::DyVrfPrivateKey private_key_proto =
       DyVrfPrivateKeyToProto(private_key);
 
+  // Generate the keys proof. This proof is a sigma protocol that proves
+  // knowledge of the key, and also that the same key has been committed in each
+  // component of the batched Pedersen commitment scheme. Furthermore, this
+  // proof shows that the key is bounded-with-slack, using the range proof
+  // feature of sigma protocols (i.e. checking the size of the masked dummy
+  // opening to the key). The proven bound on the key is ec_group_order *
+  // 2^(challenge_length + security_parameter).
+  //
+  // These properties are sufficient for the key to be safe for use downstream.
+  //
+  // As in all sigma protocols, this proof proceeds by the prover generating
+  // dummy values for all the secret exponents (here, these are the key and the
+  // commitment randomness), and then creating a dummy commitment to the key
+  // using the dummy values. The sigma protocol then hashes this dummy
+  // commitment together with the proof statement (i.e. the original commitment)
+  // to produce a challenge using the Fiat-Shamir heuristic. Given this
+  // challenge, the prover then sends the receiver "masked_dummy_values" as
+  // dummy_value + (challenge * real_value) for each of the secret exponents.
+  // The verifier can then use these masked_dummy_values to verify the proof.
+
+  // Generate dummy key and opening.
+  BigNum dummy_key_bound =
+      ec_group_->GetOrder().Lshift(parameters_proto_.challenge_length_bits() +
+                                   parameters_proto_.security_parameter());
+  BigNum dummy_opening_bound =
+      pedersen_->n().Lshift(parameters_proto_.challenge_length_bits() +
+                            parameters_proto_.security_parameter());
+  BigNum dummy_key = context_->GenerateRandLessThan(dummy_key_bound);
+  BigNum dummy_opening = context_->GenerateRandLessThan(dummy_opening_bound);
+  std::vector<BigNum> dummy_key_vector =
+      std::vector<BigNum>(num_copies, dummy_key);
+  ASSIGN_OR_RETURN(PedersenOverZn::Commitment dummy_commit_prf_key,
+                   pedersen_->CommitWithRand(dummy_key_vector, dummy_opening));
+
+  // Create Statement and first message, and generate the challenge.
+  proto::DyVrfGenerateKeysProof::Statement statement;
+  *statement.mutable_parameters() = parameters_proto_;
+  *statement.mutable_public_key() = public_key_proto;
+
+  proto::DyVrfGenerateKeysProof::Message1 message_1;
+  *message_1.mutable_dummy_commit_prf_key() = dummy_commit_prf_key.ToBytes();
+
+  ASSIGN_OR_RETURN(BigNum challenge,
+                   GenerateChallengeForGenerateKeysProof(statement, message_1));
+
+  // Create the masked_dummy_opening values.
+  BigNum masked_dummy_prf_key = dummy_key + (key.Mul(challenge));
+  BigNum masked_dummy_opening =
+      dummy_opening + (commit_and_open_key.opening.Mul(challenge));
+
+  // Package the values into the proof proto.
+  proto::DyVrfGenerateKeysProof generate_keys_proof;
+
+  generate_keys_proof.set_challenge(challenge.ToBytes());
+  generate_keys_proof.mutable_message_2()->set_masked_dummy_prf_key(
+      masked_dummy_prf_key.ToBytes());
+  generate_keys_proof.mutable_message_2()->set_masked_dummy_opening(
+      masked_dummy_opening.ToBytes());
+
   return {std::make_tuple(std::move(public_key_proto),
                           std::move(private_key_proto),
-                          std::move(empty_proof))};
+                          std::move(generate_keys_proof))};
+}
+
+// Verifies that the public key has a bounded key, and commits to the same key
+// in each component of the Pedersen batch commitment.
+Status DyVerifiableRandomFunction::VerifyGenerateKeysProof(
+    const proto::DyVrfPublicKey& public_key,
+    const proto::DyVrfGenerateKeysProof& proof) {
+  // Deserialize components of the public key and proof
+  BigNum commit_prf_key = context_->CreateBigNum(public_key.commit_prf_key());
+  BigNum challenge_from_proof = context_->CreateBigNum(proof.challenge());
+  BigNum masked_dummy_prf_key =
+      context_->CreateBigNum(proof.message_2().masked_dummy_prf_key());
+  BigNum masked_dummy_opening =
+      context_->CreateBigNum(proof.message_2().masked_dummy_opening());
+
+  // Verify the bounds on masked_dummy values
+  BigNum masked_dummy_prf_key_bound =
+      ec_group_->GetOrder().Lshift(parameters_proto_.challenge_length_bits() +
+                                   parameters_proto_.security_parameter() + 1);
+  if (masked_dummy_prf_key > masked_dummy_prf_key_bound) {
+    return absl::InvalidArgumentError(absl::StrCat(
+        "DyVerifiableRandomFunction::VerifyGenerateKeysProof: "
+        "masked_dummy_prf_key is larger than the bound. Supplied value: ",
+        masked_dummy_prf_key.ToDecimalString(),
+        ". bound: ", masked_dummy_prf_key_bound.ToDecimalString()));
+  }
+
+  // Regenerate dummy values from the masked_dummy values and the challenge in
+  // the proof.
+  std::vector<BigNum> masked_dummy_prf_key_vector =
+      std::vector<BigNum>(pedersen_->gs().size(), masked_dummy_prf_key);
+  ASSIGN_OR_RETURN(PedersenOverZn::Commitment masked_dummy_prf_key_commitment,
+                   pedersen_->CommitWithRand(masked_dummy_prf_key_vector,
+                                             masked_dummy_opening));
+
+  ASSIGN_OR_RETURN(PedersenOverZn::Commitment commit_keys_to_challenge_inverse,
+                   pedersen_->Multiply(commit_prf_key, challenge_from_proof)
+                       .ModInverse(pedersen_->n()));
+  PedersenOverZn::Commitment dummy_commit_prf_key = pedersen_->Add(
+      commit_keys_to_challenge_inverse, masked_dummy_prf_key_commitment);
+
+  // Regenerate the challenge and verify that it matches the challenge in the
+  // proof.
+  proto::DyVrfGenerateKeysProof::Statement statement;
+  proto::DyVrfGenerateKeysProof::Message1 message_1;
+
+  *statement.mutable_parameters() = parameters_proto_;
+  *statement.mutable_public_key() = public_key;
+
+  message_1.set_dummy_commit_prf_key(dummy_commit_prf_key.ToBytes());
+
+  ASSIGN_OR_RETURN(BigNum reconstructed_challenge,
+                   GenerateChallengeForGenerateKeysProof(statement, message_1));
+
+  if (reconstructed_challenge != challenge_from_proof) {
+    return absl::InvalidArgumentError(absl::StrCat(
+        "DyVerifiableRandomFunction::VerifyGenerateKeysProof: Failed to verify "
+        " proof. Challenge in proof (",
+        challenge_from_proof.ToDecimalString(),
+        ") does not match reconstructed challenge (",
+        reconstructed_challenge.ToDecimalString(), ")."));
+  }
+
+  return absl::OkStatus();
+}
+
+// Generates the challenge for the GenerateKeysProof using the Fiat-Shamir
+// heuristic.
+StatusOr<BigNum>
+DyVerifiableRandomFunction::GenerateChallengeForGenerateKeysProof(
+    const proto::DyVrfGenerateKeysProof::Statement& statement,
+    const proto::DyVrfGenerateKeysProof::Message1& message_1) {
+  // Note that the random oracle prefix is implicitly included as part of the
+  // parameters being serialized in the statement proto. We skip including it
+  // again here to avoid unnecessary duplication.
+  std::string challenge_string =
+      "DyVerifiableRandomFunction::GenerateChallengeForGenerateKeysProof";
+  auto challenge_sos =
+      std::make_unique<google::protobuf::io::StringOutputStream>(
+          &challenge_string);
+  auto challenge_cos =
+      std::make_unique<google::protobuf::io::CodedOutputStream>(
+          challenge_sos.get());
+  challenge_cos->SetSerializationDeterministic(true);
+  challenge_cos->WriteVarint64(statement.ByteSizeLong());
+  if (!statement.SerializeToCodedStream(challenge_cos.get())) {
+    return absl::InternalError(
+        "DyVerifiableRandomFunction::GenerateChallengeForGenerateKeysProof: "
+        "Failed to serialize statement.");
+  }
+  challenge_cos->WriteVarint64(message_1.ByteSizeLong());
+  if (!message_1.SerializeToCodedStream(challenge_cos.get())) {
+    return absl::InternalError(
+        "DyVerifiableRandomFunction::GenerateChallengeForGenerateKeysProof: "
+        "Failed to serialize message_1.");
+  }
+
+  BigNum challenge_bound =
+      context_->One().Lshift(parameters_proto_.challenge_length_bits());
+
+  // Delete the serialization objects to make sure they clean up and write.
+  challenge_cos.reset();
+  challenge_sos.reset();
+
+  return context_->RandomOracleSha512(challenge_string, challenge_bound);
 }
 
 // Applies the DY VRF to a given batch of messages.

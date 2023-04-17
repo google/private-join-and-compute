@@ -17,6 +17,9 @@
 
 #include <stdint.h>
 
+#include <algorithm>
+#include <cstddef>
+#include <iterator>
 #include <memory>
 #include <string>
 #include <tuple>
@@ -36,6 +39,71 @@
 #include "private_join_and_compute/crypto/proto/proto_util.h"
 
 namespace private_join_and_compute {
+
+namespace {
+
+// Helper functions to compute batched encryptions of Enc(a*(k + m + yr) + bq)
+// given masked_messages (= am + bq), as, gammas (= ar), Enc(k), Enc(y), and the
+// public_camenisch_shoup. Assumes that all sizes have been checked beforehand.
+//
+// Can be used for the "real" encryptions, the dummy encryptions, and the masked
+// dummy encryptions.
+StatusOr<std::vector<CamenischShoupCiphertext>>
+GenerateHomomorphicCsCiphertexts(
+    const std::vector<BigNum>& masked_messages, const std::vector<BigNum>& as,
+    const std::vector<BigNum>& gammas,
+    const std::vector<BigNum>& encryption_randomness,
+    const std::vector<CamenischShoupCiphertext>& parsed_encrypted_k,
+    const std::vector<CamenischShoupCiphertext>& parsed_encrypted_y,
+    PublicCamenischShoup* public_camenisch_shoup) {
+  // The messages are encrypted in batches of vector_encryption_length. We
+  // compute the number of Camenisch Shoup ciphertexts needed to cover the
+  // messages.
+  size_t num_camenisch_shoup_ciphertexts =
+      (masked_messages.size() +
+       public_camenisch_shoup->vector_encryption_length() - 1) /
+      public_camenisch_shoup->vector_encryption_length();
+
+  std::vector<CamenischShoupCiphertext> encrypted_masked_messages;
+  encrypted_masked_messages.reserve(num_camenisch_shoup_ciphertexts);
+
+  for (size_t i = 0; i < num_camenisch_shoup_ciphertexts; ++i) {
+    size_t batch_start_index =
+        i * public_camenisch_shoup->vector_encryption_length();
+    size_t batch_size =
+        std::min(public_camenisch_shoup->vector_encryption_length(),
+                 masked_messages.size() - batch_start_index);
+    size_t batch_end_index = batch_start_index + batch_size;
+    // Determine the messages for the i'th batch.
+    std::vector<BigNum> masked_messages_for_batch_i(
+        masked_messages.begin() + batch_start_index,
+        masked_messages.begin() + batch_end_index);
+    ASSIGN_OR_RETURN(
+        CamenischShoupCiphertext encrypted_masked_message_at_i,
+        public_camenisch_shoup->EncryptWithRand(masked_messages_for_batch_i,
+                                                encryption_randomness[i]));
+
+    // Homomorphically add the appropriate a*k and a*r*y to the masked_message
+    // in the j'th slot, by using the encryption of k in the j'th slot and y in
+    // the j'th slot respectively (from the BbObliviousSignature public key).
+    for (uint64_t j = 0; j < batch_size; ++j) {
+      encrypted_masked_message_at_i = public_camenisch_shoup->Add(
+          encrypted_masked_message_at_i,
+          public_camenisch_shoup->Multiply(parsed_encrypted_k[j],
+                                           as[batch_start_index + j]));
+
+      encrypted_masked_message_at_i = public_camenisch_shoup->Add(
+          encrypted_masked_message_at_i,
+          public_camenisch_shoup->Multiply(parsed_encrypted_y[j],
+                                           gammas[batch_start_index + j]));
+    }
+    encrypted_masked_messages.push_back(
+        std::move(encrypted_masked_message_at_i));
+  }
+  return std::move(encrypted_masked_messages);
+}
+
+}  // namespace
 
 StatusOr<std::unique_ptr<BbObliviousSignature>> BbObliviousSignature::Create(
     proto::BbObliviousSignatureParameters parameters_proto, Context* ctx,
@@ -68,14 +136,6 @@ StatusOr<std::unique_ptr<BbObliviousSignature>> BbObliviousSignature::Create(
         "positive.");
   }
 
-  if (pedersen->gs().size() <
-      public_camenisch_shoup->vector_encryption_length()) {
-    return absl::InvalidArgumentError(
-        "BbObliviousSignature::Create: The Pedersen object provided does not "
-        "support the "
-        "vector_commitment_length corresponding to the Camenisch Shoup "
-        "encryption scheme.");
-  }
   // dummy_masked_betas_bound is the largest value that should be encrypt-able
   // by the Camenisch-Shoup scheme.
   BigNum dummy_masked_betas_bound =
@@ -166,12 +226,13 @@ BbObliviousSignature::GenerateRequestAndProof(
   proto::BbObliviousSignatureRequestPrivateState private_state_proto;
 
   // Check that sizes are compatible
-  if (messages.size() > public_camenisch_shoup_->vector_encryption_length()) {
+  if (messages.size() > pedersen_->gs().size()) {
     return absl::InvalidArgumentError(absl::StrCat(
         "BbObliviousSignature::GenerateRequest: messages has size ",
         messages.size(),
-        " which is larger than vector_encryption_length in parameters_ (",
-        public_camenisch_shoup_->vector_encryption_length(), ")"));
+        " which is larger than the batch size supported by the Pedersen "
+        "commitment scheme (",
+        pedersen_->gs().size(), ")"));
   }
   if (rs.size() != messages.size()) {
     return absl::InvalidArgumentError(absl::StrCat(
@@ -205,16 +266,7 @@ BbObliviousSignature::GenerateRequestAndProof(
                               (bs.back() * ec_group_->GetOrder()));
   }
 
-  ASSIGN_OR_RETURN(
-      CamenischShoupCiphertextWithRand encrypted_masked_messages_and_rand,
-      public_camenisch_shoup_->EncryptAndGetRand(masked_messages));
-
-  CamenischShoupCiphertext encrypted_masked_messages =
-      std::move(encrypted_masked_messages_and_rand.ct);
-  // Used for request proof.
-  BigNum encryption_randomness =
-      std::move(encrypted_masked_messages_and_rand.r);
-
+  // Parse the needed components of the public key.
   std::vector<CamenischShoupCiphertext> parsed_encrypted_k;
   parsed_encrypted_k.reserve(
       public_camenisch_shoup_->vector_encryption_length());
@@ -222,31 +274,47 @@ BbObliviousSignature::GenerateRequestAndProof(
   parsed_encrypted_y.reserve(
       public_camenisch_shoup_->vector_encryption_length());
 
-  // Homomorphically add a[i]*k and as[i]*rs[i]*y to the masked_message in the
-  // i'th slot, by using the encryption of k in the i'th slot and y in the i'th
-  // slot respectively (from the BbObliviousSignature public key).
-  for (size_t i = 0; i < messages.size(); ++i) {
+  for (int i = 0; i < public_camenisch_shoup_->vector_encryption_length();
+       ++i) {
     ASSIGN_OR_RETURN(CamenischShoupCiphertext cs_encrypt_k_at_i,
                      public_camenisch_shoup_->ParseCiphertextProto(
                          public_key.encrypted_k(i)));
-    encrypted_masked_messages = public_camenisch_shoup_->Add(
-        encrypted_masked_messages,
-        public_camenisch_shoup_->Multiply(cs_encrypt_k_at_i, as[i]));
     parsed_encrypted_k.push_back(std::move(cs_encrypt_k_at_i));
 
     ASSIGN_OR_RETURN(CamenischShoupCiphertext cs_encrypt_y_at_i,
                      public_camenisch_shoup_->ParseCiphertextProto(
                          public_key.encrypted_y(i)));
-    encrypted_masked_messages = public_camenisch_shoup_->Add(
-        encrypted_masked_messages,
-        public_camenisch_shoup_->Multiply(cs_encrypt_y_at_i, gammas[i]));
     parsed_encrypted_y.push_back(std::move(cs_encrypt_y_at_i));
   }
 
+  // The messages are encrypted in batches of vector_encryption_length. We
+  // compute the number of Camenisch Shoup ciphertexts needed to cover the
+  // messages.
+  size_t num_camenisch_shoup_ciphertexts =
+      (messages.size() + public_camenisch_shoup_->vector_encryption_length() -
+       1) /
+      public_camenisch_shoup_->vector_encryption_length();
+
+  // Used for request proof.
+  std::vector<BigNum> encryption_randomness;
+  encryption_randomness.reserve(num_camenisch_shoup_ciphertexts);
+  for (size_t i = 0; i < num_camenisch_shoup_ciphertexts; ++i) {
+    encryption_randomness.push_back(
+        ctx_->GenerateRandLessThan(public_camenisch_shoup_->n()));
+  }
+
+  ASSIGN_OR_RETURN(
+      std::vector<CamenischShoupCiphertext> encrypted_masked_messages,
+      GenerateHomomorphicCsCiphertexts(
+          masked_messages, as, gammas, encryption_randomness,
+          parsed_encrypted_k, parsed_encrypted_y, public_camenisch_shoup_));
+
   request_proto.set_num_messages(messages.size());
-  *request_proto.mutable_encrypted_masked_messages() =
-      CamenischShoupCiphertextToProto(encrypted_masked_messages);
   *private_state_proto.mutable_private_as() = BigNumVectorToProto(as);
+  for (size_t i = 0; i < num_camenisch_shoup_ciphertexts; ++i) {
+    *request_proto.add_repeated_encrypted_masked_messages() =
+        CamenischShoupCiphertextToProto(encrypted_masked_messages[i]);
+  }
 
   // Commit to as, bs.
   // as must be committed separately in order to be able to homomorphically
@@ -269,26 +337,28 @@ BbObliviousSignature::GenerateRequestAndProof(
   ASSIGN_OR_RETURN(PedersenOverZn::CommitmentAndOpening commit_and_open_bs,
                    pedersen_->Commit(bs));
 
-  // Homomorphically generate commitment to alphas, gammas. This homomorphically
-  // generated commitment will be used in 2 parts of the proof.
+  // Homomorphically generate commitment to alphas, gammas. This
+  // homomorphically generated commitment will be used in 2 parts of the
+  // proof.
   //
-  // Taking the example of alphas, recall that alphas[i] = as[i] * messages[i].
-  // We want to show that alphas[i] was (1) properly used in computing
-  // encrypted_masked_messages, and (2) was properly generated as
-  // as[i]*messages[i]. For property (1), we need to show knowledge of alphas[i]
-  // and the randomness used to commit to alphas, and for property (2), we need
-  // to show that the commitment to alphas was homomorphically generated from
-  // Com(as[i]).
+  // Taking the example of alphas, recall that alphas[i] = as[i] *
+  // messages[i]. We want to show that alphas[i] was (1) properly used in
+  // computing encrypted_masked_messages, and (2) was properly generated as
+  // as[i]*messages[i]. For property (1), we need to show knowledge of
+  // alphas[i] and the randomness used to commit to alphas, and for property
+  // (2), we need to show that the commitment to alphas was homomorphically
+  // generated from Com(as[i]).
 
-  // To support these proofs, we homomorphically generate Com(alpha) as (Prod_i
-  // Com(as[i])^messages[i]) * Com(0), where Com(0) is a fresh commitment to 0.
-  // Since we generated Com(as[i]) with as[i] each in a different Pedersen
-  // vector slot, this will correctly come out to a commitment of alpha, with
-  // overall commitment randomness (Sum_i open_as[i] * messages[i]) +
-  // open_alphas_2, where open_alphas_2 is the randomness used in the second
-  // commitment of 0. We will refer to the overall commitment randomness as
-  // open_alphas_1, and the randomness used to commit to 0 as open_alphas_2.
-  // These will be used in order to prove properties (1) and (2) respectively.
+  // To support these proofs, we homomorphically generate Com(alpha) as
+  // (Prod_i Com(as[i])^messages[i]) * Com(0), where Com(0) is a fresh
+  // commitment to 0. Since we generated Com(as[i]) with as[i] each in a
+  // different Pedersen vector slot, this will correctly come out to a
+  // commitment of alpha, with overall commitment randomness (Sum_i open_as[i]
+  // * messages[i]) + open_alphas_2, where open_alphas_2 is the randomness
+  // used in the second commitment of 0. We will refer to the overall
+  // commitment randomness as open_alphas_1, and the randomness used to commit
+  // to 0 as open_alphas_2. These will be used in order to prove properties
+  // (1) and (2) respectively.
   //
   // We proceed similarly for gammas, where gammas[i] = as[i] * rs[i].
   std::vector<BigNum> zero_vector(pedersen_->gs().size(), ctx_->Zero());
@@ -300,8 +370,8 @@ BbObliviousSignature::GenerateRequestAndProof(
       pedersen_->Commit(zero_vector));
 
   // commit_alphas and commit_gammas serve as accumulators for the homomorphic
-  // computation. open_alphas_1 and open_gammas_1 will serve as accumulators for
-  // the randomness in these homomorphically generated commitments.
+  // computation. open_alphas_1 and open_gammas_1 will serve as accumulators
+  // for the randomness in these homomorphically generated commitments.
   // open_alphas_2 and open_gammas_2 will serve to record the randomness used
   // in the commitments to 0.
   PedersenOverZn::Commitment commit_alphas =
@@ -339,8 +409,8 @@ BbObliviousSignature::GenerateRequestAndProof(
       pedersen_->n().Lshift(parameters_proto_.challenge_length_bits() +
                             parameters_proto_.security_parameter());
 
-  // The homomorphically computed openings for Com(alphas) and Com(gammas) need
-  // larger dummy values.
+  // The homomorphically computed openings for Com(alphas) and Com(gammas)
+  // need larger dummy values.
   BigNum dummy_homomorphically_computed_openings_bound =
       dummy_openings_bound * ec_group_->GetOrder() *
       ctx_->CreateBigNum(messages.size() + 1);
@@ -390,8 +460,12 @@ BbObliviousSignature::GenerateRequestAndProof(
       ctx_->GenerateRandLessThan(dummy_homomorphically_computed_openings_bound);
   BigNum dummy_gammas_opening_2 =
       ctx_->GenerateRandLessThan(dummy_openings_bound);
-  BigNum dummy_encryption_randomness =
-      ctx_->GenerateRandLessThan(dummy_encryption_randomness_bound);
+  std::vector<BigNum> dummy_encryption_randomness;
+  dummy_encryption_randomness.reserve(num_camenisch_shoup_ciphertexts);
+  for (size_t i = 0; i < num_camenisch_shoup_ciphertexts; ++i) {
+    dummy_encryption_randomness.push_back(
+        ctx_->GenerateRandLessThan(dummy_encryption_randomness_bound));
+  }
 
   // Create dummy composites for all values
   ASSIGN_OR_RETURN(
@@ -431,22 +505,13 @@ BbObliviousSignature::GenerateRequestAndProof(
         dummy_commit_gammas_2, pedersen_->Multiply(commit_as[i], dummy_rs[i]));
   }
 
-  ASSIGN_OR_RETURN(CamenischShoupCiphertext dummy_encrypted_masked_messages,
-                   public_camenisch_shoup_->EncryptWithRand(
-                       dummy_masked_messages, dummy_encryption_randomness));
-
-  // Homomorphically add a[i]*k + gammas[i]*y to the masked_message in the i'th
-  // slot, by using the encryption of k and y in the i'th slot (from the BB
-  // Oblivious Signature public key).
-  for (size_t i = 0; i < messages.size(); ++i) {
-    dummy_encrypted_masked_messages = public_camenisch_shoup_->Add(
-        dummy_encrypted_masked_messages,
-        public_camenisch_shoup_->Multiply(parsed_encrypted_k[i], dummy_as[i]));
-    dummy_encrypted_masked_messages = public_camenisch_shoup_->Add(
-        dummy_encrypted_masked_messages,
-        public_camenisch_shoup_->Multiply(parsed_encrypted_y[i],
-                                          dummy_gammas[i]));
-  }
+  // Generate the dummy Camenisch Shoup encryptions.
+  ASSIGN_OR_RETURN(
+      std::vector<CamenischShoupCiphertext> dummy_encrypted_masked_messages,
+      GenerateHomomorphicCsCiphertexts(
+          dummy_masked_messages, dummy_as, dummy_gammas,
+          dummy_encryption_randomness, parsed_encrypted_k, parsed_encrypted_y,
+          public_camenisch_shoup_));
 
   // Serialize the statement and first message into protos, and generate the
   // challenge
@@ -472,8 +537,10 @@ BbObliviousSignature::GenerateRequestAndProof(
   proof_message_1.set_dummy_commit_alphas_2(dummy_commit_alphas_2.ToBytes());
   proof_message_1.set_dummy_commit_gammas_1(dummy_commit_gammas_1.ToBytes());
   proof_message_1.set_dummy_commit_gammas_2(dummy_commit_gammas_2.ToBytes());
-  *proof_message_1.mutable_dummy_encrypted_masked_messages() =
-      CamenischShoupCiphertextToProto(dummy_encrypted_masked_messages);
+  for (size_t i = 0; i < num_camenisch_shoup_ciphertexts; ++i) {
+    *proof_message_1.add_repeated_dummy_encrypted_masked_messages() =
+        CamenischShoupCiphertextToProto(dummy_encrypted_masked_messages[i]);
+  }
 
   ASSIGN_OR_RETURN(BigNum challenge, GenerateRequestProofChallenge(
                                          proof_statement, proof_message_1));
@@ -519,8 +586,12 @@ BbObliviousSignature::GenerateRequestAndProof(
       dummy_gammas_opening_1 + challenge * open_gammas_1;
   BigNum masked_dummy_gammas_opening_2 =
       dummy_gammas_opening_2 + challenge * open_gammas_2;
-  BigNum masked_dummy_encryption_randomness =
-      dummy_encryption_randomness + challenge * encryption_randomness;
+  std::vector<BigNum> masked_dummy_encryption_randomness;
+  masked_dummy_encryption_randomness.reserve(num_camenisch_shoup_ciphertexts);
+  for (size_t i = 0; i < num_camenisch_shoup_ciphertexts; ++i) {
+    masked_dummy_encryption_randomness.push_back(
+        dummy_encryption_randomness[i] + challenge * encryption_randomness[i]);
+  }
 
   // Generate proof proto.
 
@@ -560,8 +631,9 @@ BbObliviousSignature::GenerateRequestAndProof(
       masked_dummy_gammas_opening_1.ToBytes());
   proof_proto_message_2->set_masked_dummy_gammas_opening_2(
       masked_dummy_gammas_opening_2.ToBytes());
-  proof_proto_message_2->set_masked_dummy_encryption_randomness(
-      masked_dummy_encryption_randomness.ToBytes());
+  *proof_proto_message_2
+       ->mutable_masked_dummy_encryption_randomness_per_ciphertext() =
+      BigNumVectorToProto(masked_dummy_encryption_randomness);
 
   return std::make_tuple(std::move(request_proto), std::move(proof_proto),
                          std::move(private_state_proto));
@@ -574,6 +646,114 @@ Status BbObliviousSignature::VerifyRequest(
     const proto::BbObliviousSignatureRequestProof& request_proof,
     const PedersenOverZn::Commitment& commit_messages,
     const PedersenOverZn::Commitment& commit_rs) {
+  if (request.num_messages() > pedersen_->gs().size()) {
+    return absl::InvalidArgumentError(absl::StrCat(
+        "BbObliviousSignature::VerifyRequest: messages has size ",
+        request.num_messages(),
+        " which is larger than the pedersen batch size in parameters (",
+        pedersen_->gs().size(), ")"));
+  }
+  // Check that all vectors have the correct size.
+  if (request_proof.commit_as().serialized_big_nums_size() !=
+      request.num_messages()) {
+    return absl::InvalidArgumentError(
+        absl::StrCat("BbObliviousSignatures::VerifyRequest: request proof "
+                     "has wrong number of commit_as: expected ",
+                     request.num_messages(), ", actual ",
+                     request_proof.commit_as().serialized_big_nums_size()));
+  }
+  if (request_proof.message_2()
+          .masked_dummy_messages()
+          .serialized_big_nums_size() != request.num_messages()) {
+    return absl::InvalidArgumentError(absl::StrCat(
+        "BbObliviousSignatures::VerifyRequest: request proof has wrong "
+        "number of masked_dummy_messages: expected ",
+        request.num_messages(), ", actual ",
+        request_proof.message_2()
+            .masked_dummy_messages()
+            .serialized_big_nums_size()));
+  }
+  if (request_proof.message_2().masked_dummy_rs().serialized_big_nums_size() !=
+      request.num_messages()) {
+    return absl::InvalidArgumentError(absl::StrCat(
+        "BbObliviousSignatures::VerifyRequest: request proof has wrong "
+        "number of masked_dummy_rs: expected ",
+        request.num_messages(), ", actual ",
+        request_proof.message_2()
+            .masked_dummy_rs()
+            .serialized_big_nums_size()));
+  }
+  if (request_proof.message_2().masked_dummy_as().serialized_big_nums_size() !=
+      request.num_messages()) {
+    return absl::InvalidArgumentError(absl::StrCat(
+        "BbObliviousSignatures::VerifyRequest: request proof has wrong "
+        "number of masked_dummy_as: expected ",
+        request.num_messages(), ", actual ",
+        request_proof.message_2()
+            .masked_dummy_as()
+            .serialized_big_nums_size()));
+  }
+  if (request_proof.message_2().masked_dummy_bs().serialized_big_nums_size() !=
+      request.num_messages()) {
+    return absl::InvalidArgumentError(absl::StrCat(
+        "BbObliviousSignatures::VerifyRequest: request proof has wrong "
+        "number of masked_dummy_bs: expected ",
+        request.num_messages(), ", actual ",
+        request_proof.message_2()
+            .masked_dummy_bs()
+            .serialized_big_nums_size()));
+  }
+  if (request_proof.message_2()
+          .masked_dummy_alphas()
+          .serialized_big_nums_size() != request.num_messages()) {
+    return absl::InvalidArgumentError(absl::StrCat(
+        "BbObliviousSignatures::VerifyRequest: request proof has wrong "
+        "number of masked_dummy_alphas: expected ",
+        request.num_messages(), ", actual ",
+        request_proof.message_2()
+            .masked_dummy_alphas()
+            .serialized_big_nums_size()));
+  }
+  if (request_proof.message_2()
+          .masked_dummy_gammas()
+          .serialized_big_nums_size() != request.num_messages()) {
+    return absl::InvalidArgumentError(absl::StrCat(
+        "BbObliviousSignatures::VerifyRequest: request proof has wrong "
+        "number of masked_dummy_gammas: expected ",
+        request.num_messages(), ", actual ",
+        request_proof.message_2()
+            .masked_dummy_gammas()
+            .serialized_big_nums_size()));
+  }
+
+  // The messages are encrypted in batches of vector_encryption_length. We
+  // compute the number of Camenisch Shoup ciphertexts needed to cover the
+  // messages.
+  size_t num_camenisch_shoup_ciphertexts =
+      (request.num_messages() +
+       public_camenisch_shoup_->vector_encryption_length() - 1) /
+      public_camenisch_shoup_->vector_encryption_length();
+
+  if (request.repeated_encrypted_masked_messages_size() !=
+      num_camenisch_shoup_ciphertexts) {
+    return absl::InvalidArgumentError(
+        absl::StrCat("BbObliviousSignatures::VerifyRequest: request has wrong "
+                     "number of ciphertexts: expected ",
+                     num_camenisch_shoup_ciphertexts, ", actual ",
+                     request.repeated_encrypted_masked_messages_size()));
+  }
+  if (request_proof.message_2()
+          .masked_dummy_encryption_randomness_per_ciphertext()
+          .serialized_big_nums_size() != num_camenisch_shoup_ciphertexts) {
+    return absl::InvalidArgumentError(absl::StrCat(
+        "BbObliviousSignatures::VerifyRequest: request proof has wrong "
+        "number of masked_dummy_encryption_randomness: expected ",
+        num_camenisch_shoup_ciphertexts, ", actual ",
+        request_proof.message_2()
+            .masked_dummy_encryption_randomness_per_ciphertext()
+            .serialized_big_nums_size()));
+  }
+
   // Create the proof statement
   proto::BbObliviousSignatureRequestProof::Statement proof_statement;
   *proof_statement.mutable_parameters() = parameters_proto_;
@@ -595,9 +775,15 @@ Status BbObliviousSignature::VerifyRequest(
       ctx_->CreateBigNum(request_proof.commit_alphas());
   PedersenOverZn::Commitment commit_gammas =
       ctx_->CreateBigNum(request_proof.commit_gammas());
-  ASSIGN_OR_RETURN(CamenischShoupCiphertext encrypted_masked_messages,
-                   public_camenisch_shoup_->ParseCiphertextProto(
-                       request.encrypted_masked_messages()));
+  std::vector<CamenischShoupCiphertext> encrypted_masked_messages;
+  encrypted_masked_messages.reserve(num_camenisch_shoup_ciphertexts);
+  for (size_t i = 0; i < num_camenisch_shoup_ciphertexts; ++i) {
+    ASSIGN_OR_RETURN(CamenischShoupCiphertext encrypted_masked_messages_at_i,
+                     public_camenisch_shoup_->ParseCiphertextProto(
+                         request.repeated_encrypted_masked_messages(i)));
+    encrypted_masked_messages.push_back(
+        std::move(encrypted_masked_messages_at_i));
+  }
 
   // Parse challenge from the proof.
   BigNum challenge_from_proof = ctx_->CreateBigNum(request_proof.challenge());
@@ -631,61 +817,10 @@ Status BbObliviousSignature::VerifyRequest(
       request_proof.message_2().masked_dummy_gammas_opening_1());
   BigNum masked_dummy_gammas_opening_2 = ctx_->CreateBigNum(
       request_proof.message_2().masked_dummy_gammas_opening_2());
-  BigNum masked_dummy_encryption_randomness = ctx_->CreateBigNum(
-      request_proof.message_2().masked_dummy_encryption_randomness());
-
-  if (request.num_messages() >
-      public_camenisch_shoup_->vector_encryption_length()) {
-    return absl::InvalidArgumentError(absl::StrCat(
-        "BbObliviousSignature::VerifyRequest: messages has size ",
-        request.num_messages(),
-        " which is larger than vector_encryption_length in parameters (",
-        public_camenisch_shoup_->vector_encryption_length(), ")"));
-  }
-
-  // Check that all vectors have the correct size.
-  if (commit_as.size() != request.num_messages()) {
-    return absl::InvalidArgumentError(absl::StrCat(
-        "BbObliviousSignatures::VerifyRequest: request proof has wrong number "
-        "of commit_as: expected ",
-        request.num_messages(), ", actual ", commit_as.size()));
-  }
-  if (masked_dummy_messages.size() != request.num_messages()) {
-    return absl::InvalidArgumentError(absl::StrCat(
-        "BbObliviousSignatures::VerifyRequest: request proof has wrong number "
-        "of masked_dummy_messages: expected ",
-        request.num_messages(), ", actual ", masked_dummy_messages.size()));
-  }
-  if (masked_dummy_rs.size() != request.num_messages()) {
-    return absl::InvalidArgumentError(absl::StrCat(
-        "BbObliviousSignatures::VerifyRequest: request proof has wrong number "
-        "of masked_dummy_rs: expected ",
-        request.num_messages(), ", actual ", masked_dummy_rs.size()));
-  }
-  if (masked_dummy_as.size() != request.num_messages()) {
-    return absl::InvalidArgumentError(absl::StrCat(
-        "BbObliviousSignatures::VerifyRequest: request proof has wrong number "
-        "of masked_dummy_as: expected ",
-        request.num_messages(), ", actual ", masked_dummy_as.size()));
-  }
-  if (masked_dummy_bs.size() != request.num_messages()) {
-    return absl::InvalidArgumentError(absl::StrCat(
-        "BbObliviousSignatures::VerifyRequest: request proof has wrong number "
-        "of masked_dummy_bs: expected ",
-        request.num_messages(), ", actual ", masked_dummy_bs.size()));
-  }
-  if (masked_dummy_alphas.size() != request.num_messages()) {
-    return absl::InvalidArgumentError(absl::StrCat(
-        "BbObliviousSignatures::VerifyRequest: request proof has wrong number "
-        "of masked_dummy_alphas: expected ",
-        request.num_messages(), ", actual ", masked_dummy_alphas.size()));
-  }
-  if (masked_dummy_gammas.size() != request.num_messages()) {
-    return absl::InvalidArgumentError(absl::StrCat(
-        "BbObliviousSignatures::VerifyRequest: request proof has wrong number "
-        "of masked_dummy_gammas: expected ",
-        request.num_messages(), ", actual ", masked_dummy_gammas.size()));
-  }
+  std::vector<BigNum> masked_dummy_encryption_randomness =
+      ParseBigNumVectorProto(
+          ctx_, request_proof.message_2()
+                    .masked_dummy_encryption_randomness_per_ciphertext());
 
   // Verify bounds.
   BigNum masked_dummy_messages_bound =
@@ -807,32 +942,34 @@ Status BbObliviousSignature::VerifyRequest(
         masked_dummy_alphas[i] + masked_dummy_bs[i] * ec_group_->GetOrder());
   }
 
-  ASSIGN_OR_RETURN(
-      CamenischShoupCiphertext masked_dummy_encrypted_masked_messages,
-      public_camenisch_shoup_->EncryptWithRand(
-          dummy_masked_encrypted_masked_messages,
-          masked_dummy_encryption_randomness));
+  std::vector<CamenischShoupCiphertext> parsed_encrypted_k;
+  parsed_encrypted_k.reserve(
+      public_camenisch_shoup_->vector_encryption_length());
+  std::vector<CamenischShoupCiphertext> parsed_encrypted_y;
+  parsed_encrypted_y.reserve(
+      public_camenisch_shoup_->vector_encryption_length());
 
-  // Homomorphically add a[i]*k and as[i]*rs[i]*y to the masked_message in the
-  // i'th slot, by using the encryption of k in the i'th slot and y in the i'th
-  // slot respectively (from the BbObliviousSignature public key).
-  for (size_t i = 0; i < dummy_masked_encrypted_masked_messages.size(); ++i) {
+  for (size_t i = 0; i < public_camenisch_shoup_->vector_encryption_length();
+       ++i) {
     ASSIGN_OR_RETURN(CamenischShoupCiphertext cs_encrypt_k_at_i,
                      public_camenisch_shoup_->ParseCiphertextProto(
                          public_key.encrypted_k(i)));
-    masked_dummy_encrypted_masked_messages = public_camenisch_shoup_->Add(
-        masked_dummy_encrypted_masked_messages,
-        public_camenisch_shoup_->Multiply(cs_encrypt_k_at_i,
-                                          masked_dummy_as[i]));
+    parsed_encrypted_k.push_back(std::move(cs_encrypt_k_at_i));
 
     ASSIGN_OR_RETURN(CamenischShoupCiphertext cs_encrypt_y_at_i,
                      public_camenisch_shoup_->ParseCiphertextProto(
                          public_key.encrypted_y(i)));
-    masked_dummy_encrypted_masked_messages = public_camenisch_shoup_->Add(
-        masked_dummy_encrypted_masked_messages,
-        public_camenisch_shoup_->Multiply(cs_encrypt_y_at_i,
-                                          masked_dummy_gammas[i]));
+    parsed_encrypted_y.push_back(std::move(cs_encrypt_y_at_i));
   }
+
+  // Generate the dummy Camenisch Shoup encryptions.
+  ASSIGN_OR_RETURN(
+      std::vector<CamenischShoupCiphertext>
+          masked_dummy_encrypted_masked_messages,
+      GenerateHomomorphicCsCiphertexts(
+          dummy_masked_encrypted_masked_messages, masked_dummy_as,
+          masked_dummy_gammas, masked_dummy_encryption_randomness,
+          parsed_encrypted_k, parsed_encrypted_y, public_camenisch_shoup_));
 
   //  Recreate dummy composites from masked dummy composites (in order to
   //  regenerate Proof Message 1). Each dummy_composite is computed as
@@ -882,33 +1019,6 @@ Status BbObliviousSignature::VerifyRequest(
   PedersenOverZn::Commitment dummy_commit_gammas_2 = pedersen_->Add(
       masked_dummy_commit_gammas_2, commit_gammas_to_challenge_inverse);
 
-  // Some extra work is needed for the Camenisch Shoup ciphertext since it
-  // doesn't natively support inverse.
-  CamenischShoupCiphertext encrypted_masked_messages_to_challenge =
-      public_camenisch_shoup_->Multiply(encrypted_masked_messages,
-                                        challenge_from_proof);
-  ASSIGN_OR_RETURN(BigNum encrypted_masked_messages_to_challenge_u_inverse,
-                   encrypted_masked_messages_to_challenge.u.ModInverse(
-                       public_camenisch_shoup_->modulus()));
-  std::vector<BigNum> encrypted_masked_messages_to_challenge_es_inverse;
-  encrypted_masked_messages_to_challenge_es_inverse.reserve(
-      encrypted_masked_messages_to_challenge.es.size());
-  for (size_t i = 0; i < encrypted_masked_messages_to_challenge.es.size();
-       ++i) {
-    ASSIGN_OR_RETURN(BigNum encrypted_masked_messages_to_challenge_e_inverse,
-                     encrypted_masked_messages_to_challenge.es[i].ModInverse(
-                         public_camenisch_shoup_->modulus()));
-    encrypted_masked_messages_to_challenge_es_inverse.push_back(
-        std::move(encrypted_masked_messages_to_challenge_e_inverse));
-  }
-  CamenischShoupCiphertext encrypted_masked_messages_to_challenge_inverse{
-      std::move(encrypted_masked_messages_to_challenge_u_inverse),
-      std::move(encrypted_masked_messages_to_challenge_es_inverse)};
-  CamenischShoupCiphertext dummy_encrypted_masked_messages =
-      public_camenisch_shoup_->Add(
-          masked_dummy_encrypted_masked_messages,
-          encrypted_masked_messages_to_challenge_inverse);
-
   // Package dummy_composites into Proof message_1.
   proto::BbObliviousSignatureRequestProof::Message1 message_1;
   message_1.set_dummy_commit_messages(dummy_commit_messages.ToBytes());
@@ -919,11 +1029,42 @@ Status BbObliviousSignature::VerifyRequest(
   message_1.set_dummy_commit_alphas_2(dummy_commit_alphas_2.ToBytes());
   message_1.set_dummy_commit_gammas_1(dummy_commit_gammas_1.ToBytes());
   message_1.set_dummy_commit_gammas_2(dummy_commit_gammas_2.ToBytes());
-  *message_1.mutable_dummy_encrypted_masked_messages() =
-      CamenischShoupCiphertextToProto(dummy_encrypted_masked_messages);
+  // dummy_encrypted_masked_messages are computed below.
 
-  // Reconstruct the challenge and check that it matches the one supplied in the
-  // proof.
+  // Some extra work is needed for the Camenisch Shoup ciphertext since it
+  // doesn't natively support inverse.
+  for (size_t i = 0; i < num_camenisch_shoup_ciphertexts; ++i) {
+    CamenischShoupCiphertext encrypted_masked_messages_to_challenge =
+        public_camenisch_shoup_->Multiply(encrypted_masked_messages[i],
+                                          challenge_from_proof);
+    ASSIGN_OR_RETURN(BigNum encrypted_masked_messages_to_challenge_u_inverse,
+                     encrypted_masked_messages_to_challenge.u.ModInverse(
+                         public_camenisch_shoup_->modulus()));
+    std::vector<BigNum> encrypted_masked_messages_to_challenge_es_inverse;
+    encrypted_masked_messages_to_challenge_es_inverse.reserve(
+        encrypted_masked_messages_to_challenge.es.size());
+    for (size_t i = 0; i < encrypted_masked_messages_to_challenge.es.size();
+         ++i) {
+      ASSIGN_OR_RETURN(BigNum encrypted_masked_messages_to_challenge_e_inverse,
+                       encrypted_masked_messages_to_challenge.es[i].ModInverse(
+                           public_camenisch_shoup_->modulus()));
+      encrypted_masked_messages_to_challenge_es_inverse.push_back(
+          std::move(encrypted_masked_messages_to_challenge_e_inverse));
+    }
+    CamenischShoupCiphertext encrypted_masked_messages_to_challenge_inverse{
+        std::move(encrypted_masked_messages_to_challenge_u_inverse),
+        std::move(encrypted_masked_messages_to_challenge_es_inverse)};
+    CamenischShoupCiphertext dummy_encrypted_masked_messages =
+        public_camenisch_shoup_->Add(
+            masked_dummy_encrypted_masked_messages[i],
+            encrypted_masked_messages_to_challenge_inverse);
+
+    *message_1.add_repeated_dummy_encrypted_masked_messages() =
+        CamenischShoupCiphertextToProto(dummy_encrypted_masked_messages);
+  }
+
+  // Reconstruct the challenge and check that it matches the one supplied in
+  // the proof.
   ASSIGN_OR_RETURN(BigNum reconstructed_challenge,
                    GenerateRequestProofChallenge(proof_statement, message_1));
 
@@ -951,25 +1092,38 @@ BbObliviousSignature::GenerateResponseAndProof(
   proto::BbObliviousSignatureResponse response_proto;
   proto::BbObliviousSignatureResponseProof response_proof_proto;
 
-  if (request.num_messages() >
-          public_camenisch_shoup_->vector_encryption_length() ||
+  if (request.num_messages() > pedersen_->gs().size() ||
       request.num_messages() < 0) {
     return absl::InvalidArgumentError(
         "BbObliviousSignature::GenerateResponse: invalid num_messages in "
         "request.");
   }
 
+  size_t num_camenisch_shoup_ciphertexts =
+      request.repeated_encrypted_masked_messages_size();
+
   // We will refer to the values decrypted from the CS ciphertexts as betas.
   // These betas are implicitly bounded as long as the request proof was
   // verified (and the sender generated its parameters correctly).
-  ASSIGN_OR_RETURN(CamenischShoupCiphertext encrypted_masked_messages,
-                   public_camenisch_shoup_->ParseCiphertextProto(
-                       request.encrypted_masked_messages()));
-  ASSIGN_OR_RETURN(std::vector<BigNum> betas,
-                   private_camenisch_shoup->Decrypt(encrypted_masked_messages));
+  std::vector<BigNum> betas;
+  betas.reserve(request.num_messages());
+  std::vector<CamenischShoupCiphertext> encrypted_masked_messages;
+  encrypted_masked_messages.reserve(num_camenisch_shoup_ciphertexts);
+  for (size_t i = 0; i < num_camenisch_shoup_ciphertexts; ++i) {
+    ASSIGN_OR_RETURN(CamenischShoupCiphertext encrypted_masked_messages_at_i,
+                     public_camenisch_shoup_->ParseCiphertextProto(
+                         request.repeated_encrypted_masked_messages(i)));
+    ASSIGN_OR_RETURN(
+        std::vector<BigNum> betas_at_i,
+        private_camenisch_shoup->Decrypt(encrypted_masked_messages_at_i));
 
-  // Truncate the last few elements of betas, if it's larger than num_messages.
-  // (These should be all zeros.)
+    encrypted_masked_messages.push_back(
+        std::move(encrypted_masked_messages_at_i));
+    betas.insert(betas.end(), std::make_move_iterator(betas_at_i.begin()),
+                 std::make_move_iterator(betas_at_i.end()));
+  }
+  // Truncate the last few elements of betas, if it's larger than
+  // num_messages. (These should be all zeros.)
   betas.erase(betas.begin() + request.num_messages(), betas.end());
 
   std::vector<ECPoint> masked_prf_values;
@@ -1023,33 +1177,14 @@ BbObliviousSignature::GenerateResponseAndProof(
   ASSIGN_OR_RETURN(PedersenOverZn::Commitment dummy_commit_betas,
                    pedersen_->CommitWithRand(dummy_betas, dummy_beta_opening));
 
-  // (1.2) Use the dummy values above to create dummy_cs_ys, dummy_commit_betas,
-  // dummy_enc_mask_messages_es and dummy_base_gs.
+  // (1.2) Use the dummy values above to create dummy_cs_ys,
+  // dummy_commit_betas, and dummy_base_gs and add them to proof message 1.
   std::vector<BigNum> dummy_cs_ys;
   dummy_cs_ys.reserve(public_camenisch_shoup_->vector_encryption_length());
   for (uint64_t i = 0; i < public_camenisch_shoup_->vector_encryption_length();
        ++i) {
     dummy_cs_ys.push_back(private_camenisch_shoup->g().ModExp(
         dummy_xs[i], private_camenisch_shoup->modulus()));
-  }
-
-  // intermediate_es contains (1+n)^dummy_betas[i] mod n^(s+1) in the "es"
-  // component. This is achieved by encrypting dummy_betas with randomness 0.
-  ASSIGN_OR_RETURN(
-      CamenischShoupCiphertext intermediate_ciphertext,
-      private_camenisch_shoup->EncryptWithRand(dummy_betas, ctx_->Zero()));
-  // dummy_enc_mask_messages_es contains u^dummy_xs[i] * (1+n)^dummy_betas[i]
-  // mod n^(s+1) in the "es" component.
-  std::vector<BigNum> dummy_enc_mask_messages_es;
-  dummy_enc_mask_messages_es.reserve(
-      public_camenisch_shoup_->vector_encryption_length());
-  for (uint64_t i = 0; i < request.num_messages(); ++i) {
-    BigNum dummy_e =
-        encrypted_masked_messages.u
-            .ModExp(dummy_xs[i], private_camenisch_shoup->modulus())
-            .ModMul(intermediate_ciphertext.es[i],
-                    private_camenisch_shoup->modulus());
-    dummy_enc_mask_messages_es.push_back(std::move(dummy_e));
   }
 
   std::vector<ECPoint> dummy_base_gs;
@@ -1064,10 +1199,47 @@ BbObliviousSignature::GenerateResponseAndProof(
   *proof_message_1.mutable_dummy_camenisch_shoup_ys() =
       BigNumVectorToProto(dummy_cs_ys);
   proof_message_1.set_dummy_commit_betas(dummy_commit_betas.ToBytes());
-  *proof_message_1.mutable_dummy_encrypted_masked_messages_es() =
-      BigNumVectorToProto(dummy_enc_mask_messages_es);
   ASSIGN_OR_RETURN(*proof_message_1.mutable_dummy_base_gs(),
                    ECPointVectorToProto(dummy_base_gs));
+
+  // (1.3) dummy_enc_mask_messages_es is more complicated: we need to create one
+  // entry for each CS ciphertext in the request.
+  for (size_t i = 0; i < num_camenisch_shoup_ciphertexts; ++i) {
+    size_t batch_start_index =
+        i * public_camenisch_shoup_->vector_encryption_length();
+    size_t batch_size =
+        std::min(public_camenisch_shoup_->vector_encryption_length(),
+                 request.num_messages() - batch_start_index);
+    size_t batch_end_index = batch_start_index + batch_size;
+
+    // determine the dummy_betas that are to be used for this ciphertext.
+    std::vector<BigNum> dummy_betas_for_batch(
+        dummy_betas.begin() + batch_start_index,
+        dummy_betas.begin() + batch_end_index);
+
+    //  intermediate_es contains
+    // (1+n)^dummy_betas[i] mod n^(s+1) in the "es" component. This is achieved
+    // by encrypting dummy_betas with randomness 0.
+    ASSIGN_OR_RETURN(CamenischShoupCiphertext intermediate_ciphertext,
+                     private_camenisch_shoup->EncryptWithRand(
+                         dummy_betas_for_batch, ctx_->Zero()));
+    // dummy_enc_mask_messages_es contains u^dummy_xs[j] * (1+n)^dummy_betas[j]
+    // mod n^(s+1) in the "es" component.
+    std::vector<BigNum> dummy_enc_mask_messages_es;
+    dummy_enc_mask_messages_es.reserve(
+        public_camenisch_shoup_->vector_encryption_length());
+    for (size_t j = 0; j < batch_size; ++j) {
+      BigNum dummy_e =
+          encrypted_masked_messages[i]
+              .u.ModExp(dummy_xs[j], private_camenisch_shoup->modulus())
+              .ModMul(intermediate_ciphertext.es[j],
+                      private_camenisch_shoup->modulus());
+      dummy_enc_mask_messages_es.push_back(std::move(dummy_e));
+    }
+
+    *proof_message_1.add_repeated_dummy_encrypted_masked_messages_es() =
+        BigNumVectorToProto(dummy_enc_mask_messages_es);
+  }
 
   // (2) Generate challenge
   ASSIGN_OR_RETURN(
@@ -1117,7 +1289,8 @@ Status BbObliviousSignature::VerifyResponse(
   if (response.masked_signature_values().serialized_ec_points_size() !=
       request.num_messages()) {
     return absl::InvalidArgumentError(
-        "BbObliviousSignature::VerifyResponse: response has a different number "
+        "BbObliviousSignature::VerifyResponse: response has a different "
+        "number "
         "of masked_signature_values values than the request");
   }
 
@@ -1126,21 +1299,32 @@ Status BbObliviousSignature::VerifyResponse(
           .serialized_big_nums_size() !=
       public_camenisch_shoup_->vector_encryption_length()) {
     return absl::InvalidArgumentError(
-        "BbObliviousSignature::VerifyResponse: response proof has wrong number "
+        "BbObliviousSignature::VerifyResponse: response proof has wrong "
+        "number "
         "of masked_dummy_camenisch_shoup_xs in message 2.");
   }
   if (response_proof.message_2()
           .masked_dummy_betas()
           .serialized_big_nums_size() != request.num_messages()) {
     return absl::InvalidArgumentError(
-        "BbObliviousSignature::VerifyResponse: response proof has wrong number "
+        "BbObliviousSignature::VerifyResponse: response proof has wrong "
+        "number "
         "of masked_dummy_betas in message 2.");
   }
 
+  size_t num_camenisch_shoup_ciphertexts =
+      request.repeated_encrypted_masked_messages_size();
+
+  std::vector<CamenischShoupCiphertext> encrypted_masked_messages;
+  encrypted_masked_messages.reserve(num_camenisch_shoup_ciphertexts);
   // Parse the needed request, response and response proof elements.
-  ASSIGN_OR_RETURN(CamenischShoupCiphertext encrypted_masked_messages,
-                   public_camenisch_shoup_->ParseCiphertextProto(
-                       request.encrypted_masked_messages()));
+  for (size_t i = 0; i < num_camenisch_shoup_ciphertexts; ++i) {
+    ASSIGN_OR_RETURN(CamenischShoupCiphertext encrypted_masked_messages_at_i,
+                     public_camenisch_shoup_->ParseCiphertextProto(
+                         request.repeated_encrypted_masked_messages(i)));
+    encrypted_masked_messages.push_back(
+        std::move(encrypted_masked_messages_at_i));
+  }
   ASSIGN_OR_RETURN(std::vector<ECPoint> masked_signature_values,
                    ParseECPointVectorProto(ctx_, ec_group_,
                                            response.masked_signature_values()));
@@ -1193,32 +1377,46 @@ Status BbObliviousSignature::VerifyResponse(
   ASSIGN_OR_RETURN(*reconstructed_message_1.mutable_dummy_base_gs(),
                    ECPointVectorToProto(dummy_base_gs));
 
-  // Reconstruct dummy_es
-  // es[i] of intermediate_ciphertext is (1+n)^masked_dummy_betas[i].
-  ASSIGN_OR_RETURN(CamenischShoupCiphertext intermediate_ciphertext,
-                   public_camenisch_shoup_->EncryptWithRand(masked_dummy_betas,
-                                                            ctx_->Zero()));
-  std::vector<BigNum> dummy_es;
-  dummy_es.reserve(request.num_messages());
-  for (uint64_t i = 0; i < request.num_messages(); ++i) {
-    // masked_dummy_e = (1+n)^masked_dummy_betas[i] * u^masked_dummy_xs[i]
-    BigNum masked_dummy_e = intermediate_ciphertext.es[i].ModMul(
-        encrypted_masked_messages.u.ModExp(masked_dummy_camenisch_shoup_xs[i],
-                                           public_camenisch_shoup_->modulus()),
-        public_camenisch_shoup_->modulus());
+  for (size_t i = 0; i < num_camenisch_shoup_ciphertexts; ++i) {
+    size_t batch_start_index =
+        i * public_camenisch_shoup_->vector_encryption_length();
+    size_t batch_size =
+        std::min(public_camenisch_shoup_->vector_encryption_length(),
+                 request.num_messages() - batch_start_index);
+    size_t batch_end_index = batch_start_index + batch_size;
+    std::vector<BigNum> masked_dummy_betas_for_batch(
+        masked_dummy_betas.begin() + batch_start_index,
+        masked_dummy_betas.begin() + batch_end_index);
+    // Reconstruct dummy_es
+    // es[i] of intermediate_ciphertext is (1+n)^masked_dummy_betas[i].
+    ASSIGN_OR_RETURN(CamenischShoupCiphertext intermediate_ciphertext,
+                     public_camenisch_shoup_->EncryptWithRand(
+                         masked_dummy_betas_for_batch, ctx_->Zero()));
+    std::vector<BigNum> dummy_es;
+    dummy_es.reserve(batch_size);
+    for (size_t j = 0; j < batch_size; ++j) {
+      // masked_dummy_e = (1+n)^masked_dummy_betas_for_batch[j] *
+      // u^masked_dummy_xs[j]
+      BigNum masked_dummy_e = intermediate_ciphertext.es[j].ModMul(
+          encrypted_masked_messages[i].u.ModExp(
+              masked_dummy_camenisch_shoup_xs[j],
+              public_camenisch_shoup_->modulus()),
+          public_camenisch_shoup_->modulus());
 
-    ASSIGN_OR_RETURN(
-        BigNum e_to_challenge_inverse,
-        encrypted_masked_messages.es[i]
-            .ModExp(challenge_from_proof, public_camenisch_shoup_->modulus())
-            .ModInverse(public_camenisch_shoup_->modulus()));
+      ASSIGN_OR_RETURN(
+          BigNum e_to_challenge_inverse,
+          encrypted_masked_messages[i]
+              .es[j]
+              .ModExp(challenge_from_proof, public_camenisch_shoup_->modulus())
+              .ModInverse(public_camenisch_shoup_->modulus()));
 
-    BigNum dummy_e = masked_dummy_e.ModMul(e_to_challenge_inverse,
-                                           public_camenisch_shoup_->modulus());
-    dummy_es.push_back(std::move(dummy_e));
+      BigNum dummy_e = masked_dummy_e.ModMul(
+          e_to_challenge_inverse, public_camenisch_shoup_->modulus());
+      dummy_es.push_back(std::move(dummy_e));
+    }
+    *reconstructed_message_1.add_repeated_dummy_encrypted_masked_messages_es() =
+        BigNumVectorToProto(dummy_es);
   }
-  *reconstructed_message_1.mutable_dummy_encrypted_masked_messages_es() =
-      BigNumVectorToProto(dummy_es);
 
   // Reconstruct dummy_commit_betas.
   ASSIGN_OR_RETURN(
@@ -1251,8 +1449,8 @@ Status BbObliviousSignature::VerifyResponse(
   *reconstructed_message_1.mutable_dummy_camenisch_shoup_ys() =
       BigNumVectorToProto(dummy_camenisch_shoup_ys);
 
-  // Reconstruct the challenge by applying FiatShamir to the reconstructed first
-  // message, and ensure it exactly matches the challenge in the proof.
+  // Reconstruct the challenge by applying FiatShamir to the reconstructed
+  // first message, and ensure it exactly matches the challenge in the proof.
   ASSIGN_OR_RETURN(BigNum reconstructed_challenge,
                    GenerateResponseProofChallenge(
                        public_key, commit_messages, commit_rs, request,

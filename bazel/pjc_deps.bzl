@@ -32,6 +32,7 @@ def pjc_deps():
     if "com_google_absl" not in native.existing_rules():
         http_archive(
             name = "com_google_absl",
+            sha256 = "f7c2cb2c5accdcbbbd5c0c59f241a988c0b1da2a3b7134b823c0bd613b1a6880",
             strip_prefix = "abseil-cpp-b971ac5250ea8de900eae9f95e06548d14cd95fe",
             urls = [
                 "https://github.com/abseil/abseil-cpp/archive/b971ac5250ea8de900eae9f95e06548d14cd95fe.zip",
@@ -42,6 +43,7 @@ def pjc_deps():
     if "com_github_google_googletest" not in native.existing_rules():
         http_archive(
             name = "com_github_google_googletest",
+            sha256 = "ad7fdba11ea011c1d925b3289cf4af2c66a352e18d4c7264392fead75e919363",
             strip_prefix = "googletest-1.13.0",
             urls = [
                 "https://github.com/google/googletest/archive/refs/tags/v1.13.0.tar.gz",

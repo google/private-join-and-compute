@@ -130,6 +130,7 @@ cc_test(
         "//private_join_and_compute/crypto:pedersen_over_zn",
         "//private_join_and_compute/crypto/proto:big_num_cc_proto",
         "//private_join_and_compute/crypto/proto:camenisch_shoup_cc_proto",
+        "//private_join_and_compute/crypto/proto:ec_point_cc_proto",
         "//private_join_and_compute/crypto/proto:pedersen_cc_proto",
         "//private_join_and_compute/crypto/proto:proto_util",
         "//private_join_and_compute/util:status_testing_includes",
