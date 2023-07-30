@@ -15,6 +15,7 @@
 
 #include "private_join_and_compute/crypto/proto/proto_util.h"
 
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -73,6 +74,10 @@ StatusOr<std::vector<ECPoint>> ParseECPointVectorProto(
     ec_point_vector.push_back(std::move(ec_point));
   }
   return std::move(ec_point_vector);
+}
+
+std::string SerializeAsStringInOrder(const google::protobuf::Message& proto) {
+  return proto.SerializeAsString();
 }
 
 }  // namespace private_join_and_compute

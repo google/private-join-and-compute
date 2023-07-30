@@ -71,6 +71,7 @@ cc_library(
         "//private_join_and_compute/crypto:bn_util",
         "//private_join_and_compute/crypto:ec_util",
         "//private_join_and_compute/util:status_includes",
+        "@com_google_protobuf//:protobuf",
     ],
 )
 
@@ -80,13 +81,14 @@ cc_test(
     deps = [
         ":big_num_cc_proto",
         ":ec_point_cc_proto",
+        ":pedersen_cc_proto",
         ":proto_util",
         "//private_join_and_compute/crypto:bn_util",
         "//private_join_and_compute/crypto:ec_util",
         "//private_join_and_compute/crypto:openssl_includes",
+        "//private_join_and_compute/crypto:pedersen_over_zn",
         "//private_join_and_compute/util:status_includes",
         "//private_join_and_compute/util:status_testing_includes",
         "@com_github_google_googletest//:gtest_main",
-        "@com_google_absl//absl/memory",
     ],
 )

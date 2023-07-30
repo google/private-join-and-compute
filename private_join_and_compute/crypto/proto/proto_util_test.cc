@@ -19,6 +19,7 @@
 #include <gtest/gtest.h>
 
 #include <memory>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -26,8 +27,10 @@
 #include "private_join_and_compute/crypto/ec_group.h"
 #include "private_join_and_compute/crypto/ec_point.h"
 #include "private_join_and_compute/crypto/openssl.inc"
+#include "private_join_and_compute/crypto/pedersen_over_zn.h"
 #include "private_join_and_compute/crypto/proto/big_num.pb.h"
 #include "private_join_and_compute/crypto/proto/ec_point.pb.h"
+#include "private_join_and_compute/crypto/proto/pedersen.pb.h"
 #include "private_join_and_compute/util/status.inc"
 #include "private_join_and_compute/util/status_testing.inc"
 
@@ -88,6 +91,22 @@ TEST(ProtoUtilTest, ParseEmptyECPointVector) {
       ParseECPointVectorProto(&ctx, &ec_group, ec_point_vector_proto));
 
   EXPECT_EQ(empty_ec_point_vector, deserialized);
+}
+
+TEST(ProtoUtilTest, SerializeAsStringInOrderIsConsistent) {
+  Context ctx;
+  std::vector<BigNum> big_num_vector = {ctx.One(), ctx.Two(), ctx.Three()};
+
+  proto::PedersenParameters pedersen_parameters_proto;
+  pedersen_parameters_proto.set_n(ctx.CreateBigNum(37).ToBytes());
+  *pedersen_parameters_proto.mutable_gs() = BigNumVectorToProto(big_num_vector);
+  pedersen_parameters_proto.set_h(ctx.CreateBigNum(4).ToBytes());
+
+  const std::string kExpectedSerialized =
+      "\n\x1%\x12\t\n\x1\x1\n\x1\x2\n\x1\x3\x1A\x1\x4";
+  std::string serialized = SerializeAsStringInOrder(pedersen_parameters_proto);
+
+  EXPECT_EQ(serialized, kExpectedSerialized);
 }
 
 }  // namespace

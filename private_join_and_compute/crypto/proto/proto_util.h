@@ -16,12 +16,14 @@
 #ifndef PRIVATE_JOIN_AND_COMPUTE_CRYPTO_PROTO_PROTO_UTIL_H_
 #define PRIVATE_JOIN_AND_COMPUTE_CRYPTO_PROTO_PROTO_UTIL_H_
 
+#include <string>
 #include <vector>
 
 #include "private_join_and_compute/crypto/context.h"
 #include "private_join_and_compute/crypto/ec_group.h"
 #include "private_join_and_compute/crypto/proto/big_num.pb.h"
 #include "private_join_and_compute/crypto/proto/ec_point.pb.h"
+#include "src/google/protobuf/message.h"
 
 namespace private_join_and_compute {
 // Converts a std::vector<BigNum> into a protocol buffer BigNumVector.
@@ -40,6 +42,11 @@ StatusOr<proto::ECPointVector> ECPointVectorToProto(
 StatusOr<std::vector<ECPoint>> ParseECPointVectorProto(
     Context* context, ECGroup* ec_group,
     const proto::ECPointVector& ec_point_vector_proto);
+
+// Serializes a proto to a string by serializing the fields in tag order. This
+// will guarantee deterministic encoding, as long as there are no cross-language
+// strings, and no unknown fields across different serializations.
+std::string SerializeAsStringInOrder(const google::protobuf::Message& proto);
 
 }  // namespace private_join_and_compute
 

@@ -1,0 +1,4 @@
+# repositories to install via Pip for compiling private-join-and-compute
+# python code externally
+six
+absl-py

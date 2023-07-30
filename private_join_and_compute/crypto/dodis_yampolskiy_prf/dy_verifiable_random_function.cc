@@ -224,17 +224,10 @@ DyVerifiableRandomFunction::GenerateChallengeForGenerateKeysProof(
           challenge_sos.get());
   challenge_cos->SetSerializationDeterministic(true);
   challenge_cos->WriteVarint64(statement.ByteSizeLong());
-  if (!statement.SerializeToCodedStream(challenge_cos.get())) {
-    return absl::InternalError(
-        "DyVerifiableRandomFunction::GenerateChallengeForGenerateKeysProof: "
-        "Failed to serialize statement.");
-  }
+  challenge_cos->WriteString(SerializeAsStringInOrder(statement));
+
   challenge_cos->WriteVarint64(message_1.ByteSizeLong());
-  if (!message_1.SerializeToCodedStream(challenge_cos.get())) {
-    return absl::InternalError(
-        "DyVerifiableRandomFunction::GenerateChallengeForGenerateKeysProof: "
-        "Failed to serialize message_1.");
-  }
+  challenge_cos->WriteString(SerializeAsStringInOrder(message_1));
 
   BigNum challenge_bound =
       context_->One().Lshift(parameters_proto_.challenge_length_bits());
@@ -552,17 +545,10 @@ StatusOr<BigNum> DyVerifiableRandomFunction::GenerateApplyProofChallenge(
           challenge_sos.get());
   challenge_cos->SetSerializationDeterministic(true);
   challenge_cos->WriteVarint64(statement.ByteSizeLong());
-  if (!statement.SerializeToCodedStream(challenge_cos.get())) {
-    return absl::InternalError(
-        "DyVerifiableRandomFunction::GenerateApplyProofChallenge: Failed to "
-        "serialize statement.");
-  }
+  challenge_cos->WriteString(SerializeAsStringInOrder(statement));
+
   challenge_cos->WriteVarint64(message_1.ByteSizeLong());
-  if (!message_1.SerializeToCodedStream(challenge_cos.get())) {
-    return absl::InternalError(
-        "DyVerifiableRandomFunction::GenerateApplyProofChallenge: Failed to "
-        "serialize message_1.");
-  }
+  challenge_cos->WriteString(SerializeAsStringInOrder(message_1));
 
   BigNum challenge_bound =
       context_->One().Lshift(parameters_proto_.challenge_length_bits());
