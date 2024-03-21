@@ -16,6 +16,7 @@
 #include "private_join_and_compute/util/ec_key_util.h"
 
 #include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h
 #include "private_join_and_compute/crypto/ec_group.h"
 #include "private_join_and_compute/util/proto_util.h"
 #include "private_join_and_compute/util/recordio.h"

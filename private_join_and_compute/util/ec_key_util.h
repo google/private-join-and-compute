@@ -16,6 +16,7 @@
 #ifndef PRIVATE_JOIN_AND_COMPUTE_UTIL_EC_KEY_UTIL_H_
 #define PRIVATE_JOIN_AND_COMPUTE_UTIL_EC_KEY_UTIL_H_
 
+#include "absl/strings/string_view.h"
 #include "private_join_and_compute/crypto/big_num.h"
 #include "private_join_and_compute/crypto/context.h"
 #include "private_join_and_compute/crypto/ec_key.pb.h"

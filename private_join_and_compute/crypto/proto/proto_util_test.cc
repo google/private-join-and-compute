@@ -23,6 +23,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/strings/str_cat.h"
 #include "private_join_and_compute/crypto/context.h"
 #include "private_join_and_compute/crypto/ec_group.h"
 #include "private_join_and_compute/crypto/ec_point.h"

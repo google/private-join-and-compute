@@ -20,6 +20,8 @@
 #include <sstream>
 #include <string>
 
+#include "absl/strings/string_view.h"
+
 namespace private_join_and_compute {
 namespace internal {
 namespace {

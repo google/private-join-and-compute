@@ -23,6 +23,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/status/status.h"
 #include "private_join_and_compute/crypto/context.h"
 #include "private_join_and_compute/crypto/proto/pedersen.pb.h"
 #include "private_join_and_compute/crypto/proto/proto_util.h"

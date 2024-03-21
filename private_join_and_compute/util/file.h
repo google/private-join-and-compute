@@ -18,6 +18,7 @@
 
 #include <string>
 
+#include "absl/strings/string_view.h"
 #include "private_join_and_compute/util/status.inc"
 
 namespace private_join_and_compute {
