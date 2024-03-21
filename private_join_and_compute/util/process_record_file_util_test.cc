@@ -23,7 +23,7 @@
 #include <string>
 #include <vector>
 
-#include "absl/strings/str_cat.h"
+#include "absl/status/status.h"
 #include "absl/strings/string_view.h"
 #include "private_join_and_compute/util/process_record_file_parameters.h"
 #include "private_join_and_compute/util/proto_util.h"

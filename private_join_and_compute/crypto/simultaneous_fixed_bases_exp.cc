@@ -19,6 +19,9 @@
 #include <memory>
 #include <vector>
 
+#include "absl/memory/memory.h"
+#include "absl/status/status.h"
+#include "absl/strings/str_cat.h"
 #include "private_join_and_compute/crypto/mont_mul.h"
 
 namespace private_join_and_compute {

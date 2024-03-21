@@ -22,6 +22,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/status/status.h"
 #include "private_join_and_compute/crypto/big_num.h"
 #include "private_join_and_compute/crypto/context.h"
 #include "private_join_and_compute/crypto/ec_group.h"

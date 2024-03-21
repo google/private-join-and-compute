@@ -25,6 +25,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/types/span.h"
 #include "private_join_and_compute/crypto/big_num.h"
 #include "private_join_and_compute/crypto/dodis_yampolskiy_prf/dy_verifiable_random_function.pb.h"
 #include "private_join_and_compute/crypto/ec_point.h"

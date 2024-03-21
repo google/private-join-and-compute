@@ -24,6 +24,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/status/status.h"
 #include "private_join_and_compute/crypto/big_num.h"
 #include "private_join_and_compute/crypto/camenisch_shoup.h"
 #include "private_join_and_compute/crypto/dodis_yampolskiy_prf/bb_oblivious_signature.pb.h"
@@ -36,6 +37,7 @@
 #include "private_join_and_compute/crypto/proto/pedersen.pb.h"
 #include "private_join_and_compute/crypto/proto/proto_util.h"
 #include "private_join_and_compute/util/status_testing.inc"
+
 namespace private_join_and_compute {
 namespace {
 

@@ -18,6 +18,8 @@
 #include <memory>
 #include <utility>
 
+#include "absl/memory/memory.h"
+
 namespace private_join_and_compute::elgamal_proto_util {
 
 StatusOr<ElGamalPublicKey> SerializePublicKey(

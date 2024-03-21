@@ -21,6 +21,7 @@
 #include <vector>
 
 #include "absl/log/check.h"
+#include "absl/strings/string_view.h"
 #include "private_join_and_compute/crypto/openssl.inc"
 
 namespace private_join_and_compute {

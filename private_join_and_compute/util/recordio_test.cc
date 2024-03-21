@@ -23,8 +23,6 @@
 #include <string>
 #include <vector>
 
-#include "absl/random/random.h"
-#include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "private_join_and_compute/crypto/context.h"
 #include "private_join_and_compute/util/file_test.pb.h"
@@ -39,8 +37,8 @@ using ::private_join_and_compute::testing::TestProto;
 using ::testing::ElementsAreArray;
 using ::testing::HasSubstr;
 using ::testing::IsEmpty;
-using testing::IsOkAndHolds;
-using testing::StatusIs;
+using ::testing::IsOkAndHolds;
+using ::testing::StatusIs;
 using ::testing::TempDir;
 
 std::string GetTestPBWithDummyAsStr(absl::string_view data,

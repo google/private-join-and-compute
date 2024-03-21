@@ -19,6 +19,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/types/span.h"
 #include "private_join_and_compute/crypto/context.h"
 #include "private_join_and_compute/crypto/ec_group.h"
 #include "private_join_and_compute/crypto/ec_point.h"
