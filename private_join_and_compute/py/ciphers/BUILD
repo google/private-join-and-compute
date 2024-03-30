@@ -15,8 +15,8 @@
 # Description:
 #   Contains libraries for openssl big num operations.
 load("@com_google_protobuf//:protobuf.bzl", "py_proto_library")
-load("@rules_python//python:defs.bzl", "py_library", "py_test")
 load("@pip_deps//:requirements.bzl", "requirement")
+load("@rules_python//python:defs.bzl", "py_library", "py_test")
 
 package(default_visibility = ["//visibility:public"])
 

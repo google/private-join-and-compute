@@ -30,11 +30,14 @@
 #ifndef PRIVATE_JOIN_AND_COMPUTE_CRYPTO_SIMULTANEOUS_FIXED_BASES_H_
 #define PRIVATE_JOIN_AND_COMPUTE_CRYPTO_SIMULTANEOUS_FIXED_BASES_H_
 
+#include <cstddef>
+#include <memory>
 #include <vector>
 
 #include "private_join_and_compute/crypto/big_num.h"
 #include "private_join_and_compute/crypto/ec_point.h"
 #include "private_join_and_compute/util/status.inc"
+
 namespace private_join_and_compute {
 
 // Template type definitions for elements of the multiplicative group mod n.

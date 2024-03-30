@@ -115,6 +115,7 @@ cc_library(
 
 cc_test(
     name = "bb_oblivious_signature_test",
+    timeout = "long",
     srcs = [
         "bb_oblivious_signature_test.cc",
     ],
