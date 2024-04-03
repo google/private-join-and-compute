@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#include "absl/status/status.h"
-#include "absl/status/statusor.h"
+#include "absl/status/status.h"    // IWYU pragma: export
+#include "absl/status/statusor.h"  // IWYU pragma: export
 
 #include "private_join_and_compute/util/status_macros.h"
 

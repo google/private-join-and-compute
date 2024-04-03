@@ -16,10 +16,16 @@
 #include "private_join_and_compute/crypto/simultaneous_fixed_bases_exp.h"
 
 #include <algorithm>
+#include <cstddef>
 #include <memory>
+#include <utility>
 #include <vector>
 
+#include "absl/memory/memory.h"
+#include "absl/strings/str_cat.h"
+#include "private_join_and_compute/crypto/big_num.h"
 #include "private_join_and_compute/crypto/mont_mul.h"
+#include "private_join_and_compute/util/status.inc"
 
 namespace private_join_and_compute {
 

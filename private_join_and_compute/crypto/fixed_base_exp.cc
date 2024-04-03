@@ -26,6 +26,7 @@
 
 #include "private_join_and_compute/crypto/fixed_base_exp.h"
 
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <vector>
