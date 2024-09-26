@@ -115,11 +115,11 @@ cc_library(
     deps = [
         ":file",
         ":status_includes",
+        "@abseil-cpp//absl/log",
         "@abseil-cpp//absl/memory",
         "@abseil-cpp//absl/status",
         "@abseil-cpp//absl/strings",
         "@abseil-cpp//absl/synchronization",
-        "@glog",
         "@protobuf//:protobuf_lite",
     ],
 )

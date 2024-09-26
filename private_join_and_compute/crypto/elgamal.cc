@@ -15,11 +15,11 @@
 
 #include "private_join_and_compute/crypto/elgamal.h"
 
+#include <memory>
+#include <utility>
 #include <vector>
 
-#define GLOG_NO_ABBREVIATED_SEVERITIES
-#include "absl/memory/memory.h"
-#include "glog/logging.h"
+#include "absl/log/check.h"
 #include "private_join_and_compute/crypto/big_num.h"
 #include "private_join_and_compute/crypto/ec_group.h"
 #include "private_join_and_compute/crypto/ec_point.h"

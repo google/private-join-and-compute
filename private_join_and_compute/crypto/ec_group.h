@@ -64,14 +64,10 @@ class ECGroup {
   // string, which could lead to a timing attack.
   // Security: This function is only secure for curves of prime order.
   StatusOr<ECPoint> GetPointByHashingToCurveSha256(absl::string_view m) const;
-
-  // Hashes m to a point on the elliptic curve y^2 = x^3 + ax + b over a
-  // prime field using SHA512.
-  // Returns an INVALID_ARGUMENT error code if an error occurs.
-  //
-  // Security: The number of operations required to hash a string depends on the
-  // string, which could lead to a timing attack.
+  StatusOr<ECPoint> GetPointByHashingToCurveSha384(absl::string_view m) const;
   StatusOr<ECPoint> GetPointByHashingToCurveSha512(absl::string_view m) const;
+  StatusOr<ECPoint> GetPointByHashingToCurveSswuRo(absl::string_view m,
+                                                   absl::string_view dst) const;
 
   // Returns y^2 for the given x. The returned value is computed as x^3 + ax + b
   // mod p, where a and b are the parameters of the curve.
@@ -106,7 +102,7 @@ class ECGroup {
   const BigNum& GetCofactor() const { return cofactor_; }
 
   // Returns the curve id.
-  const int GetCurveId() const { return EC_GROUP_get_curve_name(group_.get()); }
+  int GetCurveId() const { return EC_GROUP_get_curve_name(group_.get()); }
 
   // Creates an ECPoint which is the identity.
   StatusOr<ECPoint> GetPointAtInfinity() const;

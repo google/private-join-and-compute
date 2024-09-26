@@ -16,10 +16,10 @@
 #include "private_join_and_compute/crypto/commutative_elgamal.h"
 
 #include <memory>
+#include <string>
+#include <utility>
 
-#define GLOG_NO_ABBREVIATED_SEVERITIES
 #include "absl/strings/string_view.h"
-#include "glog/logging.h"
 #include "private_join_and_compute/crypto/big_num.h"
 #include "private_join_and_compute/crypto/ec_group.h"
 #include "private_join_and_compute/crypto/ec_point.h"

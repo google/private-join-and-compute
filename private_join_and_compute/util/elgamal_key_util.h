@@ -18,6 +18,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "private_join_and_compute/crypto/elgamal.pb.h"
 #include "private_join_and_compute/util/status.inc"

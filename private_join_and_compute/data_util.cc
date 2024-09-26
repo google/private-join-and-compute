@@ -16,14 +16,20 @@
 #include "private_join_and_compute/data_util.h"
 
 #include <algorithm>
+#include <cctype>
 #include <fstream>
 #include <limits>
 #include <random>
 #include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
 
+#include "absl/container/btree_set.h"
 #include "absl/strings/numbers.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_replace.h"
+#include "absl/strings/string_view.h"
 #include "private_join_and_compute/crypto/context.h"
 #include "private_join_and_compute/util/status.inc"
 
@@ -122,7 +128,7 @@ void SplitCSVLineWithDelimiterForStrings(const std::string& line,
 // Escapes a string for CSV file writing. By default, this will surround each
 // string with double quotes, and escape each occurrence of a double quote by
 // replacing it with 2 double quotes.
-std::string EscapeForCsv(const std::string& input) {
+std::string EscapeForCsv(absl::string_view input) {
   return absl::StrCat("\"", absl::StrReplaceAll(input, {{"\"", "\"\""}}), "\"");
 }
 
@@ -190,8 +196,8 @@ auto GenerateRandomDatabases(int64_t server_data_size, int64_t client_data_size,
   }
   std::shuffle(client_identifiers.begin(), client_identifiers.end(), gen);
 
-  std::set<std::string> server_identifiers_set(server_identifiers.begin(),
-                                               server_identifiers.end());
+  absl::btree_set<std::string> server_identifiers_set(
+      server_identifiers.begin(), server_identifiers.end());
 
   // Generate associated values for the client, adding them to the intersection
   // sum if the identifier is in common.

@@ -36,6 +36,8 @@
 #ifndef PRIVATE_JOIN_AND_COMPUTE_CRYPTO_ELGAMAL_H_
 #define PRIVATE_JOIN_AND_COMPUTE_CRYPTO_ELGAMAL_H_
 
+#include <memory>
+#include <utility>
 #include <vector>
 
 #include "private_join_and_compute/crypto/ec_group.h"

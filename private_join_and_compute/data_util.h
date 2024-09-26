@@ -20,6 +20,9 @@
 // client, and also to write the data to file and parse it back.
 
 #include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
 
 #include "absl/strings/string_view.h"
 #include "private_join_and_compute/crypto/context.h"

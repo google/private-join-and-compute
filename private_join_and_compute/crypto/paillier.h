@@ -56,6 +56,7 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "private_join_and_compute/crypto/big_num.h"

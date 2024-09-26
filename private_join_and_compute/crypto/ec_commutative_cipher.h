@@ -18,8 +18,8 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 
-#include "absl/base/port.h"
 #include "absl/strings/string_view.h"
 #include "private_join_and_compute/crypto/big_num.h"
 #include "private_join_and_compute/crypto/context.h"
@@ -54,7 +54,7 @@ namespace private_join_and_compute {
 //    #include <openssl/obj_mac.h>
 //    std::unique_ptr<ECCommutativeCipher> cipher =
 //        ECCommutativeCipher::CreateWithNewKey(
-//            NID_X9_62_prime256v1, ECCommutativeCipher::HashType::SHA256);
+//            NID_X9_62_prime256v1, ECCommutativeCipher::HashType::SSWU_RO);
 //    string key_bytes = cipher->GetPrivateKeyBytes();
 //
 //  Example: To generate a cipher with an existing private key for the named
@@ -63,7 +63,7 @@ namespace private_join_and_compute {
 //    std::unique_ptr<ECCommutativeCipher> cipher =
 //        ECCommutativeCipher::CreateFromKey(
 //            NID_X9_62_prime256v1, key_bytes,
-//            ECCommutativeCipher::HashType::SHA256);
+//            ECCommutativeCipher::HashType::SSWU_RO);
 //
 // Example: To encrypt a message using a std::unique_ptr<ECCommutativeCipher>
 //    cipher generated as above.
@@ -89,14 +89,19 @@ namespace private_join_and_compute {
 class ECCommutativeCipher {
  public:
   // The hash function used by the ECCommutativeCipher in order to hash strings
-  // to EC curve points. The suggested default is the SHA256 option.
+  // to EC curve points.
   enum HashType {
     SHA256,
+    SHA384,
     SHA512,
+    SSWU_RO,
   };
 
   // Check for valid HashType.
   static bool ValidateHashType(HashType hash_type);
+
+  // Check for valid HashType.
+  static bool ValidateHashType(int hash_type);
 
   // ECCommutativeCipher is neither copyable nor assignable.
   ECCommutativeCipher(const ECCommutativeCipher&) = delete;
@@ -122,6 +127,16 @@ class ECCommutativeCipher {
   static ::private_join_and_compute::StatusOr<
       std::unique_ptr<ECCommutativeCipher>>
   CreateFromKey(int curve_id, absl::string_view key_bytes, HashType hash_type);
+
+  // Creates an ECCommutativeCipher object with a new private key generated from
+  // the given seed and index.  This will deterministically generate a key and
+  // this should not be re-used across multiple sessions.  The seed should be a
+  // cryptographically strong random string of at least 16 bytes.
+  // Returns INTERNAL status when crypto operations are not successful.
+  static ::private_join_and_compute::StatusOr<
+      std::unique_ptr<ECCommutativeCipher>>
+  CreateWithKeyFromSeed(int curve_id, absl::string_view seed_bytes,
+                        absl::string_view tag_bytes, HashType hash_type);
 
   // Encrypts a string with the private key to a point on the elliptic curve.
   //

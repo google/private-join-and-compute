@@ -15,11 +15,12 @@
 
 #include <iostream>
 #include <memory>
+#include <ostream>
 #include <string>
+#include <utility>
 
 #include "absl/flags/flag.h"
 #include "absl/flags/parse.h"
-#include "absl/memory/memory.h"
 #include "absl/strings/str_cat.h"
 #include "include/grpc/grpc_security_constants.h"
 #include "include/grpcpp/channel.h"
@@ -95,7 +96,7 @@ int ExecuteProtocol() {
 
   std::cout << "Client: Generating keys..." << std::endl;
   std::unique_ptr<::private_join_and_compute::ProtocolClient> client =
-      absl::make_unique<
+      std::make_unique<
           ::private_join_and_compute::PrivateIntersectionSumProtocolClientImpl>(
           &context, std::move(client_identifiers_and_associated_values.first),
           std::move(client_identifiers_and_associated_values.second),
@@ -175,7 +176,6 @@ int ExecuteProtocol() {
 }  // namespace private_join_and_compute
 
 int main(int argc, char** argv) {
-  google::InitGoogleLogging(argv[0]);
   absl::ParseCommandLine(argc, argv);
 
   return private_join_and_compute::ExecuteProtocol();

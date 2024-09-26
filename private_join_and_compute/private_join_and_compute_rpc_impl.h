@@ -16,6 +16,9 @@
 #ifndef PRIVATE_JOIN_AND_COMPUTE_PRIVATE_JOIN_AND_COMPUTE_RPC_IMPL_H_
 #define PRIVATE_JOIN_AND_COMPUTE_PRIVATE_JOIN_AND_COMPUTE_RPC_IMPL_H_
 
+#include <memory>
+#include <utility>
+
 #include "include/grpcpp/grpcpp.h"
 #include "include/grpcpp/server_context.h"
 #include "include/grpcpp/support/status.h"

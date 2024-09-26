@@ -1,0 +1,16 @@
+This library contains a python wrapper over OpenSSL/BoringSSL elliptic curves.
+
+Example Usage:
+
+::
+
+	from private_join_and_compute.py.ciphers import ec_cipher
+	from private_join_and_compute.py.crypto_util import supported_curves
+	from private_join_and_compute.py.crypto_util import supported_hashes
+
+	client_cipher = ec_cipher.EcCipher(
+	  curve_id=supported_curves.SupportedCurve.SECP256R1.id,
+	  hash_type=supported_hashes.HashType.SHA256,
+	  private_key_bytes=None) # "None" generates a new key
+	encrypted_point = client_cipher.Encrypt(b"id_bytes")
+

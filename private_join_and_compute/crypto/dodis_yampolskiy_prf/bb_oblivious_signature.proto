@@ -1,0 +1,211 @@
+/*
+ * Copyright 2019 Google LLC.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto3";
+
+package private_join_and_compute.proto;
+
+import "private_join_and_compute/crypto/proto/big_num.proto";
+import "private_join_and_compute/crypto/proto/camenisch_shoup.proto";
+import "private_join_and_compute/crypto/proto/ec_point.proto";
+import "private_join_and_compute/crypto/proto/pedersen.proto";
+
+
+option java_multiple_files = true;
+
+message BbObliviousSignatureParameters {
+  // How many bits (more than the challenge bits) to add to each
+  // dummy opening (aka sigma protocol lambda). This also impacts the sizes of
+  // some masks in the protocol.
+  int64 security_parameter = 1;
+  // How many bits the challenge has.
+  int64 challenge_length_bits = 2;
+  bytes random_oracle_prefix = 3;
+  // Serialized ECPoint. Base to use for the Signature.
+  bytes base_g = 4;
+  // Public key for the associated CamenischShoup keypair.
+  CamenischShoupPublicKey camenisch_shoup_public_key = 5;
+  // PedersenParameters for the associated commitment scheme. The batch size
+  // for the Pedersen parameters is effectively the max number of messages that
+  // can be simultaneously requested. The vector_encryption_length of
+  // camenisch_shoup_public_key must divide the pedersen batch size.
+  PedersenParameters pedersen_parameters = 6;
+}
+
+// Implicitly linked to commitment-parameters for a Pedersen batch-commitment
+// scheme and a keypair for the Camenisch Shoup encryption scheme. The Pedersen
+// commitment parameters and Camenisch-Shoup public key are implicitly part of
+// the Public Key.
+message BbObliviousSignaturePublicKey {
+  // The i'th ciphertext contains an encryption of the secret value in the i'th
+  // component of the vector-encryption, and 0 elsewhere.
+  repeated CamenischShoupCiphertext encrypted_k = 1;
+  repeated CamenischShoupCiphertext encrypted_y = 2;
+}
+
+// A private key for the Boneh-Boyen oblivious signature. To be used by the
+// "Sender" in the scheme. The secret key for the associated Camenisch-Shoup
+// keypair is implicitly part of the Private Key.
+message BbObliviousSignaturePrivateKey {
+  // Serialized BigNum.
+  bytes k = 1;
+  bytes y = 2;
+}
+
+message BbObliviousSignatureRequest {
+  reserved 2;
+  uint64 num_messages = 1;
+  // There will be as many Camenisch-Shoup ciphertexts as needed to fit the
+  // messages.
+  repeated CamenischShoupCiphertext repeated_encrypted_masked_messages = 3;
+}
+
+message BbObliviousSignatureRequestProof {
+  message Statement {
+    BbObliviousSignatureParameters parameters = 1;
+    BbObliviousSignaturePublicKey public_key = 2;
+    // Serialized BigNum, corresponding to the Pedersen Commitment to the
+    // messages.
+    bytes commit_messages = 3;
+    // Serialized BigNum, corresponding to the Pedersen Commitment to the
+    // rs.
+    bytes commit_rs = 4;
+    // The Pedersen commitments to mask values a. The i'th commitment contains a
+    // commitment to as[i] in the i'th batch-position, and 0 elsewhere.
+    BigNumVector commit_as = 5;
+    // The batch-commitment to mask values b.
+    bytes commit_bs = 6;
+    // The batch commitment to alphas. alphas[i] = messages[i] * as[i]. Computed
+    // as (Prod_i Com(as[i])^bs[i]) * Com(0, alpha_opening).
+    bytes commit_alphas = 7;
+    // The batch Pedersen commitment to gammas. gammas[i] = rs[i] * as[i].
+    // Computed as (Prod_i Com(as[i])^rs[i]) * Com(0, gamma_opening).
+    bytes commit_gammas = 8;
+    BbObliviousSignatureRequest request = 9;
+  }
+
+  message Message1 {
+    reserved 9;
+    bytes dummy_commit_messages = 1;
+    bytes dummy_commit_rs = 2;
+    // Serialized BigNum corresponding to a Pedersen Commitment.
+    BigNumVector dummy_commit_as = 3;
+    // Serialized BigNum corresponding to a Pedersen Commitment.
+    bytes dummy_commit_bs = 4;
+    // Serialized BigNum corresponding to a Pedersen Commitment. Computed as a
+    // standard dummy commitment.
+    bytes dummy_commit_alphas_1 = 5;
+    // Serialized BigNum corresponding to a Pedersen Commitment. Computed as
+    // Prod_i commit_as[i]^dummy_bs[i] * Com(0, dummy_alpha_opening_2).
+    bytes dummy_commit_alphas_2 = 6;
+    // Serialized BigNum corresponding to a Pedersen Commitment. Computed as a
+    // standard dummy commitment.
+    bytes dummy_commit_gammas_1 = 7;
+    // Serialized BigNum corresponding to a Pedersen Commitment. Computed as
+    // Prod_i commit_as[i]^dummy_rs[i] * Com(0, dummy_gamma_opening_2).
+    bytes dummy_commit_gammas_2 = 8;
+    // One dummy ciphertext per ciphertext in the request.
+    repeated CamenischShoupCiphertext repeated_dummy_encrypted_masked_messages =
+        10;
+  }
+
+  message Message2 {
+    reserved 15;
+    BigNumVector masked_dummy_messages = 1;
+    // Serialized BigNum corresponding to a Pedersen Commitment Opening.
+    bytes masked_dummy_messages_opening = 2;
+    BigNumVector masked_dummy_rs = 3;
+    // Serialized BigNum corresponding to a Pedersen Commitment Opening.
+    bytes masked_dummy_rs_opening = 4;
+    BigNumVector masked_dummy_as = 5;
+    // BigNumVector corresponding to each Pedersen Commitment Opening.
+    BigNumVector masked_dummy_as_opening = 6;
+    BigNumVector masked_dummy_bs = 7;
+    // Serialized BigNum corresponding to a Pedersen Commitment Opening.
+    bytes masked_dummy_bs_opening = 8;
+    BigNumVector masked_dummy_alphas = 9;
+    // The Pedersen Commitment opening corresponding to dummy_commit_alphas_1.
+    bytes masked_dummy_alphas_opening_1 = 10;
+    // The Pedersen Commitment opening corresponding to dummy_commit_alphas_2.
+    bytes masked_dummy_alphas_opening_2 = 11;
+    BigNumVector masked_dummy_gammas = 12;
+    // The Pedersen Commitment opening corresponding to dummy_commit_gammas_1.
+    bytes masked_dummy_gammas_opening_1 = 13;
+    // The Pedersen Commitment opening corresponding to dummy_commit_gammas_2.
+    bytes masked_dummy_gammas_opening_2 = 14;
+    // One dummy encryption randomness for each ciphertext in the request.
+    BigNumVector masked_dummy_encryption_randomness_per_ciphertext = 16;
+  }
+
+  BigNumVector commit_as = 1;
+  bytes commit_bs = 2;
+  bytes commit_alphas = 3;
+  bytes commit_gammas = 4;
+
+  bytes challenge = 5;
+  Message2 message_2 = 6;
+}
+
+message BbObliviousSignatureRequestPrivateState {
+  // Masks needed in order to recover the signature from the response.
+  BigNumVector private_as = 1;
+}
+
+message BbObliviousSignatureResponse {
+  ECPointVector masked_signature_values = 1;
+}
+
+message BbObliviousSignatureResponseProof {
+  message Statement {
+    BbObliviousSignatureParameters parameters = 1;
+    BbObliviousSignaturePublicKey public_key = 2;
+    // Serialized BigNum, corresponding to the Pedersen Commitment to the
+    // messages.
+    bytes commit_messages = 3;
+    // Serialized BigNum, corresponding to the Pedersen Commitment to rs.
+    bytes commit_rs = 4;
+    BbObliviousSignatureRequest request = 5;
+    BbObliviousSignatureResponse response = 6;
+    // Commitment to the values decrypted from the Request.
+    bytes commit_betas = 7;
+  }
+
+  message Message1 {
+    reserved 3;
+    // Dummy version of the Camenisch Shoup public key ys.
+    BigNumVector dummy_camenisch_shoup_ys = 1;
+    // Serialized BigNum corresponding to a dummy Pedersen Commitment.
+    bytes dummy_commit_betas = 2;
+    // For each masked_signature_value, we show that
+    // masked_signature_value^beta = base_g. Serialized ECPoints.
+    ECPointVector dummy_base_gs = 4;
+    // One dummy_encrypted_masked_messages_es for each ciphertext in the
+    // request.
+    repeated BigNumVector repeated_dummy_encrypted_masked_messages_es = 5;
+  }
+
+  message Message2 {
+    BigNumVector masked_dummy_camenisch_shoup_xs = 1;
+    BigNumVector masked_dummy_betas = 2;
+    bytes masked_dummy_beta_opening = 3;
+  }
+
+  // Commitment to the values decrypted from the Request. Serialized BigNum.
+  bytes commit_betas = 1;
+  // Message 1 and Statement are used to create the challenge via FiatShamir.
+  // Serialized BigNum
+  bytes challenge = 2;
+  Message2 message_2 = 3;
+}

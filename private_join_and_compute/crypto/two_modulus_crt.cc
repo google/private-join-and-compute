@@ -18,8 +18,8 @@
 namespace private_join_and_compute {
 
 TwoModulusCrt::TwoModulusCrt(const BigNum& coprime1, const BigNum& coprime2)
-    : crt_term1_(coprime2 * coprime2.ModInverse(coprime1)),
-      crt_term2_(coprime1 * coprime1.ModInverse(coprime2)),
+    : crt_term1_(coprime2 * coprime2.ModInverse(coprime1).value()),
+      crt_term2_(coprime1 * coprime1.ModInverse(coprime2).value()),
       coprime_product_(coprime1 * coprime2) {}
 
 BigNum TwoModulusCrt::Compute(const BigNum& solution1,

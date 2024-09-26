@@ -16,6 +16,11 @@
 #include "private_join_and_compute/server_impl.h"
 
 #include <algorithm>
+#include <iterator>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include "absl/memory/memory.h"
 #include "private_join_and_compute/crypto/ec_commutative_cipher.h"
@@ -24,7 +29,6 @@
 
 using ::private_join_and_compute::BigNum;
 using ::private_join_and_compute::ECCommutativeCipher;
-using ::private_join_and_compute::PublicPaillier;
 
 namespace private_join_and_compute {
 

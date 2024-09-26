@@ -15,13 +15,10 @@
 
 #include "private_join_and_compute/crypto/ec_group.h"
 
-#include <algorithm>
 #include <utility>
 
-#define GLOG_NO_ABBREVIATED_SEVERITIES
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
-#include "glog/logging.h"
 #include "private_join_and_compute/crypto/ec_point.h"
 #include "private_join_and_compute/crypto/openssl.inc"
 #include "private_join_and_compute/util/status.inc"
@@ -174,6 +171,18 @@ StatusOr<ECPoint> ECGroup::GetPointByHashingToCurveSha256(
   }
 }
 
+StatusOr<ECPoint> ECGroup::GetPointByHashingToCurveSha384(
+    absl::string_view m) const {
+  BigNum x = context_->RandomOracleSha384(m, curve_params_.p);
+  while (true) {
+    auto status_or_point = GetPointByHashingToCurveInternal(x);
+    if (status_or_point.ok()) {
+      return status_or_point;
+    }
+    x = context_->RandomOracleSha384(x.ToBytes(), curve_params_.p);
+  }
+}
+
 StatusOr<ECPoint> ECGroup::GetPointByHashingToCurveSha512(
     absl::string_view m) const {
   BigNum x = context_->RandomOracleSha512(m, curve_params_.p);
@@ -184,6 +193,30 @@ StatusOr<ECPoint> ECGroup::GetPointByHashingToCurveSha512(
     }
     x = context_->RandomOracleSha512(x.ToBytes(), curve_params_.p);
   }
+}
+
+StatusOr<ECPoint> ECGroup::GetPointByHashingToCurveSswuRo(
+    absl::string_view m, absl::string_view dst) const {
+  ASSIGN_OR_RETURN(ECPoint out, GetPointAtInfinity());
+  int curve_id = GetCurveId();
+  if (curve_id == NID_X9_62_prime256v1) {
+    if (EC_hash_to_curve_p256_xmd_sha256_sswu(
+            group_.get(), out.point_.get(),
+            reinterpret_cast<const uint8_t*>(dst.data()), dst.length(),
+            reinterpret_cast<const uint8_t*>(m.data()), m.length()) != 1) {
+      return InternalError(OpenSSLErrorString());
+    }
+  } else if (curve_id == NID_secp384r1) {
+    if (EC_hash_to_curve_p384_xmd_sha384_sswu(
+            group_.get(), out.point_.get(),
+            reinterpret_cast<const uint8_t*>(dst.data()), dst.length(),
+            reinterpret_cast<const uint8_t*>(m.data()), m.length()) != 1) {
+      return InternalError(OpenSSLErrorString());
+    }
+  } else {
+    return InvalidArgumentError("Curve does not support HashToCurveSswuRo.");
+  }
+  return out;
 }
 
 BigNum ECGroup::ComputeYSquare(const BigNum& x) const {

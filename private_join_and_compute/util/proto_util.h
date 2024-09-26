@@ -18,6 +18,7 @@
 #ifndef PRIVATE_JOIN_AND_COMPUTE_INTERNAL_UTIL_PROTO_UTIL_H_
 #define PRIVATE_JOIN_AND_COMPUTE_INTERNAL_UTIL_PROTO_UTIL_H_
 
+#include <memory>
 #include <sstream>
 #include <string>
 

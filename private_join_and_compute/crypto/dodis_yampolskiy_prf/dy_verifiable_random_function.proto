@@ -1,0 +1,116 @@
+/*
+ * Copyright 2019 Google LLC.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto3";
+
+package private_join_and_compute.proto;
+
+import "private_join_and_compute/crypto/proto/big_num.proto";
+import "private_join_and_compute/crypto/proto/ec_point.proto";
+import "private_join_and_compute/crypto/proto/pedersen.proto";
+
+
+option java_multiple_files = true;
+
+message DyVrfParameters {
+  // How many bits (more than the challenge bits) to add to each
+  // dummy opening (aka sigma protocol lambda).
+  int64 security_parameter = 1;
+  // How many bits the challenge has.
+  int64 challenge_length_bits = 2;
+  // Prefix to inject into the random oracle.
+  string random_oracle_prefix = 3;
+  // Serialized ECPoint
+  bytes dy_prf_base_g = 4;
+  // Parameters for the associated Pedersen Commitment Scheme. Implicitly
+  // determines the max number of messages that can be VRF'ed together in a
+  // single proof.
+  PedersenParameters pedersen_parameters = 5;
+}
+
+// Proof that the parameters were generated correctly.
+message DyVrfGenerateKeysProof {
+  message Statement {
+    DyVrfParameters parameters = 1;
+    DyVrfPublicKey public_key = 2;
+  }
+  message Message1 {
+    // Dummy commitment to the key in each slot of the Pedersen Commitment.
+    bytes dummy_commit_prf_key = 1;
+  }
+
+  message Message2 {
+    // Masked dummy PRF key underlying the masked dummy commitment in each slot.
+    // Serialized BigNum.
+    bytes masked_dummy_prf_key = 1;
+    // Opening to the masked dummy commitment to the PRF key.
+    bytes masked_dummy_opening = 2;
+  }
+
+  // Message 1 and Statement are used to create the challenge via FiatShamir.
+  // Serialized BigNum
+  bytes challenge = 1;
+  Message2 message_2 = 2;
+}
+
+// A public key for the Dodis-Yampolskiy Verifiable Random Function. Implicitly
+// linked to parameters for a Pedersen batch-commitment scheme.
+message DyVrfPublicKey {
+  // A commitment to a copy of the PRF key in each slot of the Pedersen
+  // Commitment. (Serialized BigNum)
+  bytes commit_prf_key = 1;
+}
+
+message DyVrfPrivateKey {
+  // The PRF key. (Serialized BigNum).
+  bytes prf_key = 1;
+  // An opening to commit_prf_key (serialized BigNum).
+  bytes open_commit_prf_key = 2;
+}
+
+message DyVrfApplyProof {
+  // Formalizes the statement being proved. This is defined only in order to
+  // be input to the random oracle, to produce the challenge.
+  message Statement {
+    DyVrfParameters parameters = 1;
+    DyVrfPublicKey public_key = 2;
+    // Serialized BigNum, corresponding to the Pedersen Commitment to the
+    // messages.
+    bytes commit_messages = 3;
+    // The actual PRF evaluations (serialized ECPoints).
+    ECPointVector prf_evaluations = 4;
+  }
+
+  // Message1 and the Statement feed into the Random Oracle to produce the
+  // proof challenge.
+  message Message1 {
+    // Serialized BigNum.
+    bytes commit_dummy_messages_plus_key = 1;
+    // Serialized ECPoints.
+    ECPointVector dummy_dy_prf_base_gs = 2;
+  }
+
+  // Second message of the ApplyProof.
+  message Message2 {
+    BigNumVector masked_dummy_messages_plus_key = 1;
+    // Serialized BigNum
+    bytes masked_dummy_opening = 2;
+  }
+
+  // The challenge will be generated using the Fiat-Shamir heuristic applied to
+  // Statement and Message1.
+  Message1 message_1 = 1;
+  Message2 message_2 = 2;
+}

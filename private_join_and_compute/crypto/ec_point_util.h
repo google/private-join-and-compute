@@ -19,7 +19,6 @@
 #include <memory>
 #include <string>
 
-#include "absl/base/port.h"
 #include "absl/strings/string_view.h"
 #include "private_join_and_compute/crypto/big_num.h"
 #include "private_join_and_compute/crypto/context.h"

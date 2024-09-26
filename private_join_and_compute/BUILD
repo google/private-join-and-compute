@@ -14,6 +14,8 @@
 
 load("@com_github_grpc_grpc//bazel:grpc_build_system.bzl", "grpc_proto_library")
 
+package(default_visibility = ["//visibility:public"])
+
 grpc_proto_library(
     name = "match_proto",
     srcs = ["match.proto"],
@@ -69,7 +71,6 @@ cc_library(
         "//private_join_and_compute/crypto:ec_commutative_cipher",
         "//private_join_and_compute/crypto:paillier",
         "//private_join_and_compute/util:status_includes",
-        "@abseil-cpp//absl/memory",
     ],
 )
 
@@ -97,7 +98,6 @@ cc_library(
         "//private_join_and_compute/crypto:ec_commutative_cipher",
         "//private_join_and_compute/crypto:paillier",
         "//private_join_and_compute/util:status_includes",
-        "@abseil-cpp//absl/memory",
     ],
 )
 
@@ -109,7 +109,7 @@ cc_library(
         ":match_proto",
         "//private_join_and_compute/crypto:bn_util",
         "//private_join_and_compute/util:status_includes",
-        "@abseil-cpp//absl/memory",
+        "@abseil-cpp//absl/container:btree",
         "@abseil-cpp//absl/strings",
     ],
 )
@@ -122,7 +122,7 @@ cc_binary(
         "@abseil-cpp//absl/base",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/flags:parse",
-        "@glog",
+        "@abseil-cpp//absl/log",
     ],
 )
 
@@ -151,10 +151,8 @@ cc_binary(
         "@abseil-cpp//absl/base",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/flags:parse",
-        "@abseil-cpp//absl/memory",
         "@com_github_grpc_grpc//:grpc",
         "@com_github_grpc_grpc//:grpc++",
-        "@glog",
     ],
 )
 
@@ -169,10 +167,8 @@ cc_binary(
         "@abseil-cpp//absl/base",
         "@abseil-cpp//absl/flags:flag",
         "@abseil-cpp//absl/flags:parse",
-        "@abseil-cpp//absl/memory",
         "@abseil-cpp//absl/strings",
         "@com_github_grpc_grpc//:grpc",
         "@com_github_grpc_grpc//:grpc++",
-        "@glog",
     ],
 )

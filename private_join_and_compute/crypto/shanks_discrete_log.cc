@@ -15,6 +15,9 @@
 
 #include "private_join_and_compute/crypto/shanks_discrete_log.h"
 
+#include <map>
+#include <memory>
+#include <string>
 #include <utility>
 
 #include "absl/status/statusor.h"
@@ -67,7 +70,7 @@ absl::StatusOr<std::unique_ptr<ShanksDiscreteLog>> ShanksDiscreteLog::Create(
                      kMaxMessageSize, "."));
   }
   ASSIGN_OR_RETURN(auto generator_clone, generator->Clone());
-  auto generator_ptr = absl::make_unique<private_join_and_compute::ECPoint>(
+  auto generator_ptr = std::make_unique<private_join_and_compute::ECPoint>(
       std::move(generator_clone));
   ASSIGN_OR_RETURN(auto table,
                    PrecomputeTable(group, generator, precompute_bits));

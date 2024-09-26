@@ -16,7 +16,9 @@
 #ifndef PRIVATE_JOIN_AND_COMPUTE_COMMUTATIVE_ELGAMAL_H_
 #define PRIVATE_JOIN_AND_COMPUTE_COMMUTATIVE_ELGAMAL_H_
 
+#include <memory>
 #include <string>
+#include <utility>
 
 #include "absl/strings/string_view.h"
 #include "private_join_and_compute/crypto/elgamal.h"

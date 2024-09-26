@@ -1,0 +1,68 @@
+/*
+ * Copyright 2019 Google LLC.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto3";
+
+package private_join_and_compute.proto;
+
+import "private_join_and_compute/crypto/proto/big_num.proto";
+
+option java_multiple_files = true;
+
+// Public key for Camenisch-Shoup encryption scheme. All the fields are
+// serialized BigNums.
+//
+// n is a strong RSA modulus: n = p * q where p, q are large safe primes.
+// g is a random n^s-th residue mod n^(s+1): g = r^n mod n^(s+1) for a random r.
+// ys[i] = g^xs[i] mod n^(s+1) for a random x, where x is the secret key. We
+// allow multiple ys, thereby enabling encrypting multiple messages in a single
+// ciphertext.
+//
+// To encrypt a batch of  messages ms, where each ms[i] < n^s:
+// u = g^r mod n^(s+1) for a random r;
+// es[i] = (1 + n)^m * ys[i]^r mod n^(s+1);
+// Ciphertext = (u, e).
+message CamenischShoupPublicKey {
+  bytes n = 1;
+  bytes g = 2;
+  // The public key for each component. There will be one secret key in xs for
+  // each ys, and one ciphertext component es (though optionally fewer).
+  BigNumVector ys = 3;
+  // n^(s+1) is the modulus for the scheme. n^s is the message space.
+  uint64 s = 4;
+}
+
+// Secret key for Camenisch-Shoup encryption scheme. All the fields are
+// serialized BigNums.
+//
+// For public key (n, s, g, ys):
+// ys[i] = g^xs[i] mod n^(s+1).
+//
+// To decrypt a ciphertext (u,es):
+// ms[i] = ((es[i]/u^xs[i] - 1) mod n^(s+1)) / n.
+message CamenischShoupPrivateKey {
+  BigNumVector xs = 1;
+}
+
+// Ciphertext of Camenisch-Shoup encryption scheme. All the fields are
+// serialized BigNums.
+//
+// For public key (n, s, g, ys), messages ms, and randomness r:
+// u = g^r mod n^(s+1);
+// es[i] = (1 + n)^ms[i] * ys[i]^r mod n^(s+1).
+message CamenischShoupCiphertext {
+  bytes u = 1;
+  BigNumVector es = 2;
+}

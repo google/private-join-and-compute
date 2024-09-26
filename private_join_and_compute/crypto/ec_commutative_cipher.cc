@@ -15,12 +15,31 @@
 
 #include "private_join_and_compute/crypto/ec_commutative_cipher.h"
 
+#include <memory>
+#include <string>
 #include <utility>
 
+#include "private_join_and_compute/crypto/big_num.h"
+#include "private_join_and_compute/crypto/ec_group.h"
 #include "private_join_and_compute/crypto/elgamal.h"
 #include "private_join_and_compute/util/status.inc"
 
 namespace private_join_and_compute {
+
+namespace {
+
+constexpr absl::string_view kEcCommutativeCipherDst = "ECCommutativeCipher";
+
+// Invert private scalar using Fermat's Little Theorem to avoid side-channel
+// attacks. This avoids the caveat of ModInverseBlinded, namely that the
+// underlying BN_mod_inverse_blinded is not available on all platforms.
+BigNum InvertPrivateScalar(const BigNum& scalar, const ECGroup& ec_group,
+                           Context& context) {
+  const BigNum& order = ec_group.GetOrder();
+  return scalar.ModExp(order.Sub(context.Two()), order);
+}
+
+}  // namespace
 
 ECCommutativeCipher::ECCommutativeCipher(std::unique_ptr<Context> context,
                                          ECGroup group, BigNum private_key,
@@ -28,11 +47,17 @@ ECCommutativeCipher::ECCommutativeCipher(std::unique_ptr<Context> context,
     : context_(std::move(context)),
       group_(std::move(group)),
       private_key_(std::move(private_key)),
-      private_key_inverse_(private_key_.ModInverse(group_.GetOrder())),
+      private_key_inverse_(
+          InvertPrivateScalar(private_key_, group_, *context_)),
       hash_type_(hash_type) {}
 
 bool ECCommutativeCipher::ValidateHashType(HashType hash_type) {
-  return (hash_type == SHA256 || hash_type == SHA512);
+  return (hash_type == SHA256 || hash_type == SHA384 || hash_type == SHA512 ||
+          hash_type == SSWU_RO);
+}
+
+bool ECCommutativeCipher::ValidateHashType(int hash_type) {
+  return hash_type >= SHA256 && hash_type <= SSWU_RO;
 }
 
 StatusOr<std::unique_ptr<ECCommutativeCipher>>
@@ -60,6 +85,24 @@ ECCommutativeCipher::CreateFromKey(int curve_id, absl::string_view key_bytes,
   if (!status.ok()) {
     return status;
   }
+  return std::unique_ptr<ECCommutativeCipher>(new ECCommutativeCipher(
+      std::move(context), std::move(group), std::move(private_key), hash_type));
+}
+
+StatusOr<std::unique_ptr<ECCommutativeCipher>>
+ECCommutativeCipher::CreateWithKeyFromSeed(int curve_id,
+                                           absl::string_view seed_bytes,
+                                           absl::string_view tag_bytes,
+                                           HashType hash_type) {
+  std::unique_ptr<Context> context(new Context);
+  ASSIGN_OR_RETURN(ECGroup group, ECGroup::Create(curve_id, context.get()));
+  if (seed_bytes.size() < 16) {
+    return InvalidArgumentError("Seed is too short.");
+  }
+  if (!ECCommutativeCipher::ValidateHashType(hash_type)) {
+    return InvalidArgumentError("Invalid hash type.");
+  }
+  BigNum private_key = context->PRF(seed_bytes, tag_bytes, group.GetOrder());
   return std::unique_ptr<ECCommutativeCipher>(new ECCommutativeCipher(
       std::move(context), std::move(group), std::move(private_key), hash_type));
 }
@@ -113,8 +156,13 @@ ECCommutativeCipher::HashToTheCurveInternal(absl::string_view plaintext) {
   StatusOr<ECPoint> status_or_point;
   if (hash_type_ == SHA512) {
     status_or_point = group_.GetPointByHashingToCurveSha512(plaintext);
+  } else if (hash_type_ == SHA384) {
+    status_or_point = group_.GetPointByHashingToCurveSha384(plaintext);
   } else if (hash_type_ == SHA256) {
     status_or_point = group_.GetPointByHashingToCurveSha256(plaintext);
+  } else if (hash_type_ == SSWU_RO) {
+    status_or_point = group_.GetPointByHashingToCurveSswuRo(
+        plaintext, kEcCommutativeCipherDst);
   } else {
     return InvalidArgumentError("Invalid hash type.");
   }

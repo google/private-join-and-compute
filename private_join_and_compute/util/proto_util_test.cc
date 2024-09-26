@@ -19,6 +19,7 @@
 #include <gtest/gtest.h>
 
 #include <string>
+#include <vector>
 
 #include "private_join_and_compute/util/file_test.pb.h"
 #include "private_join_and_compute/util/status_testing.inc"
