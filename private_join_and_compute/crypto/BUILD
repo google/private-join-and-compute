@@ -33,7 +33,7 @@ cc_library(
     deps = [
         ":openssl_includes",
         "@boringssl//:ssl",
-        "@com_github_google_glog//:glog",
+        "@glog",
     ],
 )
 
@@ -51,10 +51,10 @@ cc_library(
         ":openssl_includes",
         ":openssl_init",
         "//private_join_and_compute/util:status_includes",
-        "@com_github_google_glog//:glog",
-        "@com_google_absl//absl/base",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/base",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/strings",
+        "@glog",
     ],
 )
 
@@ -69,9 +69,9 @@ cc_library(
     deps = [
         ":bn_util",
         ":openssl_includes",
-        "@com_github_google_glog//:glog",
-        "@com_google_absl//absl/base",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/base",
+        "@abseil-cpp//absl/strings",
+        "@glog",
     ],
 )
 
@@ -89,9 +89,9 @@ cc_library(
         ":bn_util",
         ":openssl_includes",
         "//private_join_and_compute/util:status_includes",
-        "@com_github_google_glog//:glog",
-        "@com_google_absl//absl/base",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/base",
+        "@abseil-cpp//absl/strings",
+        "@glog",
     ],
 )
 
@@ -107,8 +107,8 @@ cc_library(
         ":bn_util",
         ":ec_util",
         "//private_join_and_compute/util:status_includes",
-        "@com_github_google_glog//:glog",
-        "@com_google_absl//absl/memory",
+        "@abseil-cpp//absl/memory",
+        "@glog",
     ],
 )
 
@@ -125,8 +125,8 @@ cc_library(
         ":ec_util",
         ":elgamal",
         "//private_join_and_compute/util:status_includes",
-        "@com_github_google_glog//:glog",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
+        "@glog",
     ],
 )
 
@@ -143,8 +143,8 @@ cc_library(
         ":ec_commutative_cipher",
         ":ec_util",
         "//private_join_and_compute/util:status_includes",
-        "@com_github_google_glog//:glog",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
+        "@glog",
     ],
 )
 
@@ -161,9 +161,9 @@ cc_library(
         ":ec_util",
         ":elgamal",
         "//private_join_and_compute/util:status_includes",
-        "@com_github_google_glog//:glog",
-        "@com_google_absl//absl/base",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/base",
+        "@abseil-cpp//absl/strings",
+        "@glog",
     ],
 )
 
@@ -179,9 +179,9 @@ cc_library(
         ":bn_util",
         ":mont_mul",
         "//private_join_and_compute/util:status_includes",
-        "@com_github_google_glog//:glog",
-        "@com_google_absl//absl/base",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/base",
+        "@abseil-cpp//absl/strings",
+        "@glog",
     ],
 )
 
@@ -195,7 +195,7 @@ cc_library(
     ],
     deps = [
         ":bn_util",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -218,10 +218,10 @@ cc_library(
         ":paillier_proto",
         ":two_modulus_crt",
         "//private_join_and_compute/util:status_includes",
-        "@com_github_google_glog//:glog",
-        "@com_google_absl//absl/base",
-        "@com_google_absl//absl/container:node_hash_map",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/base",
+        "@abseil-cpp//absl/container:node_hash_map",
+        "@abseil-cpp//absl/strings",
+        "@glog",
     ],
 )
 
@@ -238,7 +238,7 @@ cc_library(
         ":ec_util",
         ":elgamal",
         "//private_join_and_compute/util:status_includes",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
     ],
 )
 

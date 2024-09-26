@@ -41,7 +41,7 @@ cc_library(
     deps = [
         ":private_join_and_compute_proto",
         "//private_join_and_compute/util:status_includes",
-        "@com_google_absl//absl/memory",
+        "@abseil-cpp//absl/memory",
     ],
 )
 
@@ -69,7 +69,7 @@ cc_library(
         "//private_join_and_compute/crypto:ec_commutative_cipher",
         "//private_join_and_compute/crypto:paillier",
         "//private_join_and_compute/util:status_includes",
-        "@com_google_absl//absl/memory",
+        "@abseil-cpp//absl/memory",
     ],
 )
 
@@ -97,7 +97,7 @@ cc_library(
         "//private_join_and_compute/crypto:ec_commutative_cipher",
         "//private_join_and_compute/crypto:paillier",
         "//private_join_and_compute/util:status_includes",
-        "@com_google_absl//absl/memory",
+        "@abseil-cpp//absl/memory",
     ],
 )
 
@@ -109,8 +109,8 @@ cc_library(
         ":match_proto",
         "//private_join_and_compute/crypto:bn_util",
         "//private_join_and_compute/util:status_includes",
-        "@com_google_absl//absl/memory",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/memory",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -119,10 +119,10 @@ cc_binary(
     srcs = ["generate_dummy_data.cc"],
     deps = [
         ":data_util",
-        "@com_github_google_glog//:glog",
-        "@com_google_absl//absl/base",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/flags:parse",
+        "@abseil-cpp//absl/base",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/flags:parse",
+        "@glog",
     ],
 )
 
@@ -148,13 +148,13 @@ cc_binary(
         ":private_join_and_compute_rpc_impl",
         ":protocol_server",
         ":server_impl",
-        "@com_github_google_glog//:glog",
+        "@abseil-cpp//absl/base",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/flags:parse",
+        "@abseil-cpp//absl/memory",
         "@com_github_grpc_grpc//:grpc",
         "@com_github_grpc_grpc//:grpc++",
-        "@com_google_absl//absl/base",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/flags:parse",
-        "@com_google_absl//absl/memory",
+        "@glog",
     ],
 )
 
@@ -166,13 +166,13 @@ cc_binary(
         ":data_util",
         ":private_join_and_compute_proto",
         ":protocol_client",
-        "@com_github_google_glog//:glog",
+        "@abseil-cpp//absl/base",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/flags:parse",
+        "@abseil-cpp//absl/memory",
+        "@abseil-cpp//absl/strings",
         "@com_github_grpc_grpc//:grpc",
         "@com_github_grpc_grpc//:grpc++",
-        "@com_google_absl//absl/base",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/flags:parse",
-        "@com_google_absl//absl/memory",
-        "@com_google_absl//absl/strings",
+        "@glog",
     ],
 )

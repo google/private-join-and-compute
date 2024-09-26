@@ -22,9 +22,9 @@ def pjc_deps():
     if "com_github_google_glog" not in native.existing_rules():
         http_archive(
             name = "com_github_google_glog",
-            sha256 = "122fb6b712808ef43fbf80f75c52a21c9760683dae470154f02bddfc61135022",
-            strip_prefix = "glog-0.6.0",
-            urls = ["https://github.com/google/glog/archive/v0.6.0.zip"],
+            sha256 = "42c7395b26f1aa2157015b7d7b811b799c9c477147f4239410bde48901f009c5",
+            strip_prefix = "glog-c18db3903b9f0abd80ae740fde94f7e32aa40b92",
+            urls = ["https://github.com/google/glog/archive/c18db3903b9f0abd80ae740fde94f7e32aa40b92.zip"],
         )
 
     if "com_github_gflags_gflags" not in native.existing_rules():
@@ -42,27 +42,27 @@ def pjc_deps():
 
     # Abseil C++ libraries
     if "com_google_absl" not in native.existing_rules():
-        git_repository(
+        http_archive(
             name = "com_google_absl",
-            remote = "https://github.com/abseil/abseil-cpp.git",
-            commit = "0f3bb466b868b523cf1dc9b2aaaed65c77b28862",
-            shallow_since = "1603283562 -0400",
+            sha256 = "31b0b6fe3f14875a27c48d5775d05e157bab233065f7c55f0e1f4991c5e95840",
+            strip_prefix = "abseil-cpp-522606b7fae37836c138e83f6eec0eabb9947dc0",
+            url = "https://github.com/abseil/abseil-cpp/archive/522606b7fae37836c138e83f6eec0eabb9947dc0.zip",
         )
 
     # gtest.
     if "com_github_google_googletest" not in native.existing_rules():
-        git_repository(
-            name = "com_github_google_googletest",
-            commit = "703bd9caab50b139428cea1aaff9974ebee5742e",  # tag = "release-1.10.0"
-            remote = "https://github.com/google/googletest.git",
-            shallow_since = "1570114335 -0400",
+        http_archive(
+            name = "com_google_googletest",
+            sha256 = "81964fe578e9bd7c94dfdb09c8e4d6e6759e19967e397dbea48d1c10e45d0df2",
+            strip_prefix = "googletest-release-1.12.1",
+            url = "https://github.com/google/googletest/archive/refs/tags/release-1.12.1.tar.gz",
         )
 
     # Protobuf
-    if "com_google_protobuf" not in native.existing_rules():
-        git_repository(
-            name = "com_google_protobuf",
-            remote = "https://github.com/protocolbuffers/protobuf.git",
-            commit = "9647a7c2356a9529754c07235a2877ee676c2fd0",
-            shallow_since = "1609366209 -0800",
+    if "com_github_protocolbuffers_protobuf" not in native.existing_rules():
+        http_archive(
+            name = "com_github_protocolbuffers_protobuf",
+            sha256 = "930c2c3b5ecc6c9c12615cf5ad93f1cd6e12d0aba862b572e076259970ac3a53",
+            strip_prefix = "protobuf-3.21.12",
+            urls = ["https://github.com/protocolbuffers/protobuf/archive/refs/tags/v3.21.12.tar.gz"],
         )
