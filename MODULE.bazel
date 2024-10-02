@@ -18,18 +18,31 @@ bazel_dep(name = "abseil-cpp", version = "20240722.0")
 bazel_dep(name = "googletest", version = "1.15.2")
 bazel_dep(name = "boringssl", version = "0.20240913.0")
 bazel_dep(name = "rules_cc", version = "0.0.10")
-bazel_dep(name = "rules_proto", version = "6.0.2")
+bazel_dep(name = "protobuf", version = "28.2")
 bazel_dep(name = "rules_proto_grpc", version = "5.0.0")
 bazel_dep(name = "rules_proto_grpc_cpp", version = "5.0.0")
 bazel_dep(name = "rules_pkg", version = "1.0.1")
-bazel_dep(name = "rules_java", version = "7.11.1")
+bazel_dep(name = "rules_java", version = "7.12.1")
 bazel_dep(name = "rules_python", version = "0.36.0")
-bazel_dep(name = "protobuf", version = "28.2")
 
 # Python
-python = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
-python.parse(
-    name = "pip_deps",
-    requirements_lock = ":requirements.txt",
+python = use_extension("@rules_python//python/extensions:python.bzl", "python")
+python.toolchain(
+    is_default = True,
+    python_version = "3.12",
 )
-use_repo(python, "pip_deps")
+use_repo(
+    python,
+    # register toolchains
+    "python_3_12",
+    # Handy helper for all
+    "python_versions",
+)
+
+pip = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
+use_repo(pip, "pcj_deps")
+pip.parse(
+    hub_name = "pcj_deps",
+    python_version = "3.12",
+    requirements_lock = "//private_join_and_compute/py/requirements:requirements_lock_3_12.txt",
+)

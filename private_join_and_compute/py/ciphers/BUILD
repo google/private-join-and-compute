@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-load("@pip_deps//:requirements.bzl", "requirement")
+load("@pcj_deps//:requirements.bzl", "requirement")
 
 # Description:
 #   Contains libraries for openssl big num operations.

@@ -15,7 +15,7 @@
 # Description:
 #   Contains libraries for openssl big num operations.
 
-load("@pip_deps//:requirements.bzl", "requirement")
+load("@pcj_deps//:requirements.bzl", "requirement")
 load("@rules_python//python:defs.bzl", "py_library", "py_test")
 
 package(default_visibility = ["//visibility:public"])

@@ -214,7 +214,7 @@ cc_test(
         ":simultaneous_fixed_bases_exp",
         "//private_join_and_compute/util:status_includes",
         "//private_join_and_compute/util:status_testing_includes",
-        "@com_github_google_googletest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -306,7 +306,7 @@ cc_test(
         "//private_join_and_compute/crypto/proto:proto_util",
         "//private_join_and_compute/util:status_includes",
         "//private_join_and_compute/util:status_testing_includes",
-        "@com_github_google_googletest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -341,7 +341,7 @@ cc_test(
         "//private_join_and_compute/crypto/proto:proto_util",
         "//private_join_and_compute/util:status_includes",
         "//private_join_and_compute/util:status_testing_includes",
-        "@com_github_google_googletest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )
 

@@ -14,8 +14,8 @@
 
 # Implementation of Dodis-Yampolskiy VRF and OPRF.
 
+load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("@rules_cc//cc:defs.bzl", "cc_library")
-load("@rules_proto//proto:defs.bzl", "proto_library")
 
 package(
     default_visibility = ["//visibility:public"],
@@ -71,7 +71,7 @@ cc_test(
         "//private_join_and_compute/crypto/proto:proto_util",
         "//private_join_and_compute/util:status_testing_includes",
         "@abseil-cpp//absl/strings",
-        "@com_github_google_googletest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -133,6 +133,6 @@ cc_test(
         "//private_join_and_compute/crypto/proto:proto_util",
         "//private_join_and_compute/util:status_testing_includes",
         "@abseil-cpp//absl/strings",
-        "@com_github_google_googletest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )

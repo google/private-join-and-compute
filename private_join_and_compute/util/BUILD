@@ -47,7 +47,7 @@ cc_library(
     deps = [
         ":status_includes",
         "@abseil-cpp//absl/strings",
-        "@com_github_google_googletest//:gtest",
+        "@googletest//:gtest",
     ],
 )
 
@@ -74,7 +74,7 @@ cc_test(
     ],
     deps = [
         ":file",
-        "@com_github_google_googletest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -102,7 +102,7 @@ cc_test(
         ":file_test_proto",
         ":proto_util",
         ":status_testing_includes",
-        "@com_github_google_googletest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -136,7 +136,7 @@ cc_test(
         "//private_join_and_compute/crypto:bn_util",
         "@abseil-cpp//absl/random",
         "@abseil-cpp//absl/strings",
-        "@com_github_google_googletest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -176,7 +176,7 @@ cc_test(
         ":status_testing_includes",
         ":test_proto",
         "@abseil-cpp//absl/strings",
-        "@com_github_google_googletest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -228,7 +228,7 @@ cc_test(
     deps = [
         ":elgamal_proto_util",
         ":status_testing_includes",
-        "@com_github_google_googletest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -245,7 +245,7 @@ cc_test(
         "//private_join_and_compute/crypto:elgamal",
         "//private_join_and_compute/crypto:elgamal_proto",
         "//private_join_and_compute/crypto:openssl_includes",
-        "@com_github_google_googletest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -260,6 +260,6 @@ cc_test(
         "//private_join_and_compute/crypto:ec_key_proto",
         "//private_join_and_compute/crypto:ec_util",
         "//private_join_and_compute/crypto:openssl_includes",
-        "@com_github_google_googletest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )

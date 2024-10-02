@@ -9,4 +9,4 @@ build --host_cxxopt='-std=c++17'
 
 test -c opt
 test --cxxopt='-std=c++17'
-build --host_cxxopt='-std=c++17'
+test --host_cxxopt='-std=c++17'
