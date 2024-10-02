@@ -26,14 +26,6 @@ bazel_dep(name = "rules_java", version = "7.11.1")
 bazel_dep(name = "rules_python", version = "0.36.0")
 bazel_dep(name = "protobuf", version = "28.2")
 
-# Grpc
-grpc_deps = use_extension(
-    "//bazel:grpc_deps.bzl",
-    "grpc_extension",
-)
-grpc_deps.load_dependencies()
-use_repo(grpc_deps)
-
 # Python
 python = use_extension("@rules_python//python/extensions:pip.bzl", "pip")
 python.parse(
