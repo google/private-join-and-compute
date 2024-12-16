@@ -28,3 +28,6 @@
 #include <openssl/ossl_typ.h>
 #include <openssl/rand.h>
 #include <openssl/sha.h>
+#include <openssl/mem.h>
+#include <openssl/base.h>
+#include <openssl/nid.h>

@@ -19,6 +19,7 @@ package private_join_and_compute.proto;
 
 import "private_join_and_compute/crypto/proto/big_num.proto";
 
+
 option java_multiple_files = true;
 
 // Public key for Camenisch-Shoup encryption scheme. All the fields are
@@ -37,9 +38,11 @@ option java_multiple_files = true;
 message CamenischShoupPublicKey {
   bytes n = 1;
   bytes g = 2;
+
   // The public key for each component. There will be one secret key in xs for
   // each ys, and one ciphertext component es (though optionally fewer).
   BigNumVector ys = 3;
+
   // n^(s+1) is the modulus for the scheme. n^s is the message space.
   uint64 s = 4;
 }

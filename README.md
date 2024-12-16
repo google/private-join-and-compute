@@ -37,15 +37,15 @@ as Private Intersection-Sum.
 
 ## How to run the protocol
 
-In order to run Private Join and Compute, you need to install Bazel, if you
-don't have it already.
-[Follow the instructions for your platform on the Bazel website.](https://docs.bazel.build/versions/master/install.html)
+In order to run Private Join and Compute, you need to install Bazelisk (Note
+this release requires Bazel version < 7.0.)
+[Follow the instructions for your platform on the Bazelisk website.](https://github.com/bazelbuild/bazelisk/blob/master/README.md)
 
 You also need to install Git, if you don't have it already.
 [Follow the instructions for your platform on the Git website.](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
 
-Once you've installed Bazel and Git, open a Terminal and clone the Private Join
-and Compute repository into a local folder:
+Once you've installed Bazelisk and Git, open a Terminal and clone the Private
+Join and Compute repository into a local folder:
 
 ```shell
 git clone https://github.com/google/private-join-and-compute.git
@@ -56,7 +56,7 @@ the Private Join and Compute library and dependencies using Bazel:
 
 ```bash
 cd private-join-and-compute
-bazel build //private_join_and_compute:all
+bazelisk build //private_join_and_compute:all
 ```
 
 (All the following instructions must be run from inside the
@@ -131,29 +131,39 @@ careful analysis of whether any party has an incentive to lie about their
 inputs. This risk can also be mitigated by external enforcement such as code
 audits.
 
-### Leakage from the Intersection-Sum.
+### Leakage from the Intersection-Sum with Cardinality.
 
 While the Private Join and Compute functionality is supposed to reveal only the
-intersection-size and intersection-sum, it is possible that the intersection-sum
-itself could reveal something about which identifiers were in common.
+intersection-size and intersection-sum, it is possible that these outputs
+themselves could reveal something about the inputs.
 
 For example, if an identifier has a very unique associated integer values, then
 it may be easy to detect if that identifier was in the intersection simply by
 looking at the intersection-sum. One way this could happen is if one of the
 identifiers has a very large associated value compared to all other identifiers.
 In that case, if the intersection-sum is large, one could reasonably infer that
-that identifier was in the intersection. To mitigate this, we suggest scrubbing
-inputs to remove identifiers with "outlier" values.
+that identifier was in the intersection.
 
 Another way that the intersection-sum may leak which identifiers are in the
 intersection is if the intersection is too small. This could make it easier to
 guess which combination of identifiers could be in the intersection in order to
-yield a particular intersection-sum. To mitigate this, one could abort the
-protocol if the intersection-size is below a certain threshold, or to add noise
-to the output of the protocol.
+yield a particular intersection-sum.
+
+Finally, a sequence of computations on the same or related input data could
+allow inferring more about the inputs.
+
+Possible mitigations include requiring the inputs to be sufficiently large and
+sufficiently different across different executions, pruning outlier values,
+adding differential privacy noise to the outputs, and aborting if the
+intersection size is too small.
 
 (Note that these mitigations are not currently implemented in this open-source
 library.)
+
+Works including Guo et al
+[("Birds of a Feather Flock Together", USENIX '22)](https://usenix.org/conference/usenixsecurity22/presentation/guo)
+systematically study the leakage of intersection-sum with cardinality, and also
+explore mitigations. We refer readers to these works for further discussion.
 
 ## Disclaimers
 

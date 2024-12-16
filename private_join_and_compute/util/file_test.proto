@@ -13,11 +13,11 @@
  * limitations under the License.
  */
 
-syntax = "proto2";
+syntax = "proto3";
 
 package private_join_and_compute.testing;
 
 message TestProto {
-  optional bytes record = 1;
-  optional bytes dummy = 2;
+  bytes record = 1;
+  bytes dummy = 2;
 }

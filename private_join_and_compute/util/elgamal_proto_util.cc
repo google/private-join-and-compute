@@ -18,6 +18,8 @@
 #include <memory>
 #include <utility>
 
+#include "private_join_and_compute/util/status.inc"
+
 namespace private_join_and_compute::elgamal_proto_util {
 
 StatusOr<ElGamalPublicKey> SerializePublicKey(

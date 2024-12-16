@@ -22,20 +22,20 @@ def pjc_deps():
     if "boringssl" not in native.existing_rules():
         http_archive(
             name = "boringssl",
-            sha256 = "d56ac3b83e7848e86a657f53c403a8f83f45d7eb2df22ffca5e8a25018af40d0",
-            strip_prefix = "boringssl-2fbdc3bf0113d72e1bba77f9b135e513ccd0eb4b",
+            strip_prefix = "boringssl-fcef13a49852397a0d39c00be8d7bc2ba1ab6fb9",
+            integrity = "sha256-/0NFA2qR7hqV35nTIsx2KPwNNsMg7lZEoiNfkN3uuKg=",
             urls = [
-                "https://github.com/google/boringssl/archive/2fbdc3bf0113d72e1bba77f9b135e513ccd0eb4b.tar.gz",
+                "https://github.com/google/boringssl/archive/fcef13a49852397a0d39c00be8d7bc2ba1ab6fb9.tar.gz",
             ],
         )
 
     if "com_google_absl" not in native.existing_rules():
         http_archive(
             name = "com_google_absl",
-            sha256 = "f7c2cb2c5accdcbbbd5c0c59f241a988c0b1da2a3b7134b823c0bd613b1a6880",
-            strip_prefix = "abseil-cpp-b971ac5250ea8de900eae9f95e06548d14cd95fe",
+            strip_prefix = "abseil-cpp-4447c7562e3bc702ade25105912dce503f0c4010",
+            integrity = "sha256-2DQq13qp4WEDxIa2FUYMJKaVofBM23YOsC/veA35l1k=",
             urls = [
-                "https://github.com/abseil/abseil-cpp/archive/b971ac5250ea8de900eae9f95e06548d14cd95fe.zip",
+                "https://github.com/abseil/abseil-cpp/archive/4447c7562e3bc702ade25105912dce503f0c4010.zip",
             ],
         )
 
@@ -43,10 +43,10 @@ def pjc_deps():
     if "com_github_google_googletest" not in native.existing_rules():
         http_archive(
             name = "com_github_google_googletest",
-            sha256 = "ad7fdba11ea011c1d925b3289cf4af2c66a352e18d4c7264392fead75e919363",
-            strip_prefix = "googletest-1.13.0",
+            strip_prefix = "googletest-1.15.2",
+            integrity = "sha256-e0K01u1IgQxTYsJloX+uvpDcI3PIheUhZDnTeSfwKSY=",
             urls = [
-                "https://github.com/google/googletest/archive/refs/tags/v1.13.0.tar.gz",
+                "https://github.com/google/googletest/archive/refs/tags/v1.15.2.tar.gz",
             ],
         )
 
@@ -54,9 +54,10 @@ def pjc_deps():
     if "com_google_protobuf" not in native.existing_rules():
         http_archive(
             name = "com_google_protobuf",
-            strip_prefix = "protobuf-f0dc78d7e6e331b8c6bb2d5283e06aa26883ca7c",
+            strip_prefix = "protobuf-5fda5abda3dee5f7a102c85860594bff8d8610bd",
+            integrity = "sha256-jY+vJ/71Ul+pFEvu8szQcqOwEyW/xytoKkB9kbYyEvI=",
             urls = [
-                "https://github.com/protocolbuffers/protobuf/archive/f0dc78d7e6e331b8c6bb2d5283e06aa26883ca7c.tar.gz",
+                "https://github.com/protocolbuffers/protobuf/archive/5fda5abda3dee5f7a102c85860594bff8d8610bd.tar.gz",
             ],
         )
 
@@ -65,6 +66,5 @@ def pjc_deps():
         http_archive(
             name = "six",
             build_file = "@com_google_protobuf//:six.BUILD",
-            sha256 = "105f8d68616f8248e24bf0e9372ef04d3cc10104f1980f54d57b2ce73a5ad56a",
-            url = "https://pypi.python.org/packages/source/s/six/six-1.10.0.tar.gz#md5=34eed507548117b2ab523ab14b2f8b55",
+            url = "hhttps://files.pythonhosted.org/packages/71/39/171f1c67cd00715f190ba0b100d606d440a28c93c7714febeca8b79af85e/six-1.16.0.tar.gz",
         )

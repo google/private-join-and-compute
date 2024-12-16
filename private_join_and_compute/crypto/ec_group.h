@@ -16,14 +16,15 @@
 #ifndef PRIVATE_JOIN_AND_COMPUTE_CRYPTO_EC_GROUP_H_
 #define PRIVATE_JOIN_AND_COMPUTE_CRYPTO_EC_GROUP_H_
 
+#include <cstddef>
 #include <memory>
-#include <string>
 
+#include "absl/status/status.h"
+#include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "private_join_and_compute/crypto/big_num.h"
 #include "private_join_and_compute/crypto/context.h"
 #include "private_join_and_compute/crypto/openssl.inc"
-#include "private_join_and_compute/util/status.inc"
 
 namespace private_join_and_compute {
 
@@ -45,15 +46,16 @@ class ECGroup {
   // NIST. Returns INTERNAL error code if there is a failure in crypto
   // operations. Security: this function is secure only for prime order curves.
   // (All supported curves in BoringSSL have prime order.)
-  static StatusOr<ECGroup> Create(int curve_id, Context* context);
+  static absl::StatusOr<ECGroup> Create(int curve_id, Context* context);
 
   // Generates a new private key. The private key is a cryptographically strong
   // pseudo-random number in the range (0, order).
   BigNum GeneratePrivateKey() const;
 
   // Verifies that the random key is a valid number in the range (0, order).
-  // Returns Status::OK if the key is valid, otherwise returns INVALID_ARGUMENT.
-  Status CheckPrivateKey(const BigNum& priv_key) const;
+  // Returns absl::Status::OK if the key is valid, otherwise returns
+  // INVALID_ARGUMENT.
+  absl::Status CheckPrivateKey(const BigNum& priv_key) const;
 
   // Hashes m to a point on the elliptic curve y^2 = x^3 + ax + b over a
   // prime field using SHA256 with "try-and-increment" method.
@@ -63,11 +65,25 @@ class ECGroup {
   // Security: The number of operations required to hash a string depends on the
   // string, which could lead to a timing attack.
   // Security: This function is only secure for curves of prime order.
-  StatusOr<ECPoint> GetPointByHashingToCurveSha256(absl::string_view m) const;
-  StatusOr<ECPoint> GetPointByHashingToCurveSha384(absl::string_view m) const;
-  StatusOr<ECPoint> GetPointByHashingToCurveSha512(absl::string_view m) const;
-  StatusOr<ECPoint> GetPointByHashingToCurveSswuRo(absl::string_view m,
-                                                   absl::string_view dst) const;
+  absl::StatusOr<ECPoint> GetPointByHashingToCurveSha256(
+      absl::string_view m) const;
+  absl::StatusOr<ECPoint> GetPointByHashingToCurveSha384(
+      absl::string_view m) const;
+  absl::StatusOr<ECPoint> GetPointByHashingToCurveSha512(
+      absl::string_view m) const;
+  absl::StatusOr<ECPoint> GetPointByHashingToCurveSswuRo(
+      absl::string_view m, absl::string_view dst) const;
+
+  // Pad the given message until it is a valid point on the curve. Padding is
+  // achieved by left-shifting m by padding_bits_count bits, and appending
+  // successive integers till a curve point is found.
+  absl::StatusOr<ECPoint> GetPointByPaddingX(const BigNum& m,
+                                             size_t padding_bit_count) const;
+
+  // Recover the original message from a point that was derived by message
+  // padding using GetPointByPaddingX.
+  absl::StatusOr<BigNum> RecoverXFromPaddedPoint(
+      const ECPoint& point, size_t padding_bit_count) const;
 
   // Returns y^2 for the given x. The returned value is computed as x^3 + ax + b
   // mod p, where a and b are the parameters of the curve.
@@ -75,17 +91,22 @@ class ECGroup {
 
   // Returns a fixed generator for this group.
   // Returns an INTERNAL error code if it fails.
-  StatusOr<ECPoint> GetFixedGenerator() const;
+  absl::StatusOr<ECPoint> GetFixedGenerator() const;
 
   // Returns a random generator for this group.
   // Returns an INTERNAL error code if it fails.
-  StatusOr<ECPoint> GetRandomGenerator() const;
+  absl::StatusOr<ECPoint> GetRandomGenerator() const;
 
   // Creates an ECPoint from the given string.
   // Returns an INTERNAL error code if creating the point fails.
   // Returns an INVALID_ARGUMENT error code if the created point is not in this
   // group or if it is the point at infinity.
-  StatusOr<ECPoint> CreateECPoint(absl::string_view bytes) const;
+  absl::StatusOr<ECPoint> CreateECPoint(absl::string_view bytes) const;
+
+  // Creates an ECPoint object with the given x, y affine coordinates.
+  // Returns an INVALID_ARGUMENT error code if the point (x, y) is not in this
+  // group or if it is the point at infinity.
+  absl::StatusOr<ECPoint> CreateECPoint(const BigNum& x, const BigNum& y) const;
 
   // The parameters describing an elliptic curve given by the equation
   // y^2 = x^3 + a * x + b over a prime field Fp.
@@ -105,16 +126,11 @@ class ECGroup {
   int GetCurveId() const { return EC_GROUP_get_curve_name(group_.get()); }
 
   // Creates an ECPoint which is the identity.
-  StatusOr<ECPoint> GetPointAtInfinity() const;
+  absl::StatusOr<ECPoint> GetPointAtInfinity() const;
 
  private:
   ECGroup(Context* context, ECGroupPtr group, BigNum order, BigNum cofactor,
           CurveParams curve_params, BigNum p_minus_one_over_two);
-
-  // Creates an ECPoint object with the given x, y affine coordinates.
-  // Returns an INVALID_ARGUMENT error code if the point (x, y) is not in this
-  // group or if it is the point at infinity.
-  StatusOr<ECPoint> CreateECPoint(const BigNum& x, const BigNum& y) const;
 
   // Returns true if q is a quadratic residue modulo curve_params_.p_.
   bool IsSquare(const BigNum& q) const;
@@ -141,7 +157,8 @@ class ECGroup {
   // Constant used to evaluate if a number is a quadratic residue.
   BigNum p_minus_one_over_two_;
 
-  StatusOr<ECPoint> GetPointByHashingToCurveInternal(const BigNum& x) const;
+  absl::StatusOr<ECPoint> GetPointByHashingToCurveInternal(
+      const BigNum& x) const;
 };
 
 }  // namespace private_join_and_compute

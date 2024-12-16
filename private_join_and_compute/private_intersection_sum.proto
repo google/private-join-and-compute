@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-syntax = "proto2";
+syntax = "proto3";
 
 package private_join_and_compute;
 
@@ -33,9 +33,9 @@ message PrivateIntersectionSumClientMessage {
   // Message containing the client's set encrypted under the client's keys, and
   // the server's set re-encrypted with the client's key, and shuffled.
   message ClientRoundOne {
-    optional bytes public_key = 1;
-    optional EncryptedSet encrypted_set = 2;
-    optional EncryptedSet reencrypted_set = 3;
+    bytes public_key = 1;
+    EncryptedSet encrypted_set = 2;
+    EncryptedSet reencrypted_set = 3;
   }
 }
 
@@ -48,11 +48,11 @@ message PrivateIntersectionSumServerMessage {
   }
 
   message ServerRoundOne {
-    optional EncryptedSet encrypted_set = 1;
+    EncryptedSet encrypted_set = 1;
   }
 
   message ServerRoundTwo {
-    optional int64 intersection_size = 1;
-    optional bytes encrypted_sum = 2;
+    int64 intersection_size = 1;
+    bytes encrypted_sum = 2;
   }
 }

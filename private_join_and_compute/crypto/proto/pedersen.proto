@@ -19,6 +19,7 @@ package private_join_and_compute.proto;
 
 import "private_join_and_compute/crypto/proto/big_num.proto";
 
+
 option java_multiple_files = true;
 
 // Parameters key for Pedersen commitment scheme. All the fields are serialized
@@ -33,6 +34,7 @@ message PedersenParameters {
   // Serialized BigNum.
   bytes n = 1;
   BigNumVector gs = 2;
+
   // Serialized BigNum.
   bytes h = 3;
 }

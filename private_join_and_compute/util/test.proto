@@ -17,6 +17,8 @@ syntax = "proto3";
 
 package private_join_and_compute.util.proto.test;
 
+
+
 message IntValueProto {
   int32 prefix = 1;
   int32 value = 2;

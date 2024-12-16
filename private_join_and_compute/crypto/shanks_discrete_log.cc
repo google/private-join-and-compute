@@ -20,8 +20,13 @@
 #include <string>
 #include <utility>
 
+#include "absl/memory/memory.h"
+#include "absl/status/status.h"
 #include "absl/status/statusor.h"
 #include "absl/strings/str_cat.h"
+#include "private_join_and_compute/crypto/context.h"
+#include "private_join_and_compute/crypto/ec_group.h"
+#include "private_join_and_compute/crypto/ec_point.h"
 #include "private_join_and_compute/util/status.inc"
 
 namespace private_join_and_compute {

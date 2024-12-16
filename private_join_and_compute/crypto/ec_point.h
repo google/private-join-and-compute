@@ -18,9 +18,11 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 
+#include "absl/status/statusor.h"
+#include "private_join_and_compute/crypto/big_num.h"
 #include "private_join_and_compute/crypto/openssl.inc"
-#include "private_join_and_compute/util/status.inc"
 
 namespace private_join_and_compute {
 
@@ -47,23 +49,27 @@ class ECPoint {
 
   // Converts this point to octet string in compressed form as defined in ANSI
   // X9.62 ECDSA.
-  StatusOr<std::string> ToBytesCompressed() const;
+  absl::StatusOr<std::string> ToBytesCompressed() const;
 
   // Allows faster conversions than ToBytesCompressed but doubles the size of
   // the serialized point.
-  StatusOr<std::string> ToBytesUnCompressed() const;
+  absl::StatusOr<std::string> ToBytesUnCompressed() const;
 
   // Returns an ECPoint whose value is (this * scalar).
   // Returns an INTERNAL error code if it fails.
-  StatusOr<ECPoint> Mul(const BigNum& scalar) const;
+  absl::StatusOr<ECPoint> Mul(const BigNum& scalar) const;
 
   // Returns an ECPoint whose value is (this + point).
   // Returns an INTERNAL error code if it fails.
-  StatusOr<ECPoint> Add(const ECPoint& point) const;
+  absl::StatusOr<ECPoint> Add(const ECPoint& point) const;
+
+  // Returns the affine coordinates of this point.
+  absl::StatusOr<std::pair<BigNum::BignumPtr, BigNum::BignumPtr>>
+  GetAffineCoordinates() const;
 
   // Returns an ECPoint whose value is (- this), the additive inverse of this.
   // Returns an INTERNAL error code if it fails.
-  StatusOr<ECPoint> Inverse() const;
+  absl::StatusOr<ECPoint> Inverse() const;
 
   // Returns "true" if the value of this ECPoint is the point-at-infinity.
   // (The point-at-infinity is the additive unit in the EC group).
@@ -73,7 +79,7 @@ class ECPoint {
   bool CompareTo(const ECPoint& point) const;
 
   // Returns an ECPoint that is a copy of this.
-  StatusOr<ECPoint> Clone() const;
+  absl::StatusOr<ECPoint> Clone() const;
 
  private:
   // Creates an ECPoint on the given group;

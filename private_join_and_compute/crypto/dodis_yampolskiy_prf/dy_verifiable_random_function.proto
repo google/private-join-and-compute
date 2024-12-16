@@ -22,18 +22,23 @@ import "private_join_and_compute/crypto/proto/ec_point.proto";
 import "private_join_and_compute/crypto/proto/pedersen.proto";
 
 
+
 option java_multiple_files = true;
 
 message DyVrfParameters {
   // How many bits (more than the challenge bits) to add to each
   // dummy opening (aka sigma protocol lambda).
   int64 security_parameter = 1;
+
   // How many bits the challenge has.
   int64 challenge_length_bits = 2;
+
   // Prefix to inject into the random oracle.
   string random_oracle_prefix = 3;
+
   // Serialized ECPoint
   bytes dy_prf_base_g = 4;
+
   // Parameters for the associated Pedersen Commitment Scheme. Implicitly
   // determines the max number of messages that can be VRF'ed together in a
   // single proof.
@@ -46,6 +51,7 @@ message DyVrfGenerateKeysProof {
     DyVrfParameters parameters = 1;
     DyVrfPublicKey public_key = 2;
   }
+
   message Message1 {
     // Dummy commitment to the key in each slot of the Pedersen Commitment.
     bytes dummy_commit_prf_key = 1;
@@ -55,6 +61,7 @@ message DyVrfGenerateKeysProof {
     // Masked dummy PRF key underlying the masked dummy commitment in each slot.
     // Serialized BigNum.
     bytes masked_dummy_prf_key = 1;
+
     // Opening to the masked dummy commitment to the PRF key.
     bytes masked_dummy_opening = 2;
   }
@@ -76,6 +83,7 @@ message DyVrfPublicKey {
 message DyVrfPrivateKey {
   // The PRF key. (Serialized BigNum).
   bytes prf_key = 1;
+
   // An opening to commit_prf_key (serialized BigNum).
   bytes open_commit_prf_key = 2;
 }
@@ -86,9 +94,11 @@ message DyVrfApplyProof {
   message Statement {
     DyVrfParameters parameters = 1;
     DyVrfPublicKey public_key = 2;
+
     // Serialized BigNum, corresponding to the Pedersen Commitment to the
     // messages.
     bytes commit_messages = 3;
+
     // The actual PRF evaluations (serialized ECPoints).
     ECPointVector prf_evaluations = 4;
   }
@@ -98,6 +108,7 @@ message DyVrfApplyProof {
   message Message1 {
     // Serialized BigNum.
     bytes commit_dummy_messages_plus_key = 1;
+
     // Serialized ECPoints.
     ECPointVector dummy_dy_prf_base_gs = 2;
   }
@@ -105,6 +116,7 @@ message DyVrfApplyProof {
   // Second message of the ApplyProof.
   message Message2 {
     BigNumVector masked_dummy_messages_plus_key = 1;
+
     // Serialized BigNum
     bytes masked_dummy_opening = 2;
   }

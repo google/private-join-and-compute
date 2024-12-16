@@ -23,6 +23,7 @@
 #include "private_join_and_compute/crypto/ec_group.h"
 #include "private_join_and_compute/crypto/proto/big_num.pb.h"
 #include "private_join_and_compute/crypto/proto/ec_point.pb.h"
+#include "private_join_and_compute/util/status.inc"
 #include "src/google/protobuf/message.h"
 
 namespace private_join_and_compute {

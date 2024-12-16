@@ -17,7 +17,7 @@
 // the ElGamal encryption scheme, over an Elliptic Curve or over a
 // multiplicative integer group.
 
-syntax = "proto2";
+syntax = "proto3";
 
 package private_join_and_compute;
 
@@ -41,9 +41,9 @@ package private_join_and_compute;
 // Note: The exponential ElGamal encryption scheme is an additively homomorphic
 // encryption scheme, and it only works for small messages.
 message ElGamalPublicKey {
-  optional bytes p = 1;  // modulus of the integer group
-  optional bytes g = 2;
-  optional bytes y = 3;
+  bytes p = 1;  // modulus of the integer group
+  bytes g = 2;
+  bytes y = 3;
 }
 
 // Secret key (or secret key share) for ElGamal encryption scheme. x is a
@@ -64,7 +64,7 @@ message ElGamalPublicKey {
 //     m = e * (u^{x_1})^{-1} * (u^{x_2})^{-1}, or
 //     m = log_g (e * (u^{x_1})^{-1} * (u^{x_2})^{-1}) in exponential ElGamal.
 message ElGamalSecretKey {
-  optional bytes x = 1;
+  bytes x = 1;
 }
 
 // Ciphertext of ElGamal encryption scheme. For ElGamal over integers, all the
@@ -80,6 +80,6 @@ message ElGamalSecretKey {
 //     u = g^r;
 //     e = g^m * y^r.
 message ElGamalCiphertext {
-  optional bytes u = 1;
-  optional bytes e = 2;
+  bytes u = 1;
+  bytes e = 2;
 }

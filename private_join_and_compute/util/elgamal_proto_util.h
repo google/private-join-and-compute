@@ -25,6 +25,7 @@
 #include "private_join_and_compute/crypto/ec_group.h"
 #include "private_join_and_compute/crypto/elgamal.h"
 #include "private_join_and_compute/crypto/elgamal.pb.h"
+#include "private_join_and_compute/util/status.inc"
 
 namespace private_join_and_compute::elgamal_proto_util {
 

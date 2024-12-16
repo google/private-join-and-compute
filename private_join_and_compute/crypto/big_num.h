@@ -22,9 +22,10 @@
 #include <ostream>
 #include <string>
 
+#include "absl/base/attributes.h"
+#include "absl/status/statusor.h"
 #include "absl/strings/string_view.h"
 #include "private_join_and_compute/crypto/openssl.inc"
-#include "private_join_and_compute/util/status.inc"
 
 namespace private_join_and_compute {
 
@@ -63,7 +64,7 @@ class ABSL_MUST_USE_RESULT BigNum {
 
   // Converts this BigNum to a uint64_t value. Returns an INVALID_ARGUMENT
   // error code if the value of *this is larger than 64 bits.
-  StatusOr<uint64_t> ToIntValue() const;
+  absl::StatusOr<uint64_t> ToIntValue() const;
 
   // Returns a string representation of the BigNum as a decimal number.
   std::string ToDecimalString() const;
@@ -154,7 +155,7 @@ class ABSL_MUST_USE_RESULT BigNum {
   // Returns a BigNum whose value is (*this ^ -1 mod m).
   // Returns a status error if the operation fails, for example if the inverse
   // doesn't exist.
-  StatusOr<BigNum> ModInverse(const BigNum& m) const;
+  absl::StatusOr<BigNum> ModInverse(const BigNum& m) const;
 
   // Returns r such that r ^ 2 == *this mod p.
   // Causes a check failure if the operation fails.

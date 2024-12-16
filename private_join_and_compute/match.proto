@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-syntax = "proto2";
+syntax = "proto3";
 
 package private_join_and_compute;
 
@@ -24,6 +24,6 @@ message EncryptedSet {
 
 // Holds an encrypted value and possibly encrypted associated data.
 message EncryptedElement {
-  optional bytes element = 1;
-  optional bytes associated_data = 2;
+  bytes element = 1;
+  bytes associated_data = 2;
 }
