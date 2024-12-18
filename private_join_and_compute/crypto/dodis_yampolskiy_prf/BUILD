@@ -14,8 +14,8 @@
 
 # Implementation of Dodis-Yampolskiy VRF and OPRF.
 
+load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("@rules_cc//cc:defs.bzl", "cc_library")
-load("@rules_proto//proto:defs.bzl", "proto_library")
 
 package(
     default_visibility = ["//visibility:public"],
@@ -50,8 +50,8 @@ cc_library(
         "//private_join_and_compute/crypto:ec_util",
         "//private_join_and_compute/crypto:pedersen_over_zn",
         "//private_join_and_compute/crypto/proto:proto_util",
-        "@com_google_absl//absl/strings",
-        "@com_google_protobuf//:protobuf_lite",
+        "@abseil-cpp//absl/strings",
+        "@protobuf//:protobuf_lite",
     ],
 )
 
@@ -70,8 +70,8 @@ cc_test(
         "//private_join_and_compute/crypto/proto:pedersen_cc_proto",
         "//private_join_and_compute/crypto/proto:proto_util",
         "//private_join_and_compute/util:status_testing_includes",
-        "@com_github_google_googletest//:gtest_main",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -109,7 +109,7 @@ cc_library(
         "//private_join_and_compute/crypto/proto:camenisch_shoup_cc_proto",
         "//private_join_and_compute/crypto/proto:ec_point_cc_proto",
         "//private_join_and_compute/crypto/proto:proto_util",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -132,7 +132,7 @@ cc_test(
         "//private_join_and_compute/crypto/proto:pedersen_cc_proto",
         "//private_join_and_compute/crypto/proto:proto_util",
         "//private_join_and_compute/util:status_testing_includes",
-        "@com_github_google_googletest//:gtest_main",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
+        "@googletest//:gtest_main",
     ],
 )

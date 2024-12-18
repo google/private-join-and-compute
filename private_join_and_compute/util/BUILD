@@ -31,9 +31,9 @@ cc_library(
         "status_macros.h",
     ],
     deps = [
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/status:statusor",
-        "@com_google_protobuf//:protobuf_lite",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/status:statusor",
+        "@protobuf//:protobuf_lite",
     ],
 )
 
@@ -46,8 +46,8 @@ cc_library(
     ],
     deps = [
         ":status_includes",
-        "@com_github_google_googletest//:gtest",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
+        "@googletest//:gtest",
     ],
 )
 
@@ -62,7 +62,7 @@ cc_library(
     ],
     deps = [
         ":status_includes",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -74,7 +74,7 @@ cc_test(
     ],
     deps = [
         ":file",
-        "@com_github_google_googletest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -89,8 +89,8 @@ cc_library(
     deps = [
         ":recordio",
         ":status_includes",
-        "@com_google_absl//absl/strings",
-        "@com_google_protobuf//:protobuf_lite",
+        "@abseil-cpp//absl/strings",
+        "@protobuf//:protobuf_lite",
     ],
 )
 
@@ -102,7 +102,7 @@ cc_test(
         ":file_test_proto",
         ":proto_util",
         ":status_testing_includes",
-        "@com_github_google_googletest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -115,12 +115,12 @@ cc_library(
     deps = [
         ":file",
         ":status_includes",
-        "@com_google_absl//absl/log",
-        "@com_google_absl//absl/memory",
-        "@com_google_absl//absl/status",
-        "@com_google_absl//absl/strings",
-        "@com_google_absl//absl/synchronization",
-        "@com_google_protobuf//:protobuf_lite",
+        "@abseil-cpp//absl/log",
+        "@abseil-cpp//absl/memory",
+        "@abseil-cpp//absl/status",
+        "@abseil-cpp//absl/strings",
+        "@abseil-cpp//absl/synchronization",
+        "@protobuf//:protobuf_lite",
     ],
 )
 
@@ -134,9 +134,9 @@ cc_test(
         ":status_includes",
         ":status_testing_includes",
         "//private_join_and_compute/crypto:bn_util",
-        "@com_github_google_googletest//:gtest_main",
-        "@com_google_absl//absl/random",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/random",
+        "@abseil-cpp//absl/strings",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -157,7 +157,7 @@ cc_library(
         ":proto_util",
         ":recordio",
         ":status_includes",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -175,8 +175,8 @@ cc_test(
         ":proto_util",
         ":status_testing_includes",
         ":test_proto",
-        "@com_github_google_googletest//:gtest_main",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -218,7 +218,7 @@ cc_library(
         "//private_join_and_compute/crypto:bn_util",
         "//private_join_and_compute/crypto:ec_key_proto",
         "//private_join_and_compute/crypto:ec_util",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -228,7 +228,7 @@ cc_test(
     deps = [
         ":elgamal_proto_util",
         ":status_testing_includes",
-        "@com_github_google_googletest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -245,7 +245,7 @@ cc_test(
         "//private_join_and_compute/crypto:elgamal",
         "//private_join_and_compute/crypto:elgamal_proto",
         "//private_join_and_compute/crypto:openssl_includes",
-        "@com_github_google_googletest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -260,6 +260,6 @@ cc_test(
         "//private_join_and_compute/crypto:ec_key_proto",
         "//private_join_and_compute/crypto:ec_util",
         "//private_join_and_compute/crypto:openssl_includes",
-        "@com_github_google_googletest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )

@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("@protobuf//bazel:proto_library.bzl", "proto_library")
 load("@rules_cc//cc:defs.bzl", "cc_library")
-load("@rules_proto//proto:defs.bzl", "proto_library")
 
 package(
     default_visibility = ["//visibility:public"],
@@ -71,7 +71,7 @@ cc_library(
         "//private_join_and_compute/crypto:bn_util",
         "//private_join_and_compute/crypto:ec_util",
         "//private_join_and_compute/util:status_includes",
-        "@com_google_protobuf//:protobuf",
+        "@protobuf",
     ],
 )
 
@@ -89,6 +89,6 @@ cc_test(
         "//private_join_and_compute/crypto:pedersen_over_zn",
         "//private_join_and_compute/util:status_includes",
         "//private_join_and_compute/util:status_testing_includes",
-        "@com_github_google_googletest//:gtest_main",
+        "@googletest//:gtest_main",
     ],
 )

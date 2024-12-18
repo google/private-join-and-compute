@@ -43,7 +43,7 @@ cc_library(
     deps = [
         ":private_join_and_compute_proto",
         "//private_join_and_compute/util:status_includes",
-        "@com_google_absl//absl/memory",
+        "@abseil-cpp//absl/memory",
     ],
 )
 
@@ -109,8 +109,8 @@ cc_library(
         ":match_proto",
         "//private_join_and_compute/crypto:bn_util",
         "//private_join_and_compute/util:status_includes",
-        "@com_google_absl//absl/container:btree",
-        "@com_google_absl//absl/strings",
+        "@abseil-cpp//absl/container:btree",
+        "@abseil-cpp//absl/strings",
     ],
 )
 
@@ -119,10 +119,10 @@ cc_binary(
     srcs = ["generate_dummy_data.cc"],
     deps = [
         ":data_util",
-        "@com_google_absl//absl/base",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/flags:parse",
-        "@com_google_absl//absl/log",
+        "@abseil-cpp//absl/base",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/flags:parse",
+        "@abseil-cpp//absl/log",
     ],
 )
 
@@ -148,11 +148,11 @@ cc_binary(
         ":private_join_and_compute_rpc_impl",
         ":protocol_server",
         ":server_impl",
+        "@abseil-cpp//absl/base",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/flags:parse",
         "@com_github_grpc_grpc//:grpc",
         "@com_github_grpc_grpc//:grpc++",
-        "@com_google_absl//absl/base",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/flags:parse",
     ],
 )
 
@@ -164,11 +164,11 @@ cc_binary(
         ":data_util",
         ":private_join_and_compute_proto",
         ":protocol_client",
+        "@abseil-cpp//absl/base",
+        "@abseil-cpp//absl/flags:flag",
+        "@abseil-cpp//absl/flags:parse",
+        "@abseil-cpp//absl/strings",
         "@com_github_grpc_grpc//:grpc",
         "@com_github_grpc_grpc//:grpc++",
-        "@com_google_absl//absl/base",
-        "@com_google_absl//absl/flags:flag",
-        "@com_google_absl//absl/flags:parse",
-        "@com_google_absl//absl/strings",
     ],
 )

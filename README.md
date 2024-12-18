@@ -37,15 +37,15 @@ as Private Intersection-Sum.
 
 ## How to run the protocol
 
-In order to run Private Join and Compute, you need to install Bazelisk (Note
-this release requires Bazel version < 7.0.)
-[Follow the instructions for your platform on the Bazelisk website.](https://github.com/bazelbuild/bazelisk/blob/master/README.md)
+In order to run Private Join and Compute, you need to install Bazel, if you
+don't have it already.
+[Follow the instructions for your platform on the Bazel website.](https://docs.bazel.build/versions/master/install.html)
 
 You also need to install Git, if you don't have it already.
 [Follow the instructions for your platform on the Git website.](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
 
-Once you've installed Bazelisk and Git, open a Terminal and clone the Private
-Join and Compute repository into a local folder:
+Once you've installed Bazel and Git, open a Terminal and clone the Private Join
+and Compute repository into a local folder:
 
 ```shell
 git clone https://github.com/google/private-join-and-compute.git
@@ -56,7 +56,7 @@ the Private Join and Compute library and dependencies using Bazel:
 
 ```bash
 cd private-join-and-compute
-bazelisk build //private_join_and_compute:all
+bazel build //private_join_and_compute:all
 ```
 
 (All the following instructions must be run from inside the
@@ -131,7 +131,7 @@ careful analysis of whether any party has an incentive to lie about their
 inputs. This risk can also be mitigated by external enforcement such as code
 audits.
 
-### Leakage from the Intersection-Sum with Cardinality.
+### Leakage from Intersection-Sum with Cardinality.
 
 While the Private Join and Compute functionality is supposed to reveal only the
 intersection-size and intersection-sum, it is possible that these outputs
@@ -169,3 +169,8 @@ explore mitigations. We refer readers to these works for further discussion.
 
 This is not an officially supported Google product. The software is provided
 as-is without any guarantees or warranties, express or implied.
+
+## Acknowledgements
+
+Thank you to Nick Angelou ([s0l0ist@](https://github.com/s0l0ist)) who's work
+provided the basis for the Bzlmod migration.
