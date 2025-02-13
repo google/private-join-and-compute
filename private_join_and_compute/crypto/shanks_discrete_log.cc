@@ -15,6 +15,7 @@
 
 #include "private_join_and_compute/crypto/shanks_discrete_log.h"
 
+#include <cstdint>
 #include <map>
 #include <memory>
 #include <string>

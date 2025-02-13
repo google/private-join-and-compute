@@ -315,7 +315,7 @@ class RecordWriterImpl : public RecordWriter {
 
     // Write the delimited output.
     coded_output->WriteVarint32(raw_data.size());
-    coded_output->WriteString(std::string(raw_data));
+    coded_output->WriteRaw(raw_data.data(), raw_data.size());
 
     // Force the serialization, which makes delimited_output safe to read.
     coded_output = nullptr;

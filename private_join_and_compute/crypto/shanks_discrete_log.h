@@ -27,6 +27,7 @@
 #ifndef CRYPTO_SHANKS_DISCRETE_LOG_H_
 #define CRYPTO_SHANKS_DISCRETE_LOG_H_
 
+#include <cstdint>
 #include <map>
 #include <memory>
 #include <string>
