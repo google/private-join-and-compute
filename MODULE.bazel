@@ -10,20 +10,22 @@ module(
     version = "0.0.1",
 )
 
+bazel_dep(name = "rules_apple", version = "3.19.0")
+bazel_dep(name = "re2", version = "2024-07-02.bcr.1")
 bazel_dep(name = "bazel_skylib", version = "1.7.1")
 bazel_dep(name = "grpc", version = "1.69.0", repo_name = "com_github_grpc_grpc")
 bazel_dep(name = "glog", version = "0.7.1")
 bazel_dep(name = "gflags", version = "2.2.2")
-bazel_dep(name = "abseil-cpp", version = "20240722.0")
-bazel_dep(name = "googletest", version = "1.15.2")
-bazel_dep(name = "boringssl", version = "0.20241024.0")
-bazel_dep(name = "rules_cc", version = "0.0.17")
+bazel_dep(name = "abseil-cpp", version = "20250127.0")
+bazel_dep(name = "googletest", version = "1.16.0")
+bazel_dep(name = "boringssl", version = "0.20250212.0")
+bazel_dep(name = "rules_cc", version = "0.1.1")
 bazel_dep(name = "protobuf", version = "29.2")
 bazel_dep(name = "rules_proto_grpc", version = "5.0.1")
 bazel_dep(name = "rules_proto_grpc_cpp", version = "5.0.1")
 bazel_dep(name = "rules_pkg", version = "1.0.1")
-bazel_dep(name = "rules_java", version = "8.6.3")
-bazel_dep(name = "rules_python", version = "1.0.0")
+bazel_dep(name = "rules_java", version = "8.9.0")
+bazel_dep(name = "rules_python", version = "1.2.0-rc0")
 
 # Python
 python = use_extension("@rules_python//python/extensions:python.bzl", "python")

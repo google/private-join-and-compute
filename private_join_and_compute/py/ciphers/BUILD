@@ -13,11 +13,11 @@
 # limitations under the License.
 
 load("@pjc_pip_deps//:requirements.bzl", "requirement")
+load("@rules_python//python:defs.bzl", "py_library", "py_test")
 
 # Description:
 #   Contains libraries for openssl big num operations.
-load("@protobuf//:protobuf.bzl", "py_proto_library")
-load("@rules_python//python:defs.bzl", "py_library", "py_test")
+load("@rules_python//python:proto.bzl", "py_proto_library")
 
 package(default_visibility = ["//visibility:public"])
 
