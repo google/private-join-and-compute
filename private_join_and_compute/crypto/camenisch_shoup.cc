@@ -127,12 +127,12 @@ StatusOr<CamenischShoupCiphertext> CommonEncryptWithRand(
         "not share prime factors with n.");
   }
 
-  ASSIGN_OR_RETURN(BigNum u, g_fbe->ModExp(r));
+  PJC_ASSIGN_OR_RETURN(BigNum u, g_fbe->ModExp(r));
 
   std::vector<BigNum> es;
   es.reserve(ys_fbe.size());
   for (size_t i = 0; i < ys_fbe.size(); i++) {
-    ASSIGN_OR_RETURN(BigNum y_to_r, ys_fbe[i]->ModExp(r));
+    PJC_ASSIGN_OR_RETURN(BigNum y_to_r, ys_fbe[i]->ModExp(r));
     if (i < ms.size()) {
       BigNum one_plus_n_to_m =
           ComputeByBinomialExpansion(ctx, precomp, powers, ms[i]);
@@ -161,7 +161,7 @@ StatusOr<CamenischShoupCiphertextWithRand> CommonEncryptAndGetRand(
   }
 
   BigNum r = ctx->RelativelyPrimeRandomLessThan(n);
-  ASSIGN_OR_RETURN(CamenischShoupCiphertext ct,
+  PJC_ASSIGN_OR_RETURN(CamenischShoupCiphertext ct,
                    CommonEncryptWithRand(ctx, ms, r, n, n_to_s, precomp, powers,
                                          g_fbe, ys_fbe, modulus));
 
@@ -174,7 +174,7 @@ StatusOr<CamenischShoupCiphertext> CommonEncrypt(
     const std::vector<BigNum>& powers, const FixedBaseExp* g_fbe,
     const std::vector<std::unique_ptr<FixedBaseExp>>& ys_fbe,
     const BigNum& modulus) {
-  ASSIGN_OR_RETURN(auto encryption_and_randomness,
+  PJC_ASSIGN_OR_RETURN(auto encryption_and_randomness,
                    CommonEncryptAndGetRand(ctx, ms, n, n_to_s, precomp, powers,
                                            g_fbe, ys_fbe, modulus));
   return {std::move(encryption_and_randomness.ct)};
@@ -359,7 +359,7 @@ PublicCamenischShoup::PublicCamenischShoup(Context* ctx, const BigNum& n,
 
 StatusOr<std::unique_ptr<PublicCamenischShoup>> PublicCamenischShoup::FromProto(
     Context* ctx, const proto::CamenischShoupPublicKey& public_key_proto) {
-  ASSIGN_OR_RETURN(CamenischShoupPublicKey public_key,
+  PJC_ASSIGN_OR_RETURN(CamenischShoupPublicKey public_key,
                    ParseCamenischShoupPublicKeyProto(ctx, public_key_proto));
   return std::make_unique<PublicCamenischShoup>(ctx, public_key.n, public_key.s,
                                                 public_key.g, public_key.ys);
@@ -442,9 +442,9 @@ StatusOr<std::unique_ptr<PrivateCamenischShoup>>
 PrivateCamenischShoup::FromProto(
     Context* ctx, const proto::CamenischShoupPublicKey& public_key_proto,
     const proto::CamenischShoupPrivateKey& private_key_proto) {
-  ASSIGN_OR_RETURN(CamenischShoupPublicKey public_key,
+  PJC_ASSIGN_OR_RETURN(CamenischShoupPublicKey public_key,
                    ParseCamenischShoupPublicKeyProto(ctx, public_key_proto));
-  ASSIGN_OR_RETURN(CamenischShoupPrivateKey private_key,
+  PJC_ASSIGN_OR_RETURN(CamenischShoupPrivateKey private_key,
                    ParseCamenischShoupPrivateKeyProto(ctx, private_key_proto));
   return std::make_unique<PrivateCamenischShoup>(ctx, public_key.n,
                                                  public_key.s, public_key.g,
@@ -486,7 +486,7 @@ StatusOr<std::vector<BigNum>> PrivateCamenischShoup::Decrypt(
   ms.reserve(vector_encryption_length_);
 
   for (uint64_t i = 0; i < vector_encryption_length_; i++) {
-    ASSIGN_OR_RETURN(BigNum s,
+    PJC_ASSIGN_OR_RETURN(BigNum s,
                      ct.u.ModExp(xs_[i], modulus_).ModInverse(modulus_));
     BigNum denoised = ct.es[i].ModMul(s, modulus_);
 

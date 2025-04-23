@@ -49,7 +49,7 @@ StatusOr<uint32_t> ExtractVarint32(File* file) {
   std::string bytes_read = "";
 
   size_t current_byte = 0;
-  ASSIGN_OR_RETURN(auto has_more, file->HasMore());
+  PJC_ASSIGN_OR_RETURN(auto has_more, file->HasMore());
   while (current_byte < kMaxVarint32Size && has_more) {
     auto maybe_last_byte = file->Read(1);
     if (!maybe_last_byte.ok()) {
@@ -69,7 +69,7 @@ StatusOr<uint32_t> ExtractVarint32(File* file) {
           "number "
           "of bytes.");
     }
-    ASSIGN_OR_RETURN(has_more, file->HasMore());
+    PJC_ASSIGN_OR_RETURN(has_more, file->HasMore());
   }
 
   google::protobuf::io::ArrayInputStream arrayInputStream(bytes_read.data(),

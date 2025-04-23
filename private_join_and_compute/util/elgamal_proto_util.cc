@@ -25,9 +25,9 @@ namespace private_join_and_compute::elgamal_proto_util {
 StatusOr<ElGamalPublicKey> SerializePublicKey(
     const elgamal::PublicKey& public_key_struct) {
   ElGamalPublicKey public_key_proto;
-  ASSIGN_OR_RETURN(auto serialized_g, public_key_struct.g.ToBytesCompressed());
+  PJC_ASSIGN_OR_RETURN(auto serialized_g, public_key_struct.g.ToBytesCompressed());
   public_key_proto.set_g(serialized_g);
-  ASSIGN_OR_RETURN(auto serialized_y, public_key_struct.y.ToBytesCompressed());
+  PJC_ASSIGN_OR_RETURN(auto serialized_y, public_key_struct.y.ToBytesCompressed());
   public_key_proto.set_y(serialized_y);
   return public_key_proto;
 }
@@ -35,9 +35,9 @@ StatusOr<ElGamalPublicKey> SerializePublicKey(
 StatusOr<ElGamalCiphertext> SerializeCiphertext(
     const elgamal::Ciphertext& ciphertext_struct) {
   ElGamalCiphertext ciphertext_proto;
-  ASSIGN_OR_RETURN(auto serialized_u, ciphertext_struct.u.ToBytesCompressed());
+  PJC_ASSIGN_OR_RETURN(auto serialized_u, ciphertext_struct.u.ToBytesCompressed());
   ciphertext_proto.set_u(serialized_u);
-  ASSIGN_OR_RETURN(auto serialized_e, ciphertext_struct.e.ToBytesCompressed());
+  PJC_ASSIGN_OR_RETURN(auto serialized_e, ciphertext_struct.e.ToBytesCompressed());
   ciphertext_proto.set_e(serialized_e);
   return ciphertext_proto;
 }
@@ -51,9 +51,9 @@ StatusOr<ElGamalSecretKey> SerializePrivateKey(
 
 StatusOr<std::unique_ptr<elgamal::PublicKey>> DeserializePublicKey(
     const ECGroup* ec_group, const ElGamalPublicKey& public_key_proto) {
-  ASSIGN_OR_RETURN(ECPoint public_key_struct_g,
+  PJC_ASSIGN_OR_RETURN(ECPoint public_key_struct_g,
                    ec_group->CreateECPoint(public_key_proto.g()));
-  ASSIGN_OR_RETURN(ECPoint public_key_struct_y,
+  PJC_ASSIGN_OR_RETURN(ECPoint public_key_struct_y,
                    ec_group->CreateECPoint(public_key_proto.y()));
   return absl::WrapUnique(new elgamal::PublicKey(
       {std::move(public_key_struct_g), std::move(public_key_struct_y)}));
@@ -67,9 +67,9 @@ StatusOr<std::unique_ptr<elgamal::PrivateKey>> DeserializePrivateKey(
 
 StatusOr<elgamal::Ciphertext> DeserializeCiphertext(
     const ECGroup* ec_group, const ElGamalCiphertext& ciphertext_proto) {
-  ASSIGN_OR_RETURN(ECPoint ciphertext_struct_u,
+  PJC_ASSIGN_OR_RETURN(ECPoint ciphertext_struct_u,
                    ec_group->CreateECPoint(ciphertext_proto.u()));
-  ASSIGN_OR_RETURN(ECPoint ciphertext_struct_e,
+  PJC_ASSIGN_OR_RETURN(ECPoint ciphertext_struct_e,
                    ec_group->CreateECPoint(ciphertext_proto.e()));
   return elgamal::Ciphertext{std::move(ciphertext_struct_u),
                              std::move(ciphertext_struct_e)};

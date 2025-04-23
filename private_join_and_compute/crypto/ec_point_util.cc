@@ -34,26 +34,26 @@ ECPointUtil::ECPointUtil(std::unique_ptr<Context> context, ECGroup group)
 
 StatusOr<std::unique_ptr<ECPointUtil>> ECPointUtil::Create(int curve_id) {
   std::unique_ptr<Context> context(new Context());
-  ASSIGN_OR_RETURN(ECGroup group, ECGroup::Create(curve_id, context.get()));
+  PJC_ASSIGN_OR_RETURN(ECGroup group, ECGroup::Create(curve_id, context.get()));
   return std::unique_ptr<ECPointUtil>(
       new ECPointUtil(std::move(context), std::move(group)));
 }
 
 StatusOr<std::string> ECPointUtil::GetRandomCurvePoint() {
-  ASSIGN_OR_RETURN(ECPoint point, group_.GetRandomGenerator());
+  PJC_ASSIGN_OR_RETURN(ECPoint point, group_.GetRandomGenerator());
   return point.ToBytesCompressed();
 }
 
 StatusOr<std::string> ECPointUtil::HashToCurve(
     absl::string_view input, ECCommutativeCipher::HashType hash_type) {
   if (hash_type == ECCommutativeCipher::HashType::SHA512) {
-    ASSIGN_OR_RETURN(ECPoint point,
+    PJC_ASSIGN_OR_RETURN(ECPoint point,
                      group_.GetPointByHashingToCurveSha512(input));
     return point.ToBytesCompressed();
   }
 
   if (hash_type == ECCommutativeCipher::HashType::SHA256) {
-    ASSIGN_OR_RETURN(ECPoint point,
+    PJC_ASSIGN_OR_RETURN(ECPoint point,
                      group_.GetPointByHashingToCurveSha256(input));
     return point.ToBytesCompressed();
   }

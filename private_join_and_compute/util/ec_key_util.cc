@@ -24,7 +24,7 @@ namespace private_join_and_compute::ec_key_util {
 
 Status GenerateEcKey(int curve_id, absl::string_view ec_key_filename) {
   Context context;
-  ASSIGN_OR_RETURN(ECGroup ec_group, ECGroup::Create(curve_id, &context));
+  PJC_ASSIGN_OR_RETURN(ECGroup ec_group, ECGroup::Create(curve_id, &context));
   BigNum key = ec_group.GeneratePrivateKey();
   EcKeyProto key_proto;
   key_proto.set_curve_id(curve_id);

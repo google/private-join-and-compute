@@ -82,11 +82,11 @@ inline StatusOr<std::vector<ProtoType>> ProtoUtils::ReadProtosFromFile(
   std::unique_ptr<RecordReader> reader(RecordReader::GetRecordReader());
   RETURN_IF_ERROR(reader->Open(filename));
   std::string raw_record;
-  ASSIGN_OR_RETURN(bool has_more, reader->HasMore());
+  PJC_ASSIGN_OR_RETURN(bool has_more, reader->HasMore());
   while (has_more) {
     RETURN_IF_ERROR(reader->Read(&raw_record));
     result.push_back(ProtoUtils::FromString<ProtoType>(raw_record));
-    ASSIGN_OR_RETURN(has_more, reader->HasMore());
+    PJC_ASSIGN_OR_RETURN(has_more, reader->HasMore());
   }
   RETURN_IF_ERROR(reader->Close());
   return std::move(result);

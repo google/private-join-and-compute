@@ -64,7 +64,7 @@ Status ProcessRecordFile(
   // chunk, process it in parallel using the number of available threads, get
   // the values returned by each thread, and write them to file.
   // Process the next chunk until there are no more values to read.
-  ASSIGN_OR_RETURN(bool has_more, reader->HasMore());
+  PJC_ASSIGN_OR_RETURN(bool has_more, reader->HasMore());
   while (has_more) {
     // Read the next chunk to process in parallel.
     num_records_read = 0;
@@ -73,7 +73,7 @@ Status ProcessRecordFile(
       RETURN_IF_ERROR(reader->Read(&raw_record));
       chunk.push_back(ProtoUtils::FromString<InputType>(raw_record));
       num_records_read++;
-      ASSIGN_OR_RETURN(has_more, reader->HasMore());
+      PJC_ASSIGN_OR_RETURN(has_more, reader->HasMore());
     }
 
     // The max number of items each thread will process.
@@ -93,7 +93,7 @@ Status ProcessRecordFile(
            record_transformer]() -> StatusOr<std::vector<OutputType>> {
             std::vector<OutputType> processes_chunk;
             for (size_t i = start; i < end; i++) {
-              ASSIGN_OR_RETURN(auto processed_record,
+              PJC_ASSIGN_OR_RETURN(auto processed_record,
                                record_transformer(chunk.at(i)));
               processes_chunk.push_back(std::move(processed_record));
             }
@@ -106,7 +106,7 @@ Status ProcessRecordFile(
     int index = 0;
     for (auto& future : futures) {
       index++;
-      ASSIGN_OR_RETURN(auto records, future.get());
+      PJC_ASSIGN_OR_RETURN(auto records, future.get());
       for (const auto& record : records) {
         RETURN_IF_ERROR(writer->Write(ProtoUtils::ToString(record)));
       }
@@ -116,7 +116,7 @@ Status ProcessRecordFile(
 
   // Merge all the processed chunks into one output file and delete intermediate
   // chunk files.
-  ASSIGN_OR_RETURN(auto shard_files, writer->Close());
+  PJC_ASSIGN_OR_RETURN(auto shard_files, writer->Close());
   ShardMerger<std::string> merger;
   RETURN_IF_ERROR(
       merger.Merge(get_sorting_key_function, shard_files, output_file));
