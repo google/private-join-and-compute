@@ -260,7 +260,7 @@ class PrimeCrypto {
   // the value.)
   StatusOr<BigNum> EncryptWithRand(const BigNum& m, const BigNum& r) const {
     BigNum c_p = ComputeByBinomialExpansion(ctx_, precomp_, powers_, m);
-    ASSIGN_OR_RETURN(BigNum g_to_r, fbe_->ModExp(r));
+    PJC_ASSIGN_OR_RETURN(BigNum g_to_r, fbe_->ModExp(r));
     return c_p.ModMul(g_to_r, powers_[s_ + 1]);
   }
 
@@ -341,8 +341,9 @@ class PrimeCryptoWithRand {
   // random used.
   StatusOr<PaillierEncAndRand> EncryptAndGetRand(const BigNum& m) const {
     BigNum r = ctx_->GenerateRandBetween(ctx_->One(), prime_crypto_->p_);
-    ASSIGN_OR_RETURN(BigNum ct, EncryptWithRand(m, r));
-    ASSIGN_OR_RETURN(BigNum exp_for_report_to_r, exp_for_report_->ModExp(r));
+    PJC_ASSIGN_OR_RETURN(BigNum ct, EncryptWithRand(m, r));
+    PJC_ASSIGN_OR_RETURN(BigNum exp_for_report_to_r,
+                         exp_for_report_->ModExp(r));
     return {{std::move(ct), std::move(exp_for_report_to_r)}};
   }
 
@@ -411,7 +412,7 @@ StatusOr<BigNum> PublicPaillier::EncryptUsingGeneratorAndRand(
         "PublicPaillier: The given random is not less than or equal to n.");
   }
   BigNum c = ComputeByBinomialExpansion(ctx_, precomp_, n_powers_, m);
-  ASSIGN_OR_RETURN(BigNum g_n_to_r, g_n_fbe_->ModExp(r));
+  PJC_ASSIGN_OR_RETURN(BigNum g_n_to_r, g_n_fbe_->ModExp(r));
   return c.ModMul(g_n_to_r, modulus_);
 }
 
@@ -428,7 +429,7 @@ StatusOr<BigNum> PublicPaillier::EncryptWithRand(const BigNum& m,
 StatusOr<PaillierEncAndRand> PublicPaillier::EncryptAndGetRand(
     const BigNum& m) const {
   BigNum r = ctx_->RelativelyPrimeRandomLessThan(n_);
-  ASSIGN_OR_RETURN(BigNum c, EncryptWithRand(m, r));
+  PJC_ASSIGN_OR_RETURN(BigNum c, EncryptWithRand(m, r));
   return {{std::move(c), std::move(r)}};
 }
 
@@ -461,8 +462,8 @@ StatusOr<BigNum> PrivatePaillier::Encrypt(const BigNum& m) const {
     return InvalidArgumentError(
         "PrivatePaillier::Encrypt() - Message not smaller than n^s.");
   }
-  ASSIGN_OR_RETURN(BigNum p_ct, p_crypto_->Encrypt(m));
-  ASSIGN_OR_RETURN(BigNum q_ct, q_crypto_->Encrypt(m));
+  PJC_ASSIGN_OR_RETURN(BigNum p_ct, p_crypto_->Encrypt(m));
+  PJC_ASSIGN_OR_RETURN(BigNum q_ct, q_crypto_->Encrypt(m));
   return two_mod_crt_encrypt_->Compute(p_ct, q_ct);
 }
 
@@ -511,10 +512,10 @@ StatusOr<PaillierEncAndRand> PrivatePaillierWithRand::EncryptAndGetRand(
         "PrivatePaillier::Encrypt() - Message not smaller than n^s.");
   }
 
-  ASSIGN_OR_RETURN(const PaillierEncAndRand enc_p,
-                   p_crypto_->EncryptAndGetRand(m));
-  ASSIGN_OR_RETURN(const PaillierEncAndRand enc_q,
-                   q_crypto_->EncryptAndGetRand(m));
+  PJC_ASSIGN_OR_RETURN(const PaillierEncAndRand enc_p,
+                       p_crypto_->EncryptAndGetRand(m));
+  PJC_ASSIGN_OR_RETURN(const PaillierEncAndRand enc_q,
+                       q_crypto_->EncryptAndGetRand(m));
 
   BigNum c = private_paillier_->two_mod_crt_encrypt_->Compute(enc_p.ciphertext,
                                                               enc_q.ciphertext);

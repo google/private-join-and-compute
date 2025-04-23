@@ -68,10 +68,10 @@ template <typename ProtoType>
 inline StatusOr<ProtoType> ProtoUtils::ReadProtoFromFile(
     absl::string_view filename) {
   std::unique_ptr<RecordReader> reader(RecordReader::GetRecordReader());
-  RETURN_IF_ERROR(reader->Open(filename));
+  PJC_RETURN_IF_ERROR(reader->Open(filename));
   std::string raw_record;
-  RETURN_IF_ERROR(reader->Read(&raw_record));
-  RETURN_IF_ERROR(reader->Close());
+  PJC_RETURN_IF_ERROR(reader->Read(&raw_record));
+  PJC_RETURN_IF_ERROR(reader->Close());
   return ProtoUtils::FromString<ProtoType>(raw_record);
 }
 
@@ -80,23 +80,23 @@ inline StatusOr<std::vector<ProtoType>> ProtoUtils::ReadProtosFromFile(
     absl::string_view filename) {
   std::vector<ProtoType> result;
   std::unique_ptr<RecordReader> reader(RecordReader::GetRecordReader());
-  RETURN_IF_ERROR(reader->Open(filename));
+  PJC_RETURN_IF_ERROR(reader->Open(filename));
   std::string raw_record;
-  ASSIGN_OR_RETURN(bool has_more, reader->HasMore());
+  PJC_ASSIGN_OR_RETURN(bool has_more, reader->HasMore());
   while (has_more) {
-    RETURN_IF_ERROR(reader->Read(&raw_record));
+    PJC_RETURN_IF_ERROR(reader->Read(&raw_record));
     result.push_back(ProtoUtils::FromString<ProtoType>(raw_record));
-    ASSIGN_OR_RETURN(has_more, reader->HasMore());
+    PJC_ASSIGN_OR_RETURN(has_more, reader->HasMore());
   }
-  RETURN_IF_ERROR(reader->Close());
+  PJC_RETURN_IF_ERROR(reader->Close());
   return std::move(result);
 }
 
 inline Status ProtoUtils::WriteProtoToFile(
     const google::protobuf::MessageLite& record, absl::string_view filename) {
   std::unique_ptr<RecordWriter> writer(RecordWriter::Get());
-  RETURN_IF_ERROR(writer->Open(filename));
-  RETURN_IF_ERROR(writer->Write(ProtoUtils::ToString(record)));
+  PJC_RETURN_IF_ERROR(writer->Open(filename));
+  PJC_RETURN_IF_ERROR(writer->Write(ProtoUtils::ToString(record)));
   return writer->Close();
 }
 
@@ -104,9 +104,9 @@ template <typename ProtoType>
 inline Status ProtoUtils::WriteRecordsToFile(
     absl::string_view file, const std::vector<ProtoType>& records) {
   std::unique_ptr<RecordWriter> writer(RecordWriter::Get());
-  RETURN_IF_ERROR(writer->Open(file));
+  PJC_RETURN_IF_ERROR(writer->Open(file));
   for (const auto& record : records) {
-    RETURN_IF_ERROR(writer->Write(ProtoUtils::ToString(record)));
+    PJC_RETURN_IF_ERROR(writer->Write(ProtoUtils::ToString(record)));
   }
   return writer->Close();
 }

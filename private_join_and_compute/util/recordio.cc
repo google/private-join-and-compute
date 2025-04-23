@@ -49,7 +49,7 @@ StatusOr<uint32_t> ExtractVarint32(File* file) {
   std::string bytes_read = "";
 
   size_t current_byte = 0;
-  ASSIGN_OR_RETURN(auto has_more, file->HasMore());
+  PJC_ASSIGN_OR_RETURN(auto has_more, file->HasMore());
   while (current_byte < kMaxVarint32Size && has_more) {
     auto maybe_last_byte = file->Read(1);
     if (!maybe_last_byte.ok()) {
@@ -69,7 +69,7 @@ StatusOr<uint32_t> ExtractVarint32(File* file) {
           "number "
           "of bytes.");
     }
-    ASSIGN_OR_RETURN(has_more, file->HasMore());
+    PJC_ASSIGN_OR_RETURN(has_more, file->HasMore());
   }
 
   google::protobuf::io::ArrayInputStream arrayInputStream(bytes_read.data(),
@@ -245,7 +245,7 @@ class MultiSortedReaderImpl : public MultiSortedReader<T> {
   Status Read(std::string* data, int* index) override {
     if (min_heap_.empty()) {
       for (size_t i = 0; i < readers_.size(); ++i) {
-        RETURN_IF_ERROR(this->ReadHeapDataFromReader(i));
+        PJC_RETURN_IF_ERROR(this->ReadHeapDataFromReader(i));
       }
     }
     HeapData ret_data = min_heap_.top();
@@ -263,7 +263,7 @@ class MultiSortedReaderImpl : public MultiSortedReader<T> {
       return status_or_has_more.status();
     }
     if (status_or_has_more.value()) {
-      RETURN_IF_ERROR(readers_[index]->Read(&data));
+      PJC_RETURN_IF_ERROR(readers_[index]->Read(&data));
       HeapData heap_data;
       heap_data.key = (*key_)(data);
       heap_data.data = data;
@@ -340,7 +340,7 @@ class LineWriterImpl : public LineWriter {
   Status Close() final { return out_->Close(); }
 
   Status Write(absl::string_view line) final {
-    RETURN_IF_ERROR(out_->Write(line.data(), line.size()));
+    PJC_RETURN_IF_ERROR(out_->Write(line.data(), line.size()));
     return out_->Write("\n", 1);
   }
 
@@ -466,7 +466,7 @@ class ShardingWriterImpl : public ShardingWriter<T> {
       return AlreadyUnhealthyError();
     }
     if (bytes_written_ > max_bytes_) {
-      RETURN_IF_ERROR(WriteCacheToFile());
+      PJC_RETURN_IF_ERROR(WriteCacheToFile());
     }
     bytes_written_ += raw_record.size();
     cache_.push_back(std::string(raw_record));
@@ -518,7 +518,7 @@ class ShardingWriterImpl : public ShardingWriter<T> {
     if (!open_) {
       return InternalError("Must call SetShardPrefix before calling Close.");
     }
-    RETURN_IF_ERROR(WriteCacheToFile());
+    PJC_RETURN_IF_ERROR(WriteCacheToFile());
 
     return {shard_files_};
   }
@@ -568,8 +568,8 @@ Status ShardMerger<T>::Merge(const std::function<T(absl::string_view)>& get_key,
                              absl::string_view output_file) {
   if (shard_files.empty()) {
     // Create an empty output file.
-    RETURN_IF_ERROR(writer_->Open(output_file));
-    RETURN_IF_ERROR(writer_->Close());
+    PJC_RETURN_IF_ERROR(writer_->Open(output_file));
+    PJC_RETURN_IF_ERROR(writer_->Close());
   }
 
   // Multi-sorted-read all shards, and write the results to the supplied file.
@@ -579,17 +579,17 @@ Status ShardMerger<T>::Merge(const std::function<T(absl::string_view)>& get_key,
     converted_shard_files.push_back(filename);
   }
 
-  RETURN_IF_ERROR(multi_reader_->Open(converted_shard_files, get_key));
+  PJC_RETURN_IF_ERROR(multi_reader_->Open(converted_shard_files, get_key));
 
-  RETURN_IF_ERROR(writer_->Open(output_file));
+  PJC_RETURN_IF_ERROR(writer_->Open(output_file));
 
   for (std::string record; multi_reader_->HasMore().value();) {
-    RETURN_IF_ERROR(multi_reader_->Read(&record));
-    RETURN_IF_ERROR(writer_->Write(record));
+    PJC_RETURN_IF_ERROR(multi_reader_->Read(&record));
+    PJC_RETURN_IF_ERROR(writer_->Write(record));
   }
-  RETURN_IF_ERROR(writer_->Close());
+  PJC_RETURN_IF_ERROR(writer_->Close());
 
-  RETURN_IF_ERROR(multi_reader_->Close());
+  PJC_RETURN_IF_ERROR(multi_reader_->Close());
 
   return OkStatus();
 }
@@ -597,7 +597,7 @@ Status ShardMerger<T>::Merge(const std::function<T(absl::string_view)>& get_key,
 template <typename T>
 Status ShardMerger<T>::Delete(std::vector<std::string> shard_files) {
   for (const auto& filename : shard_files) {
-    RETURN_IF_ERROR(DeleteFile(filename));
+    PJC_RETURN_IF_ERROR(DeleteFile(filename));
   }
 
   return OkStatus();

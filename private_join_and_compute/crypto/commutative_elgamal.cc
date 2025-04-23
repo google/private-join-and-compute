@@ -48,8 +48,8 @@ CommutativeElGamal::CommutativeElGamal(
 StatusOr<std::unique_ptr<CommutativeElGamal>>
 CommutativeElGamal::CreateWithNewKeyPair(int curve_id) {
   std::unique_ptr<Context> context(new Context);
-  ASSIGN_OR_RETURN(ECGroup group, ECGroup::Create(curve_id, context.get()));
-  ASSIGN_OR_RETURN(auto key_pair, elgamal::GenerateKeyPair(group));
+  PJC_ASSIGN_OR_RETURN(ECGroup group, ECGroup::Create(curve_id, context.get()));
+  PJC_ASSIGN_OR_RETURN(auto key_pair, elgamal::GenerateKeyPair(group));
   std::unique_ptr<CommutativeElGamal> result(new CommutativeElGamal(
       std::move(context), std::move(group), std::move(key_pair.first),
       std::move(key_pair.second)));
@@ -60,10 +60,10 @@ StatusOr<std::unique_ptr<CommutativeElGamal>>
 CommutativeElGamal::CreateFromPublicKey(
     int curve_id, const std::pair<std::string, std::string>& public_key_bytes) {
   std::unique_ptr<Context> context(new Context);
-  ASSIGN_OR_RETURN(ECGroup group, ECGroup::Create(curve_id, context.get()));
+  PJC_ASSIGN_OR_RETURN(ECGroup group, ECGroup::Create(curve_id, context.get()));
 
-  ASSIGN_OR_RETURN(ECPoint g, group.CreateECPoint(public_key_bytes.first));
-  ASSIGN_OR_RETURN(ECPoint y, group.CreateECPoint(public_key_bytes.second));
+  PJC_ASSIGN_OR_RETURN(ECPoint g, group.CreateECPoint(public_key_bytes.first));
+  PJC_ASSIGN_OR_RETURN(ECPoint y, group.CreateECPoint(public_key_bytes.second));
 
   std::unique_ptr<elgamal::PublicKey> public_key(
       new elgamal::PublicKey({std::move(g), std::move(y)}));
@@ -77,14 +77,14 @@ CommutativeElGamal::CreateFromPublicAndPrivateKeys(
     int curve_id, const std::pair<std::string, std::string>& public_key_bytes,
     absl::string_view private_key_bytes) {
   std::unique_ptr<Context> context(new Context);
-  ASSIGN_OR_RETURN(ECGroup group, ECGroup::Create(curve_id, context.get()));
+  PJC_ASSIGN_OR_RETURN(ECGroup group, ECGroup::Create(curve_id, context.get()));
 
-  ASSIGN_OR_RETURN(ECPoint g, group.CreateECPoint(public_key_bytes.first));
-  ASSIGN_OR_RETURN(ECPoint y, group.CreateECPoint(public_key_bytes.second));
+  PJC_ASSIGN_OR_RETURN(ECPoint g, group.CreateECPoint(public_key_bytes.first));
+  PJC_ASSIGN_OR_RETURN(ECPoint y, group.CreateECPoint(public_key_bytes.second));
 
   BigNum x = context->CreateBigNum(private_key_bytes);
 
-  ASSIGN_OR_RETURN(ECPoint expected_y, g.Mul(x));
+  PJC_ASSIGN_OR_RETURN(ECPoint expected_y, g.Mul(x));
 
   if (y != expected_y) {
     return InvalidArgumentError(
@@ -104,26 +104,27 @@ CommutativeElGamal::CreateFromPublicAndPrivateKeys(
 
 StatusOr<std::pair<std::string, std::string>> CommutativeElGamal::Encrypt(
     absl::string_view plaintext) const {
-  ASSIGN_OR_RETURN(ECPoint plaintext_point, group_.CreateECPoint(plaintext));
+  PJC_ASSIGN_OR_RETURN(ECPoint plaintext_point,
+                       group_.CreateECPoint(plaintext));
 
-  ASSIGN_OR_RETURN(elgamal::Ciphertext ciphertext,
-                   encrypter_->Encrypt(plaintext_point));
+  PJC_ASSIGN_OR_RETURN(elgamal::Ciphertext ciphertext,
+                       encrypter_->Encrypt(plaintext_point));
 
-  ASSIGN_OR_RETURN(std::string u_string, ciphertext.u.ToBytesCompressed());
-  ASSIGN_OR_RETURN(std::string e_string, ciphertext.e.ToBytesCompressed());
+  PJC_ASSIGN_OR_RETURN(std::string u_string, ciphertext.u.ToBytesCompressed());
+  PJC_ASSIGN_OR_RETURN(std::string e_string, ciphertext.e.ToBytesCompressed());
 
   return {std::make_pair(std::move(u_string), std::move(e_string))};
 }
 
 StatusOr<std::pair<std::string, std::string>>
 CommutativeElGamal::EncryptIdentityElement() const {
-  ASSIGN_OR_RETURN(ECPoint plaintext_point, group_.GetPointAtInfinity());
+  PJC_ASSIGN_OR_RETURN(ECPoint plaintext_point, group_.GetPointAtInfinity());
 
-  ASSIGN_OR_RETURN(elgamal::Ciphertext ciphertext,
-                   encrypter_->Encrypt(plaintext_point));
+  PJC_ASSIGN_OR_RETURN(elgamal::Ciphertext ciphertext,
+                       encrypter_->Encrypt(plaintext_point));
 
-  ASSIGN_OR_RETURN(std::string u_string, ciphertext.u.ToBytesCompressed());
-  ASSIGN_OR_RETURN(std::string e_string, ciphertext.e.ToBytesCompressed());
+  PJC_ASSIGN_OR_RETURN(std::string u_string, ciphertext.u.ToBytesCompressed());
+  PJC_ASSIGN_OR_RETURN(std::string e_string, ciphertext.e.ToBytesCompressed());
 
   return {std::make_pair(std::move(u_string), std::move(e_string))};
 }
@@ -135,15 +136,17 @@ StatusOr<std::string> CommutativeElGamal::Decrypt(
         "CommutativeElGamal::Decrypt: cannot decrypt without the private key.");
   }
 
-  ASSIGN_OR_RETURN(ECPoint u_point, group_.CreateECPoint(ciphertext.first));
-  ASSIGN_OR_RETURN(ECPoint e_point, group_.CreateECPoint(ciphertext.second));
+  PJC_ASSIGN_OR_RETURN(ECPoint u_point, group_.CreateECPoint(ciphertext.first));
+  PJC_ASSIGN_OR_RETURN(ECPoint e_point,
+                       group_.CreateECPoint(ciphertext.second));
   elgamal::Ciphertext decoded_ciphertext(
       {std::move(u_point), std::move(e_point)});
 
-  ASSIGN_OR_RETURN(ECPoint plaintext_point,
-                   decrypter_->Decrypt(decoded_ciphertext));
+  PJC_ASSIGN_OR_RETURN(ECPoint plaintext_point,
+                       decrypter_->Decrypt(decoded_ciphertext));
 
-  ASSIGN_OR_RETURN(std::string plaintext, plaintext_point.ToBytesCompressed());
+  PJC_ASSIGN_OR_RETURN(std::string plaintext,
+                       plaintext_point.ToBytesCompressed());
 
   return {std::move(plaintext)};
 }
@@ -151,8 +154,8 @@ StatusOr<std::string> CommutativeElGamal::Decrypt(
 StatusOr<std::pair<std::string, std::string>>
 CommutativeElGamal::GetPublicKeyBytes() const {
   const elgamal::PublicKey* public_key = encrypter_->getPublicKey();
-  ASSIGN_OR_RETURN(std::string g_string, public_key->g.ToBytesCompressed());
-  ASSIGN_OR_RETURN(std::string y_string, public_key->y.ToBytesCompressed());
+  PJC_ASSIGN_OR_RETURN(std::string g_string, public_key->g.ToBytesCompressed());
+  PJC_ASSIGN_OR_RETURN(std::string y_string, public_key->y.ToBytesCompressed());
 
   return {std::make_pair(std::move(g_string), std::move(y_string))};
 }

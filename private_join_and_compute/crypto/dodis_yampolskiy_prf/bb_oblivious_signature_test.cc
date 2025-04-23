@@ -161,7 +161,7 @@ class BbObliviousSignatureTest
   StatusOr<Transcript> GenerateTranscript(const std::vector<BigNum>& messages) {
     Transcript transcript;
 
-    ASSIGN_OR_RETURN(
+    PJC_ASSIGN_OR_RETURN(
         PedersenOverZn::CommitmentAndOpening commit_and_open_messages_temp,
         pedersen_->Commit(messages));
     transcript.commit_and_open_messages =
@@ -172,7 +172,7 @@ class BbObliviousSignatureTest
     for (size_t i = 0; i < messages.size(); ++i) {
       transcript.rs.push_back(ec_group_->GeneratePrivateKey());
     }
-    ASSIGN_OR_RETURN(
+    PJC_ASSIGN_OR_RETURN(
         PedersenOverZn::CommitmentAndOpening commit_and_open_rs_temp,
         pedersen_->Commit(transcript.rs));
     transcript.commit_and_open_rs =
@@ -180,7 +180,7 @@ class BbObliviousSignatureTest
             std::move(commit_and_open_rs_temp));
 
     // Create request
-    ASSIGN_OR_RETURN(
+    PJC_ASSIGN_OR_RETURN(
         std::tie(transcript.request_proto, transcript.request_proof_proto,
                  transcript.request_private_state_proto),
         bb_ob_sig_->GenerateRequestAndProof(
@@ -189,7 +189,7 @@ class BbObliviousSignatureTest
             *transcript.commit_and_open_rs));
 
     // Compute response
-    ASSIGN_OR_RETURN(
+    PJC_ASSIGN_OR_RETURN(
         std::tie(transcript.response_proto, transcript.response_proof_proto),
         bb_ob_sig_->GenerateResponseAndProof(
             transcript.request_proto, public_key_proto_, private_key_proto_,
@@ -198,10 +198,11 @@ class BbObliviousSignatureTest
             private_camenisch_shoup_.get()));
 
     // Extract results
-    ASSIGN_OR_RETURN(transcript.results,
-                     bb_ob_sig_->ExtractResults(
-                         transcript.response_proto, transcript.request_proto,
-                         transcript.request_private_state_proto));
+    PJC_ASSIGN_OR_RETURN(
+        transcript.results,
+        bb_ob_sig_->ExtractResults(transcript.response_proto,
+                                   transcript.request_proto,
+                                   transcript.request_private_state_proto));
 
     return std::move(transcript);
   }

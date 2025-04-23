@@ -65,8 +65,9 @@ StatusOr<std::unique_ptr<PedersenOverZn>> PedersenOverZn::Create(
 StatusOr<std::unique_ptr<PedersenOverZn>> PedersenOverZn::FromProto(
     Context* ctx, const proto::PedersenParameters& parameters_proto,
     size_t num_simultaneous_exponentiations) {
-  ASSIGN_OR_RETURN(PedersenOverZn::Parameters parameters,
-                   PedersenOverZn::ParseParametersProto(ctx, parameters_proto));
+  PJC_ASSIGN_OR_RETURN(
+      PedersenOverZn::Parameters parameters,
+      PedersenOverZn::ParseParametersProto(ctx, parameters_proto));
   return PedersenOverZn::Create(ctx, std::move(parameters.gs), parameters.h,
                                 parameters.n, num_simultaneous_exponentiations);
 }
@@ -76,8 +77,8 @@ PedersenOverZn::~PedersenOverZn() = default;
 StatusOr<PedersenOverZn::CommitmentAndOpening> PedersenOverZn::Commit(
     const std::vector<BigNum>& messages) const {
   BigNum r = ctx_->GenerateRandLessThan(n_);
-  ASSIGN_OR_RETURN(auto commitment,
-                   PedersenOverZn::CommitWithRand(messages, r));
+  PJC_ASSIGN_OR_RETURN(auto commitment,
+                       PedersenOverZn::CommitWithRand(messages, r));
   return {{std::move(commitment), std::move(r)}};
 }
 
@@ -106,8 +107,9 @@ StatusOr<PedersenOverZn::Commitment> PedersenOverZn::CommitWithRand(
   }
   // Push back the exponent for h_.
   exponents.push_back(rand);
-  ASSIGN_OR_RETURN(BigNum product,
-                   simultaneous_fixed_bases_exp_->SimultaneousExp(exponents));
+  PJC_ASSIGN_OR_RETURN(
+      BigNum product,
+      simultaneous_fixed_bases_exp_->SimultaneousExp(exponents));
 
   return std::move(product);
 }
@@ -150,8 +152,9 @@ StatusOr<bool> PedersenOverZn::Verify(
   }
   // Push back the exponent for h_.
   exponents.push_back(opening);
-  ASSIGN_OR_RETURN(BigNum product,
-                   simultaneous_fixed_bases_exp_->SimultaneousExp(exponents));
+  PJC_ASSIGN_OR_RETURN(
+      BigNum product,
+      simultaneous_fixed_bases_exp_->SimultaneousExp(exponents));
 
   return commitment == product;
 }

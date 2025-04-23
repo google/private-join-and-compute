@@ -23,9 +23,9 @@
 // Helper macro that checks if the right hand side (rexpression) evaluates to a
 // StatusOr with Status OK, and if so assigns the value to the value on the left
 // hand side (lhs), otherwise returns the error status. Example:
-//   ASSIGN_OR_RETURN(lhs, rexpression);
-#ifndef ASSIGN_OR_RETURN
-#define ASSIGN_OR_RETURN(lhs, rexpr)                                       \
+//   PJC_ASSIGN_OR_RETURN(lhs, rexpression);
+#ifndef PJC_ASSIGN_OR_RETURN
+#define PJC_ASSIGN_OR_RETURN(lhs, rexpr)                                   \
   PRIVATE_JOIN_AND_COMPUTE_ASSIGN_OR_RETURN_IMPL_(                         \
       PRIVATE_JOIN_AND_COMPUTE_STATUS_MACROS_IMPL_CONCAT_(status_or_value, \
                                                           __LINE__),       \
@@ -38,13 +38,13 @@
     return std::move(statusor).status();                                      \
   }                                                                           \
   lhs = *std::move(statusor)
-#endif  // ASSIGN_OR_RETURN
+#endif  // PJC_ASSIGN_OR_RETURN
 
 // Helper macro that checks if the given expression evaluates to a
 // Status with Status OK. If not,  returns the error status. Example:
-//   RETURN_IF_ERROR(expression);
-#ifndef RETURN_IF_ERROR
-#define RETURN_IF_ERROR(expr)                                           \
+//   PJC_RETURN_IF_ERROR(expression);
+#ifndef PJC_RETURN_IF_ERROR
+#define PJC_RETURN_IF_ERROR(expr)                                       \
   PRIVATE_JOIN_AND_COMPUTE_RETURN_IF_ERROR_IMPL_(                       \
       PRIVATE_JOIN_AND_COMPUTE_STATUS_MACROS_IMPL_CONCAT_(status_value, \
                                                           __LINE__),    \
@@ -56,7 +56,7 @@
   if (ABSL_PREDICT_FALSE(!status.ok())) {                            \
     return status;                                                   \
   }
-#endif  // RETURN_IF_ERROR
+#endif  // PJC_RETURN_IF_ERROR
 
 // Internal helper for concatenating macro values.
 #define PRIVATE_JOIN_AND_COMPUTE_STATUS_MACROS_IMPL_CONCAT_INNER_(x, y) x##y

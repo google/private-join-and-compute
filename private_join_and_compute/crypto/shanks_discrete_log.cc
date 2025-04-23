@@ -51,11 +51,11 @@ absl::StatusOr<std::map<std::string, int>> ShanksDiscreteLog::PrecomputeTable(
     const private_join_and_compute::ECGroup* group,
     const private_join_and_compute::ECPoint* generator, int precompute_bits) {
   std::map<std::string, int> table;
-  ASSIGN_OR_RETURN(auto point, group->GetPointAtInfinity());
+  PJC_ASSIGN_OR_RETURN(auto point, group->GetPointAtInfinity());
   // Cannot encode point at infinity to bytes.
   for (int i = 1; i < (1 << precompute_bits); ++i) {
-    ASSIGN_OR_RETURN(point, generator->Add(point));
-    ASSIGN_OR_RETURN(auto bytes, point.ToBytesCompressed());
+    PJC_ASSIGN_OR_RETURN(point, generator->Add(point));
+    PJC_ASSIGN_OR_RETURN(auto bytes, point.ToBytesCompressed());
     table.insert(std::pair<std::string, int>(bytes, i));
   }
   return table;
@@ -75,11 +75,11 @@ absl::StatusOr<std::unique_ptr<ShanksDiscreteLog>> ShanksDiscreteLog::Create(
         absl::StrCat("Maximum number of message bits should be at most ",
                      kMaxMessageSize, "."));
   }
-  ASSIGN_OR_RETURN(auto generator_clone, generator->Clone());
+  PJC_ASSIGN_OR_RETURN(auto generator_clone, generator->Clone());
   auto generator_ptr = std::make_unique<private_join_and_compute::ECPoint>(
       std::move(generator_clone));
-  ASSIGN_OR_RETURN(auto table,
-                   PrecomputeTable(group, generator, precompute_bits));
+  PJC_ASSIGN_OR_RETURN(auto table,
+                       PrecomputeTable(group, generator, precompute_bits));
   return absl::WrapUnique<ShanksDiscreteLog>(new ShanksDiscreteLog(
       ctx, group, std::move(generator_ptr), max_message_bits, precompute_bits,
       std::move(table)));
@@ -87,10 +87,10 @@ absl::StatusOr<std::unique_ptr<ShanksDiscreteLog>> ShanksDiscreteLog::Create(
 
 absl::StatusOr<int64_t> ShanksDiscreteLog::GetDiscreteLog(
     const private_join_and_compute::ECPoint& point) {
-  ASSIGN_OR_RETURN(auto inverse, generator_->Inverse());
-  ASSIGN_OR_RETURN(auto baby_step,
-                   inverse.Mul(ctx_->CreateBigNum(1 << precompute_bits_)));
-  ASSIGN_OR_RETURN(auto current_state, point.Clone());
+  PJC_ASSIGN_OR_RETURN(auto inverse, generator_->Inverse());
+  PJC_ASSIGN_OR_RETURN(auto baby_step,
+                       inverse.Mul(ctx_->CreateBigNum(1 << precompute_bits_)));
+  PJC_ASSIGN_OR_RETURN(auto current_state, point.Clone());
   // Create guarantees that max_message_bits_ >= precompute_bits_.
   for (int i = 0; i < (1 << (max_message_bits_ - precompute_bits_)); ++i) {
     // Infinity cannot be encoded as bytes, so we explcitly check for infinity
@@ -100,7 +100,7 @@ absl::StatusOr<int64_t> ShanksDiscreteLog::GetDiscreteLog(
       shift <<= precompute_bits_;
       return shift * i;
     }
-    ASSIGN_OR_RETURN(auto bytes, current_state.ToBytesCompressed());
+    PJC_ASSIGN_OR_RETURN(auto bytes, current_state.ToBytesCompressed());
     auto iter = precomputed_table_.find(bytes);
     if (iter != precomputed_table_.end()) {
       int64_t shift = 1;
@@ -108,7 +108,7 @@ absl::StatusOr<int64_t> ShanksDiscreteLog::GetDiscreteLog(
       shift *= i;
       return shift + iter->second;
     }
-    ASSIGN_OR_RETURN(current_state, current_state.Add(baby_step));
+    PJC_ASSIGN_OR_RETURN(current_state, current_state.Add(baby_step));
   }
   return absl::InvalidArgumentError(
       "Could not find discrete log. Exponent larger than specified max size.");

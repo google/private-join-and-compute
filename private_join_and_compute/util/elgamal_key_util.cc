@@ -37,18 +37,18 @@ using private_join_and_compute::ProtoUtils;
 Status GenerateElGamalKeyPair(int curve_id, absl::string_view pub_key_filename,
                               absl::string_view prv_key_filename) {
   Context context;
-  ASSIGN_OR_RETURN(ECGroup group, ECGroup::Create(curve_id, &context));
-  ASSIGN_OR_RETURN(auto key_pair,
-                   private_join_and_compute::elgamal::GenerateKeyPair(group));
-  ASSIGN_OR_RETURN(
+  PJC_ASSIGN_OR_RETURN(ECGroup group, ECGroup::Create(curve_id, &context));
+  PJC_ASSIGN_OR_RETURN(
+      auto key_pair, private_join_and_compute::elgamal::GenerateKeyPair(group));
+  PJC_ASSIGN_OR_RETURN(
       auto public_key_proto,
       elgamal_proto_util::SerializePublicKey(*key_pair.first.get()));
-  ASSIGN_OR_RETURN(
+  PJC_ASSIGN_OR_RETURN(
       auto private_key_proto,
       elgamal_proto_util::SerializePrivateKey(*key_pair.second.get()));
-  RETURN_IF_ERROR(
+  PJC_RETURN_IF_ERROR(
       ProtoUtils::WriteProtoToFile(public_key_proto, pub_key_filename));
-  RETURN_IF_ERROR(
+  PJC_RETURN_IF_ERROR(
       ProtoUtils::WriteProtoToFile(private_key_proto, prv_key_filename));
   return OkStatus();
 }
@@ -62,22 +62,24 @@ Status ComputeJointElGamalPublicKey(
         "provided");
   }
   Context context;
-  ASSIGN_OR_RETURN(ECGroup group, ECGroup::Create(curve_id, &context));
+  PJC_ASSIGN_OR_RETURN(ECGroup group, ECGroup::Create(curve_id, &context));
   std::vector<std::unique_ptr<elgamal::PublicKey>> shares;
   for (const auto& share_file : shares_filenames) {
-    ASSIGN_OR_RETURN(
+    PJC_ASSIGN_OR_RETURN(
         auto key_share_proto,
         ProtoUtils::ReadProtoFromFile<ElGamalPublicKey>(share_file));
-    ASSIGN_OR_RETURN(auto key_share, elgamal_proto_util::DeserializePublicKey(
-                                         &group, key_share_proto));
+    PJC_ASSIGN_OR_RETURN(
+        auto key_share,
+        elgamal_proto_util::DeserializePublicKey(&group, key_share_proto));
     shares.push_back(std::move(key_share));
   }
-  ASSIGN_OR_RETURN(
+  PJC_ASSIGN_OR_RETURN(
       auto joint_key,
       private_join_and_compute::elgamal::GeneratePublicKeyFromShares(shares));
-  ASSIGN_OR_RETURN(auto joint_key_proto,
-                   elgamal_proto_util::SerializePublicKey(*joint_key.get()));
-  RETURN_IF_ERROR(
+  PJC_ASSIGN_OR_RETURN(
+      auto joint_key_proto,
+      elgamal_proto_util::SerializePublicKey(*joint_key.get()));
+  PJC_RETURN_IF_ERROR(
       ProtoUtils::WriteProtoToFile(joint_key_proto, join_pub_key_key_filename));
   return OkStatus();
 }

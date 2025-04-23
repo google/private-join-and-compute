@@ -53,7 +53,7 @@ Status ProcessRecordFile(
           return std::string(raw_record);
         }) {
   auto reader = std::unique_ptr<RecordReader>(RecordReader::GetRecordReader());
-  RETURN_IF_ERROR(reader->Open(input_file));
+  PJC_RETURN_IF_ERROR(reader->Open(input_file));
 
   auto writer = ShardingWriter<std::string>::Get(get_sorting_key_function);
   writer->SetShardPrefix(output_file);
@@ -64,16 +64,16 @@ Status ProcessRecordFile(
   // chunk, process it in parallel using the number of available threads, get
   // the values returned by each thread, and write them to file.
   // Process the next chunk until there are no more values to read.
-  ASSIGN_OR_RETURN(bool has_more, reader->HasMore());
+  PJC_ASSIGN_OR_RETURN(bool has_more, reader->HasMore());
   while (has_more) {
     // Read the next chunk to process in parallel.
     num_records_read = 0;
     std::vector<InputType> chunk;
     while (num_records_read < params.data_chunk_size && has_more) {
-      RETURN_IF_ERROR(reader->Read(&raw_record));
+      PJC_RETURN_IF_ERROR(reader->Read(&raw_record));
       chunk.push_back(ProtoUtils::FromString<InputType>(raw_record));
       num_records_read++;
-      ASSIGN_OR_RETURN(has_more, reader->HasMore());
+      PJC_ASSIGN_OR_RETURN(has_more, reader->HasMore());
     }
 
     // The max number of items each thread will process.
@@ -93,8 +93,8 @@ Status ProcessRecordFile(
            record_transformer]() -> StatusOr<std::vector<OutputType>> {
             std::vector<OutputType> processes_chunk;
             for (size_t i = start; i < end; i++) {
-              ASSIGN_OR_RETURN(auto processed_record,
-                               record_transformer(chunk.at(i)));
+              PJC_ASSIGN_OR_RETURN(auto processed_record,
+                                   record_transformer(chunk.at(i)));
               processes_chunk.push_back(std::move(processed_record));
             }
             return processes_chunk;
@@ -106,21 +106,21 @@ Status ProcessRecordFile(
     int index = 0;
     for (auto& future : futures) {
       index++;
-      ASSIGN_OR_RETURN(auto records, future.get());
+      PJC_ASSIGN_OR_RETURN(auto records, future.get());
       for (const auto& record : records) {
-        RETURN_IF_ERROR(writer->Write(ProtoUtils::ToString(record)));
+        PJC_RETURN_IF_ERROR(writer->Write(ProtoUtils::ToString(record)));
       }
     }
   }
-  RETURN_IF_ERROR(reader->Close());
+  PJC_RETURN_IF_ERROR(reader->Close());
 
   // Merge all the processed chunks into one output file and delete intermediate
   // chunk files.
-  ASSIGN_OR_RETURN(auto shard_files, writer->Close());
+  PJC_ASSIGN_OR_RETURN(auto shard_files, writer->Close());
   ShardMerger<std::string> merger;
-  RETURN_IF_ERROR(
+  PJC_RETURN_IF_ERROR(
       merger.Merge(get_sorting_key_function, shard_files, output_file));
-  RETURN_IF_ERROR(merger.Delete(shard_files));
+  PJC_RETURN_IF_ERROR(merger.Delete(shard_files));
 
   return OkStatus();
 }

@@ -55,8 +55,8 @@ StatusOr<proto::ECPointVector> ECPointVectorToProto(
   ec_point_vector_proto.mutable_serialized_ec_points()->Reserve(
       ec_point_vector.size());
   for (const auto& ec_point : ec_point_vector) {
-    ASSIGN_OR_RETURN(std::string serialized_ec_point,
-                     ec_point.ToBytesCompressed());
+    PJC_ASSIGN_OR_RETURN(std::string serialized_ec_point,
+                         ec_point.ToBytesCompressed());
     ec_point_vector_proto.add_serialized_ec_points(serialized_ec_point);
   }
   return std::move(ec_point_vector_proto);
@@ -69,8 +69,8 @@ StatusOr<std::vector<ECPoint>> ParseECPointVectorProto(
   std::vector<ECPoint> ec_point_vector;
   for (const auto& serialized_ec_point :
        ec_point_vector_proto.serialized_ec_points()) {
-    ASSIGN_OR_RETURN(ECPoint ec_point,
-                     ec_group->CreateECPoint(serialized_ec_point));
+    PJC_ASSIGN_OR_RETURN(ECPoint ec_point,
+                         ec_group->CreateECPoint(serialized_ec_point));
     ec_point_vector.push_back(std::move(ec_point));
   }
   return std::move(ec_point_vector);

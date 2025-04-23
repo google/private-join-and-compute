@@ -107,12 +107,13 @@ SimultaneousFixedBasesExp<Element, Context>::Create(
         ", can be at most the number of bases", bases.size(), "."));
   }
   size_t num_batches = (bases.size() + num_simultaneous - 1) / num_simultaneous;
-  ASSIGN_OR_RETURN(auto zero_clone, internal::Clone(zero));
+  PJC_ASSIGN_OR_RETURN(auto zero_clone, internal::Clone(zero));
   std::unique_ptr<Element> zero_ptr =
       std::make_unique<Element>(std::move(zero_clone));
-  ASSIGN_OR_RETURN(std::vector<std::vector<std::unique_ptr<Element>>> table,
-                   SimultaneousFixedBasesExp::Precompute(
-                       bases, zero, *context, num_simultaneous, num_batches));
+  PJC_ASSIGN_OR_RETURN(
+      std::vector<std::vector<std::unique_ptr<Element>>> table,
+      SimultaneousFixedBasesExp::Precompute(bases, zero, *context,
+                                            num_simultaneous, num_batches));
   return absl::WrapUnique<SimultaneousFixedBasesExp>(
       new SimultaneousFixedBasesExp(bases.size(), num_simultaneous, num_batches,
                                     std::move(zero_ptr), std::move(context),
@@ -127,7 +128,7 @@ SimultaneousFixedBasesExp<Element, Context>::Precompute(
   std::vector<std::vector<std::unique_ptr<Element>>> table;
   for (size_t i = 0; i < num_batches; ++i) {
     table.push_back({});
-    ASSIGN_OR_RETURN(Element zero_clone, internal::Clone(zero));
+    PJC_ASSIGN_OR_RETURN(Element zero_clone, internal::Clone(zero));
     table[i].push_back(std::make_unique<Element>(std::move(zero_clone)));
     const size_t start = i * num_simultaneous;
     const size_t num_items_in_batch =
@@ -141,11 +142,11 @@ SimultaneousFixedBasesExp<Element, Context>::Precompute(
       }
       size_t prev = j - (1 << highest_one_bit);
       if (prev == 0) {
-        ASSIGN_OR_RETURN(Element clone,
-                         internal::Clone(bases[start + highest_one_bit]));
+        PJC_ASSIGN_OR_RETURN(Element clone,
+                             internal::Clone(bases[start + highest_one_bit]));
         table[i].push_back(std::make_unique<Element>(std::move(clone)));
       } else {
-        ASSIGN_OR_RETURN(
+        PJC_ASSIGN_OR_RETURN(
             Element add,
             internal::Mul(*(table[i][prev]), bases[start + highest_one_bit],
                           context));
@@ -170,10 +171,10 @@ StatusOr<Element> SimultaneousFixedBasesExp<Element, Context>::SimultaneousExp(
       max_bit_length = exponent.BitLength();
     }
   }
-  ASSIGN_OR_RETURN(Element result, internal::Clone(*zero_));
+  PJC_ASSIGN_OR_RETURN(Element result, internal::Clone(*zero_));
   for (int i = max_bit_length - 1; i >= 0; --i) {
     if (!internal::IsZero(result)) {
-      ASSIGN_OR_RETURN(result, internal::Mul(result, result, *context_));
+      PJC_ASSIGN_OR_RETURN(result, internal::Mul(result, result, *context_));
     }
     for (size_t j = 0; j < num_batches_; ++j) {
       size_t precompute_idx = 0;
@@ -188,7 +189,7 @@ StatusOr<Element> SimultaneousFixedBasesExp<Element, Context>::SimultaneousExp(
         }
       }
       if (precompute_idx) {
-        ASSIGN_OR_RETURN(
+        PJC_ASSIGN_OR_RETURN(
             result,
             internal::Mul(result, *(precomputed_table_[j][precompute_idx]),
                           *context_));

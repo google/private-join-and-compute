@@ -97,25 +97,26 @@ class DyVerifiableRandomFunctionTest : public ::testing::Test {
 
   StatusOr<Transcript> GenerateTranscript(const std::vector<BigNum>& messages) {
     // Apply the PRF.
-    ASSIGN_OR_RETURN(std::vector<ECPoint> prf_evaluations,
-                     dy_vrf_->Apply(messages, private_key_));
+    PJC_ASSIGN_OR_RETURN(std::vector<ECPoint> prf_evaluations,
+                         dy_vrf_->Apply(messages, private_key_));
 
     // Commit to the messages.
-    ASSIGN_OR_RETURN(
+    PJC_ASSIGN_OR_RETURN(
         PedersenOverZn::CommitmentAndOpening commit_and_open_messages,
         pedersen_->Commit(messages));
 
     // Generate the proof.
-    ASSIGN_OR_RETURN(
+    PJC_ASSIGN_OR_RETURN(
         proto::DyVrfApplyProof apply_proof,
         dy_vrf_->GenerateApplyProof(messages, prf_evaluations, public_key_,
                                     private_key_, commit_and_open_messages));
 
     // Regenerate the challenge.
-    ASSIGN_OR_RETURN(BigNum challenge, dy_vrf_->GenerateApplyProofChallenge(
-                                           prf_evaluations, public_key_,
-                                           commit_and_open_messages.commitment,
-                                           apply_proof.message_1()));
+    PJC_ASSIGN_OR_RETURN(
+        BigNum challenge,
+        dy_vrf_->GenerateApplyProofChallenge(
+            prf_evaluations, public_key_, commit_and_open_messages.commitment,
+            apply_proof.message_1()));
 
     return Transcript{std::move(prf_evaluations),
                       std::move(commit_and_open_messages),

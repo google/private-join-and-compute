@@ -78,7 +78,7 @@ GenerateHomomorphicCsCiphertexts(
     std::vector<BigNum> masked_messages_for_batch_i(
         masked_messages.begin() + batch_start_index,
         masked_messages.begin() + batch_end_index);
-    ASSIGN_OR_RETURN(
+    PJC_ASSIGN_OR_RETURN(
         CamenischShoupCiphertext encrypted_masked_message_at_i,
         public_camenisch_shoup->EncryptWithRand(masked_messages_for_batch_i,
                                                 encryption_randomness[i]));
@@ -165,8 +165,8 @@ StatusOr<std::unique_ptr<BbObliviousSignature>> BbObliviousSignature::Create(
         dummy_masked_betas_bound.ToDecimalString()));
   }
 
-  ASSIGN_OR_RETURN(ECPoint base_g,
-                   ec_group->CreateECPoint(parameters_proto.base_g()));
+  PJC_ASSIGN_OR_RETURN(ECPoint base_g,
+                       ec_group->CreateECPoint(parameters_proto.base_g()));
 
   return absl::WrapUnique(new BbObliviousSignature(
       std::move(parameters_proto), ctx, ec_group, std::move(base_g),
@@ -197,14 +197,14 @@ BbObliviousSignature::GenerateKeys() {
         public_camenisch_shoup_->vector_encryption_length(), ctx_->Zero());
     // Encrypt and push back k
     messages[i] = k;
-    ASSIGN_OR_RETURN(CamenischShoupCiphertext k_ciphertext,
-                     public_camenisch_shoup_->Encrypt(messages));
+    PJC_ASSIGN_OR_RETURN(CamenischShoupCiphertext k_ciphertext,
+                         public_camenisch_shoup_->Encrypt(messages));
     *public_key_proto.add_encrypted_k() =
         CamenischShoupCiphertextToProto(k_ciphertext);
     // Encrypt and push back y
     messages[i] = y;
-    ASSIGN_OR_RETURN(CamenischShoupCiphertext y_ciphertext,
-                     public_camenisch_shoup_->Encrypt(messages));
+    PJC_ASSIGN_OR_RETURN(CamenischShoupCiphertext y_ciphertext,
+                         public_camenisch_shoup_->Encrypt(messages));
     *public_key_proto.add_encrypted_y() =
         CamenischShoupCiphertextToProto(y_ciphertext);
   }
@@ -276,14 +276,14 @@ BbObliviousSignature::GenerateRequestAndProof(
 
   for (int i = 0; i < public_camenisch_shoup_->vector_encryption_length();
        ++i) {
-    ASSIGN_OR_RETURN(CamenischShoupCiphertext cs_encrypt_k_at_i,
-                     public_camenisch_shoup_->ParseCiphertextProto(
-                         public_key.encrypted_k(i)));
+    PJC_ASSIGN_OR_RETURN(CamenischShoupCiphertext cs_encrypt_k_at_i,
+                         public_camenisch_shoup_->ParseCiphertextProto(
+                             public_key.encrypted_k(i)));
     parsed_encrypted_k.push_back(std::move(cs_encrypt_k_at_i));
 
-    ASSIGN_OR_RETURN(CamenischShoupCiphertext cs_encrypt_y_at_i,
-                     public_camenisch_shoup_->ParseCiphertextProto(
-                         public_key.encrypted_y(i)));
+    PJC_ASSIGN_OR_RETURN(CamenischShoupCiphertext cs_encrypt_y_at_i,
+                         public_camenisch_shoup_->ParseCiphertextProto(
+                             public_key.encrypted_y(i)));
     parsed_encrypted_y.push_back(std::move(cs_encrypt_y_at_i));
   }
 
@@ -303,7 +303,7 @@ BbObliviousSignature::GenerateRequestAndProof(
         ctx_->GenerateRandLessThan(public_camenisch_shoup_->n()));
   }
 
-  ASSIGN_OR_RETURN(
+  PJC_ASSIGN_OR_RETURN(
       std::vector<CamenischShoupCiphertext> encrypted_masked_messages,
       GenerateHomomorphicCsCiphertexts(
           masked_messages, as, gammas, encryption_randomness,
@@ -328,14 +328,15 @@ BbObliviousSignature::GenerateRequestAndProof(
     std::vector<BigNum> ai_in_ith_position(pedersen_->gs().size(),
                                            ctx_->Zero());
     ai_in_ith_position[i] = as[i];
-    ASSIGN_OR_RETURN(PedersenOverZn::CommitmentAndOpening commit_and_open_ai,
-                     pedersen_->Commit(ai_in_ith_position));
+    PJC_ASSIGN_OR_RETURN(
+        PedersenOverZn::CommitmentAndOpening commit_and_open_ai,
+        pedersen_->Commit(ai_in_ith_position));
     commit_as.push_back(std::move(commit_and_open_ai.commitment));
     open_as.push_back(std::move(commit_and_open_ai.opening));
   }
 
-  ASSIGN_OR_RETURN(PedersenOverZn::CommitmentAndOpening commit_and_open_bs,
-                   pedersen_->Commit(bs));
+  PJC_ASSIGN_OR_RETURN(PedersenOverZn::CommitmentAndOpening commit_and_open_bs,
+                       pedersen_->Commit(bs));
 
   // Homomorphically generate commitment to alphas, gammas. This
   // homomorphically generated commitment will be used in 2 parts of the
@@ -362,10 +363,10 @@ BbObliviousSignature::GenerateRequestAndProof(
   //
   // We proceed similarly for gammas, where gammas[i] = as[i] * rs[i].
   std::vector<BigNum> zero_vector(pedersen_->gs().size(), ctx_->Zero());
-  ASSIGN_OR_RETURN(
+  PJC_ASSIGN_OR_RETURN(
       PedersenOverZn::CommitmentAndOpening temp_commit_and_open_alphas,
       pedersen_->Commit(zero_vector));
-  ASSIGN_OR_RETURN(
+  PJC_ASSIGN_OR_RETURN(
       PedersenOverZn::CommitmentAndOpening temp_commit_and_open_gammas,
       pedersen_->Commit(zero_vector));
 
@@ -468,33 +469,33 @@ BbObliviousSignature::GenerateRequestAndProof(
   }
 
   // Create dummy composites for all values
-  ASSIGN_OR_RETURN(
+  PJC_ASSIGN_OR_RETURN(
       PedersenOverZn::Commitment dummy_commit_messages,
       pedersen_->CommitWithRand(dummy_messages, dummy_messages_opening));
-  ASSIGN_OR_RETURN(PedersenOverZn::Commitment dummy_commit_rs,
-                   pedersen_->CommitWithRand(dummy_rs, dummy_rs_opening));
+  PJC_ASSIGN_OR_RETURN(PedersenOverZn::Commitment dummy_commit_rs,
+                       pedersen_->CommitWithRand(dummy_rs, dummy_rs_opening));
   std::vector<PedersenOverZn::Commitment> dummy_commit_as;
   for (size_t i = 0; i < messages.size(); ++i) {
     std::vector<BigNum> dummy_as_at_i = zero_vector;
     dummy_as_at_i[i] = dummy_as[i];
-    ASSIGN_OR_RETURN(
+    PJC_ASSIGN_OR_RETURN(
         PedersenOverZn::Commitment dummy_commit_as_at_i,
         pedersen_->CommitWithRand(dummy_as_at_i, dummy_as_openings[i]));
     dummy_commit_as.push_back(std::move(dummy_commit_as_at_i));
   }
-  ASSIGN_OR_RETURN(PedersenOverZn::Commitment dummy_commit_bs,
-                   pedersen_->CommitWithRand(dummy_bs, dummy_bs_opening));
-  ASSIGN_OR_RETURN(
+  PJC_ASSIGN_OR_RETURN(PedersenOverZn::Commitment dummy_commit_bs,
+                       pedersen_->CommitWithRand(dummy_bs, dummy_bs_opening));
+  PJC_ASSIGN_OR_RETURN(
       PedersenOverZn::Commitment dummy_commit_alphas_1,
       pedersen_->CommitWithRand(dummy_alphas, dummy_alphas_opening_1));
-  ASSIGN_OR_RETURN(
+  PJC_ASSIGN_OR_RETURN(
       PedersenOverZn::Commitment dummy_commit_gammas_1,
       pedersen_->CommitWithRand(dummy_gammas, dummy_gammas_opening_1));
 
-  ASSIGN_OR_RETURN(
+  PJC_ASSIGN_OR_RETURN(
       PedersenOverZn::Commitment dummy_commit_alphas_2,
       pedersen_->CommitWithRand(zero_vector, dummy_alphas_opening_2));
-  ASSIGN_OR_RETURN(
+  PJC_ASSIGN_OR_RETURN(
       PedersenOverZn::Commitment dummy_commit_gammas_2,
       pedersen_->CommitWithRand(zero_vector, dummy_gammas_opening_2));
   for (size_t i = 0; i < messages.size(); ++i) {
@@ -506,7 +507,7 @@ BbObliviousSignature::GenerateRequestAndProof(
   }
 
   // Generate the dummy Camenisch Shoup encryptions.
-  ASSIGN_OR_RETURN(
+  PJC_ASSIGN_OR_RETURN(
       std::vector<CamenischShoupCiphertext> dummy_encrypted_masked_messages,
       GenerateHomomorphicCsCiphertexts(
           dummy_masked_messages, dummy_as, dummy_gammas,
@@ -542,8 +543,8 @@ BbObliviousSignature::GenerateRequestAndProof(
         CamenischShoupCiphertextToProto(dummy_encrypted_masked_messages[i]);
   }
 
-  ASSIGN_OR_RETURN(BigNum challenge, GenerateRequestProofChallenge(
-                                         proof_statement, proof_message_1));
+  PJC_ASSIGN_OR_RETURN(BigNum challenge, GenerateRequestProofChallenge(
+                                             proof_statement, proof_message_1));
 
   // Create masked dummy openings
   std::vector<BigNum> masked_dummy_messages;
@@ -778,9 +779,10 @@ Status BbObliviousSignature::VerifyRequest(
   std::vector<CamenischShoupCiphertext> encrypted_masked_messages;
   encrypted_masked_messages.reserve(num_camenisch_shoup_ciphertexts);
   for (size_t i = 0; i < num_camenisch_shoup_ciphertexts; ++i) {
-    ASSIGN_OR_RETURN(CamenischShoupCiphertext encrypted_masked_messages_at_i,
-                     public_camenisch_shoup_->ParseCiphertextProto(
-                         request.repeated_encrypted_masked_messages(i)));
+    PJC_ASSIGN_OR_RETURN(
+        CamenischShoupCiphertext encrypted_masked_messages_at_i,
+        public_camenisch_shoup_->ParseCiphertextProto(
+            request.repeated_encrypted_masked_messages(i)));
     encrypted_masked_messages.push_back(
         std::move(encrypted_masked_messages_at_i));
   }
@@ -889,10 +891,11 @@ Status BbObliviousSignature::VerifyRequest(
 
   // Create masked dummy composite values
 
-  ASSIGN_OR_RETURN(PedersenOverZn::Commitment masked_dummy_commit_messages,
-                   pedersen_->CommitWithRand(masked_dummy_messages,
-                                             masked_dummy_messages_opening));
-  ASSIGN_OR_RETURN(
+  PJC_ASSIGN_OR_RETURN(
+      PedersenOverZn::Commitment masked_dummy_commit_messages,
+      pedersen_->CommitWithRand(masked_dummy_messages,
+                                masked_dummy_messages_opening));
+  PJC_ASSIGN_OR_RETURN(
       PedersenOverZn::Commitment masked_dummy_commit_rs,
       pedersen_->CommitWithRand(masked_dummy_rs, masked_dummy_rs_opening));
 
@@ -902,27 +905,27 @@ Status BbObliviousSignature::VerifyRequest(
   for (size_t i = 0; i < commit_as.size(); ++i) {
     std::vector<BigNum> masked_dummy_ai_at_i = zero_vector;
     masked_dummy_ai_at_i[i] = masked_dummy_as[i];
-    ASSIGN_OR_RETURN(PedersenOverZn::Commitment masked_dummy_commit_ai,
-                     pedersen_->CommitWithRand(masked_dummy_ai_at_i,
-                                               masked_dummy_as_opening[i]));
+    PJC_ASSIGN_OR_RETURN(PedersenOverZn::Commitment masked_dummy_commit_ai,
+                         pedersen_->CommitWithRand(masked_dummy_ai_at_i,
+                                                   masked_dummy_as_opening[i]));
     masked_dummy_commit_as.push_back(masked_dummy_commit_ai);
   }
-  ASSIGN_OR_RETURN(
+  PJC_ASSIGN_OR_RETURN(
       PedersenOverZn::Commitment masked_dummy_commit_bs,
       pedersen_->CommitWithRand(masked_dummy_bs, masked_dummy_bs_opening));
-  ASSIGN_OR_RETURN(PedersenOverZn::Commitment masked_dummy_commit_alphas_1,
-                   pedersen_->CommitWithRand(masked_dummy_alphas,
-                                             masked_dummy_alphas_opening_1));
-  ASSIGN_OR_RETURN(PedersenOverZn::Commitment masked_dummy_commit_gammas_1,
-                   pedersen_->CommitWithRand(masked_dummy_gammas,
-                                             masked_dummy_gammas_opening_1));
+  PJC_ASSIGN_OR_RETURN(PedersenOverZn::Commitment masked_dummy_commit_alphas_1,
+                       pedersen_->CommitWithRand(
+                           masked_dummy_alphas, masked_dummy_alphas_opening_1));
+  PJC_ASSIGN_OR_RETURN(PedersenOverZn::Commitment masked_dummy_commit_gammas_1,
+                       pedersen_->CommitWithRand(
+                           masked_dummy_gammas, masked_dummy_gammas_opening_1));
 
   // masked_dummy_alphas_2 and masked_dummy_gammas_2 are homomorphically
   // computed from commit_as.
-  ASSIGN_OR_RETURN(
+  PJC_ASSIGN_OR_RETURN(
       PedersenOverZn::Commitment masked_dummy_commit_alphas_2,
       pedersen_->CommitWithRand(zero_vector, masked_dummy_alphas_opening_2));
-  ASSIGN_OR_RETURN(
+  PJC_ASSIGN_OR_RETURN(
       PedersenOverZn::Commitment masked_dummy_commit_gammas_2,
       pedersen_->CommitWithRand(zero_vector, masked_dummy_gammas_opening_2));
   for (size_t i = 0; i < commit_as.size(); ++i) {
@@ -951,19 +954,19 @@ Status BbObliviousSignature::VerifyRequest(
 
   for (size_t i = 0; i < public_camenisch_shoup_->vector_encryption_length();
        ++i) {
-    ASSIGN_OR_RETURN(CamenischShoupCiphertext cs_encrypt_k_at_i,
-                     public_camenisch_shoup_->ParseCiphertextProto(
-                         public_key.encrypted_k(i)));
+    PJC_ASSIGN_OR_RETURN(CamenischShoupCiphertext cs_encrypt_k_at_i,
+                         public_camenisch_shoup_->ParseCiphertextProto(
+                             public_key.encrypted_k(i)));
     parsed_encrypted_k.push_back(std::move(cs_encrypt_k_at_i));
 
-    ASSIGN_OR_RETURN(CamenischShoupCiphertext cs_encrypt_y_at_i,
-                     public_camenisch_shoup_->ParseCiphertextProto(
-                         public_key.encrypted_y(i)));
+    PJC_ASSIGN_OR_RETURN(CamenischShoupCiphertext cs_encrypt_y_at_i,
+                         public_camenisch_shoup_->ParseCiphertextProto(
+                             public_key.encrypted_y(i)));
     parsed_encrypted_y.push_back(std::move(cs_encrypt_y_at_i));
   }
 
   // Generate the dummy Camenisch Shoup encryptions.
-  ASSIGN_OR_RETURN(
+  PJC_ASSIGN_OR_RETURN(
       std::vector<CamenischShoupCiphertext>
           masked_dummy_encrypted_masked_messages,
       GenerateHomomorphicCsCiphertexts(
@@ -975,45 +978,46 @@ Status BbObliviousSignature::VerifyRequest(
   //  regenerate Proof Message 1). Each dummy_composite is computed as
   //  masked_dummy_composite / original_value^challenge_in_proof.
 
-  ASSIGN_OR_RETURN(BigNum commit_messages_to_challenge_inverse,
-                   pedersen_->Multiply(commit_messages, challenge_from_proof)
-                       .ModInverse(pedersen_->n()));
+  PJC_ASSIGN_OR_RETURN(
+      BigNum commit_messages_to_challenge_inverse,
+      pedersen_->Multiply(commit_messages, challenge_from_proof)
+          .ModInverse(pedersen_->n()));
   PedersenOverZn::Commitment dummy_commit_messages = pedersen_->Add(
       masked_dummy_commit_messages, commit_messages_to_challenge_inverse);
 
-  ASSIGN_OR_RETURN(BigNum commit_rs_to_challenge_inverse,
-                   pedersen_->Multiply(commit_rs, challenge_from_proof)
-                       .ModInverse(pedersen_->n()));
+  PJC_ASSIGN_OR_RETURN(BigNum commit_rs_to_challenge_inverse,
+                       pedersen_->Multiply(commit_rs, challenge_from_proof)
+                           .ModInverse(pedersen_->n()));
   PedersenOverZn::Commitment dummy_commit_rs =
       pedersen_->Add(masked_dummy_commit_rs, commit_rs_to_challenge_inverse);
 
   std::vector<PedersenOverZn::Commitment> dummy_commit_as;
   dummy_commit_as.reserve(commit_as.size());
   for (size_t i = 0; i < commit_as.size(); ++i) {
-    ASSIGN_OR_RETURN(BigNum commit_as_to_challenge_inverse,
-                     pedersen_->Multiply(commit_as[i], challenge_from_proof)
-                         .ModInverse(pedersen_->n()));
+    PJC_ASSIGN_OR_RETURN(BigNum commit_as_to_challenge_inverse,
+                         pedersen_->Multiply(commit_as[i], challenge_from_proof)
+                             .ModInverse(pedersen_->n()));
     dummy_commit_as.push_back(pedersen_->Add(masked_dummy_commit_as[i],
                                              commit_as_to_challenge_inverse));
   }
 
-  ASSIGN_OR_RETURN(BigNum commit_bs_to_challenge_inverse,
-                   pedersen_->Multiply(commit_bs, challenge_from_proof)
-                       .ModInverse(pedersen_->n()));
+  PJC_ASSIGN_OR_RETURN(BigNum commit_bs_to_challenge_inverse,
+                       pedersen_->Multiply(commit_bs, challenge_from_proof)
+                           .ModInverse(pedersen_->n()));
   PedersenOverZn::Commitment dummy_commit_bs =
       pedersen_->Add(masked_dummy_commit_bs, commit_bs_to_challenge_inverse);
 
-  ASSIGN_OR_RETURN(BigNum commit_alphas_to_challenge_inverse,
-                   pedersen_->Multiply(commit_alphas, challenge_from_proof)
-                       .ModInverse(pedersen_->n()));
+  PJC_ASSIGN_OR_RETURN(BigNum commit_alphas_to_challenge_inverse,
+                       pedersen_->Multiply(commit_alphas, challenge_from_proof)
+                           .ModInverse(pedersen_->n()));
   PedersenOverZn::Commitment dummy_commit_alphas_1 = pedersen_->Add(
       masked_dummy_commit_alphas_1, commit_alphas_to_challenge_inverse);
   PedersenOverZn::Commitment dummy_commit_alphas_2 = pedersen_->Add(
       masked_dummy_commit_alphas_2, commit_alphas_to_challenge_inverse);
 
-  ASSIGN_OR_RETURN(BigNum commit_gammas_to_challenge_inverse,
-                   pedersen_->Multiply(commit_gammas, challenge_from_proof)
-                       .ModInverse(pedersen_->n()));
+  PJC_ASSIGN_OR_RETURN(BigNum commit_gammas_to_challenge_inverse,
+                       pedersen_->Multiply(commit_gammas, challenge_from_proof)
+                           .ModInverse(pedersen_->n()));
   PedersenOverZn::Commitment dummy_commit_gammas_1 = pedersen_->Add(
       masked_dummy_commit_gammas_1, commit_gammas_to_challenge_inverse);
   PedersenOverZn::Commitment dummy_commit_gammas_2 = pedersen_->Add(
@@ -1037,17 +1041,19 @@ Status BbObliviousSignature::VerifyRequest(
     CamenischShoupCiphertext encrypted_masked_messages_to_challenge =
         public_camenisch_shoup_->Multiply(encrypted_masked_messages[i],
                                           challenge_from_proof);
-    ASSIGN_OR_RETURN(BigNum encrypted_masked_messages_to_challenge_u_inverse,
-                     encrypted_masked_messages_to_challenge.u.ModInverse(
-                         public_camenisch_shoup_->modulus()));
+    PJC_ASSIGN_OR_RETURN(
+        BigNum encrypted_masked_messages_to_challenge_u_inverse,
+        encrypted_masked_messages_to_challenge.u.ModInverse(
+            public_camenisch_shoup_->modulus()));
     std::vector<BigNum> encrypted_masked_messages_to_challenge_es_inverse;
     encrypted_masked_messages_to_challenge_es_inverse.reserve(
         encrypted_masked_messages_to_challenge.es.size());
     for (size_t i = 0; i < encrypted_masked_messages_to_challenge.es.size();
          ++i) {
-      ASSIGN_OR_RETURN(BigNum encrypted_masked_messages_to_challenge_e_inverse,
-                       encrypted_masked_messages_to_challenge.es[i].ModInverse(
-                           public_camenisch_shoup_->modulus()));
+      PJC_ASSIGN_OR_RETURN(
+          BigNum encrypted_masked_messages_to_challenge_e_inverse,
+          encrypted_masked_messages_to_challenge.es[i].ModInverse(
+              public_camenisch_shoup_->modulus()));
       encrypted_masked_messages_to_challenge_es_inverse.push_back(
           std::move(encrypted_masked_messages_to_challenge_e_inverse));
     }
@@ -1065,8 +1071,9 @@ Status BbObliviousSignature::VerifyRequest(
 
   // Reconstruct the challenge and check that it matches the one supplied in
   // the proof.
-  ASSIGN_OR_RETURN(BigNum reconstructed_challenge,
-                   GenerateRequestProofChallenge(proof_statement, message_1));
+  PJC_ASSIGN_OR_RETURN(
+      BigNum reconstructed_challenge,
+      GenerateRequestProofChallenge(proof_statement, message_1));
 
   if (reconstructed_challenge != challenge_from_proof) {
     return absl::InvalidArgumentError(
@@ -1110,10 +1117,11 @@ BbObliviousSignature::GenerateResponseAndProof(
   std::vector<CamenischShoupCiphertext> encrypted_masked_messages;
   encrypted_masked_messages.reserve(num_camenisch_shoup_ciphertexts);
   for (size_t i = 0; i < num_camenisch_shoup_ciphertexts; ++i) {
-    ASSIGN_OR_RETURN(CamenischShoupCiphertext encrypted_masked_messages_at_i,
-                     public_camenisch_shoup_->ParseCiphertextProto(
-                         request.repeated_encrypted_masked_messages(i)));
-    ASSIGN_OR_RETURN(
+    PJC_ASSIGN_OR_RETURN(
+        CamenischShoupCiphertext encrypted_masked_messages_at_i,
+        public_camenisch_shoup_->ParseCiphertextProto(
+            request.repeated_encrypted_masked_messages(i)));
+    PJC_ASSIGN_OR_RETURN(
         std::vector<BigNum> betas_at_i,
         private_camenisch_shoup->Decrypt(encrypted_masked_messages_at_i));
 
@@ -1129,17 +1137,17 @@ BbObliviousSignature::GenerateResponseAndProof(
   std::vector<ECPoint> masked_prf_values;
   masked_prf_values.reserve(request.num_messages());
   for (uint64_t i = 0; i < request.num_messages(); ++i) {
-    ASSIGN_OR_RETURN(BigNum beta_inverse,
-                     betas[i].ModInverse(ec_group_->GetOrder()));
-    ASSIGN_OR_RETURN(ECPoint masked_prf_value, base_g_.Mul(beta_inverse));
+    PJC_ASSIGN_OR_RETURN(BigNum beta_inverse,
+                         betas[i].ModInverse(ec_group_->GetOrder()));
+    PJC_ASSIGN_OR_RETURN(ECPoint masked_prf_value, base_g_.Mul(beta_inverse));
     masked_prf_values.push_back(std::move(masked_prf_value));
   }
 
-  ASSIGN_OR_RETURN(*response_proto.mutable_masked_signature_values(),
-                   ECPointVectorToProto(masked_prf_values));
+  PJC_ASSIGN_OR_RETURN(*response_proto.mutable_masked_signature_values(),
+                       ECPointVectorToProto(masked_prf_values));
 
   // Commit to decrypted_values (aka betas)
-  ASSIGN_OR_RETURN(auto commit_and_open_betas, pedersen_->Commit(betas));
+  PJC_ASSIGN_OR_RETURN(auto commit_and_open_betas, pedersen_->Commit(betas));
   response_proof_proto.set_commit_betas(
       commit_and_open_betas.commitment.ToBytes());
 
@@ -1174,8 +1182,9 @@ BbObliviousSignature::GenerateResponseAndProof(
 
   // Dummy opening has the same size as dummy_xs.
   BigNum dummy_beta_opening = ctx_->GenerateRandLessThan(dummy_xs_bound);
-  ASSIGN_OR_RETURN(PedersenOverZn::Commitment dummy_commit_betas,
-                   pedersen_->CommitWithRand(dummy_betas, dummy_beta_opening));
+  PJC_ASSIGN_OR_RETURN(
+      PedersenOverZn::Commitment dummy_commit_betas,
+      pedersen_->CommitWithRand(dummy_betas, dummy_beta_opening));
 
   // (1.2) Use the dummy values above to create dummy_cs_ys,
   // dummy_commit_betas, and dummy_base_gs and add them to proof message 1.
@@ -1190,8 +1199,8 @@ BbObliviousSignature::GenerateResponseAndProof(
   std::vector<ECPoint> dummy_base_gs;
   dummy_base_gs.reserve(request.num_messages());
   for (uint64_t i = 0; i < request.num_messages(); ++i) {
-    ASSIGN_OR_RETURN(ECPoint dummy_base_g,
-                     masked_prf_values[i].Mul(dummy_betas[i]));
+    PJC_ASSIGN_OR_RETURN(ECPoint dummy_base_g,
+                         masked_prf_values[i].Mul(dummy_betas[i]));
     dummy_base_gs.push_back(std::move(dummy_base_g));
   }
 
@@ -1199,8 +1208,8 @@ BbObliviousSignature::GenerateResponseAndProof(
   *proof_message_1.mutable_dummy_camenisch_shoup_ys() =
       BigNumVectorToProto(dummy_cs_ys);
   proof_message_1.set_dummy_commit_betas(dummy_commit_betas.ToBytes());
-  ASSIGN_OR_RETURN(*proof_message_1.mutable_dummy_base_gs(),
-                   ECPointVectorToProto(dummy_base_gs));
+  PJC_ASSIGN_OR_RETURN(*proof_message_1.mutable_dummy_base_gs(),
+                       ECPointVectorToProto(dummy_base_gs));
 
   // (1.3) dummy_enc_mask_messages_es is more complicated: we need to create one
   // entry for each CS ciphertext in the request.
@@ -1220,9 +1229,9 @@ BbObliviousSignature::GenerateResponseAndProof(
     //  intermediate_es contains
     // (1+n)^dummy_betas[i] mod n^(s+1) in the "es" component. This is achieved
     // by encrypting dummy_betas with randomness 0.
-    ASSIGN_OR_RETURN(CamenischShoupCiphertext intermediate_ciphertext,
-                     private_camenisch_shoup->EncryptWithRand(
-                         dummy_betas_for_batch, ctx_->Zero()));
+    PJC_ASSIGN_OR_RETURN(CamenischShoupCiphertext intermediate_ciphertext,
+                         private_camenisch_shoup->EncryptWithRand(
+                             dummy_betas_for_batch, ctx_->Zero()));
     // dummy_enc_mask_messages_es contains u^dummy_xs[j] * (1+n)^dummy_betas[j]
     // mod n^(s+1) in the "es" component.
     std::vector<BigNum> dummy_enc_mask_messages_es;
@@ -1242,7 +1251,7 @@ BbObliviousSignature::GenerateResponseAndProof(
   }
 
   // (2) Generate challenge
-  ASSIGN_OR_RETURN(
+  PJC_ASSIGN_OR_RETURN(
       BigNum challenge,
       GenerateResponseProofChallenge(
           public_key, commit_messages, commit_rs, request, response_proto,
@@ -1319,15 +1328,17 @@ Status BbObliviousSignature::VerifyResponse(
   encrypted_masked_messages.reserve(num_camenisch_shoup_ciphertexts);
   // Parse the needed request, response and response proof elements.
   for (size_t i = 0; i < num_camenisch_shoup_ciphertexts; ++i) {
-    ASSIGN_OR_RETURN(CamenischShoupCiphertext encrypted_masked_messages_at_i,
-                     public_camenisch_shoup_->ParseCiphertextProto(
-                         request.repeated_encrypted_masked_messages(i)));
+    PJC_ASSIGN_OR_RETURN(
+        CamenischShoupCiphertext encrypted_masked_messages_at_i,
+        public_camenisch_shoup_->ParseCiphertextProto(
+            request.repeated_encrypted_masked_messages(i)));
     encrypted_masked_messages.push_back(
         std::move(encrypted_masked_messages_at_i));
   }
-  ASSIGN_OR_RETURN(std::vector<ECPoint> masked_signature_values,
-                   ParseECPointVectorProto(ctx_, ec_group_,
-                                           response.masked_signature_values()));
+  PJC_ASSIGN_OR_RETURN(
+      std::vector<ECPoint> masked_signature_values,
+      ParseECPointVectorProto(ctx_, ec_group_,
+                              response.masked_signature_values()));
   PedersenOverZn::Commitment commit_betas =
       ctx_->CreateBigNum(response_proof.commit_betas());
   BigNum challenge_from_proof = ctx_->CreateBigNum(response_proof.challenge());
@@ -1361,21 +1372,21 @@ Status BbObliviousSignature::VerifyResponse(
   // Reconstruct dummy_base_gs.
   std::vector<ECPoint> dummy_base_gs;
   dummy_base_gs.reserve(request.num_messages());
-  ASSIGN_OR_RETURN(ECPoint base_g_to_challenge,
-                   base_g_.Mul(challenge_from_proof));
-  ASSIGN_OR_RETURN(ECPoint base_g_to_challenge_inverse,
-                   base_g_to_challenge.Inverse());
+  PJC_ASSIGN_OR_RETURN(ECPoint base_g_to_challenge,
+                       base_g_.Mul(challenge_from_proof));
+  PJC_ASSIGN_OR_RETURN(ECPoint base_g_to_challenge_inverse,
+                       base_g_to_challenge.Inverse());
   for (uint64_t i = 0; i < request.num_messages(); ++i) {
-    ASSIGN_OR_RETURN(ECPoint masked_dummy_g,
-                     masked_signature_values[i].Mul(masked_dummy_betas[i]));
+    PJC_ASSIGN_OR_RETURN(ECPoint masked_dummy_g,
+                         masked_signature_values[i].Mul(masked_dummy_betas[i]));
     // Compute dummy_base_g as masked_dummy_g / g^c
-    ASSIGN_OR_RETURN(ECPoint dummy_base_g,
-                     masked_dummy_g.Add(base_g_to_challenge_inverse));
+    PJC_ASSIGN_OR_RETURN(ECPoint dummy_base_g,
+                         masked_dummy_g.Add(base_g_to_challenge_inverse));
     dummy_base_gs.push_back(std::move(dummy_base_g));
   }
 
-  ASSIGN_OR_RETURN(*reconstructed_message_1.mutable_dummy_base_gs(),
-                   ECPointVectorToProto(dummy_base_gs));
+  PJC_ASSIGN_OR_RETURN(*reconstructed_message_1.mutable_dummy_base_gs(),
+                       ECPointVectorToProto(dummy_base_gs));
 
   for (size_t i = 0; i < num_camenisch_shoup_ciphertexts; ++i) {
     size_t batch_start_index =
@@ -1389,9 +1400,9 @@ Status BbObliviousSignature::VerifyResponse(
         masked_dummy_betas.begin() + batch_end_index);
     // Reconstruct dummy_es
     // es[i] of intermediate_ciphertext is (1+n)^masked_dummy_betas[i].
-    ASSIGN_OR_RETURN(CamenischShoupCiphertext intermediate_ciphertext,
-                     public_camenisch_shoup_->EncryptWithRand(
-                         masked_dummy_betas_for_batch, ctx_->Zero()));
+    PJC_ASSIGN_OR_RETURN(CamenischShoupCiphertext intermediate_ciphertext,
+                         public_camenisch_shoup_->EncryptWithRand(
+                             masked_dummy_betas_for_batch, ctx_->Zero()));
     std::vector<BigNum> dummy_es;
     dummy_es.reserve(batch_size);
     for (size_t j = 0; j < batch_size; ++j) {
@@ -1403,7 +1414,7 @@ Status BbObliviousSignature::VerifyResponse(
               public_camenisch_shoup_->modulus()),
           public_camenisch_shoup_->modulus());
 
-      ASSIGN_OR_RETURN(
+      PJC_ASSIGN_OR_RETURN(
           BigNum e_to_challenge_inverse,
           encrypted_masked_messages[i]
               .es[j]
@@ -1419,12 +1430,12 @@ Status BbObliviousSignature::VerifyResponse(
   }
 
   // Reconstruct dummy_commit_betas.
-  ASSIGN_OR_RETURN(
+  PJC_ASSIGN_OR_RETURN(
       PedersenOverZn::Commitment masked_dummy_commit_betas,
       pedersen_->CommitWithRand(masked_dummy_betas, masked_dummy_beta_opening));
-  ASSIGN_OR_RETURN(BigNum commit_betas_to_challenge_inverse,
-                   pedersen_->Multiply(commit_betas, challenge_from_proof)
-                       .ModInverse(pedersen_->n()));
+  PJC_ASSIGN_OR_RETURN(BigNum commit_betas_to_challenge_inverse,
+                       pedersen_->Multiply(commit_betas, challenge_from_proof)
+                           .ModInverse(pedersen_->n()));
   PedersenOverZn::Commitment dummy_commit_betas = pedersen_->Add(
       masked_dummy_commit_betas, commit_betas_to_challenge_inverse);
   reconstructed_message_1.set_dummy_commit_betas(dummy_commit_betas.ToBytes());
@@ -1437,7 +1448,7 @@ Status BbObliviousSignature::VerifyResponse(
        ++i) {
     BigNum masked_dummy_y = public_camenisch_shoup_->g().ModExp(
         masked_dummy_camenisch_shoup_xs[i], public_camenisch_shoup_->modulus());
-    ASSIGN_OR_RETURN(
+    PJC_ASSIGN_OR_RETURN(
         BigNum y_to_challenge_inverse,
         public_camenisch_shoup_->ys()[i]
             .ModExp(challenge_from_proof, public_camenisch_shoup_->modulus())
@@ -1451,10 +1462,10 @@ Status BbObliviousSignature::VerifyResponse(
 
   // Reconstruct the challenge by applying FiatShamir to the reconstructed
   // first message, and ensure it exactly matches the challenge in the proof.
-  ASSIGN_OR_RETURN(BigNum reconstructed_challenge,
-                   GenerateResponseProofChallenge(
-                       public_key, commit_messages, commit_rs, request,
-                       response, commit_betas, reconstructed_message_1));
+  PJC_ASSIGN_OR_RETURN(BigNum reconstructed_challenge,
+                       GenerateResponseProofChallenge(
+                           public_key, commit_messages, commit_rs, request,
+                           response, commit_betas, reconstructed_message_1));
 
   if (reconstructed_challenge != challenge_from_proof) {
     return absl::InvalidArgumentError(
@@ -1472,9 +1483,10 @@ StatusOr<std::vector<ECPoint>> BbObliviousSignature::ExtractResults(
     const proto::BbObliviousSignatureRequest& request,
     const proto::BbObliviousSignatureRequestPrivateState& request_state) {
   // Unmask and extract the signatures.
-  ASSIGN_OR_RETURN(std::vector<ECPoint> masked_prf_values,
-                   ParseECPointVectorProto(ctx_, ec_group_,
-                                           response.masked_signature_values()));
+  PJC_ASSIGN_OR_RETURN(
+      std::vector<ECPoint> masked_prf_values,
+      ParseECPointVectorProto(ctx_, ec_group_,
+                              response.masked_signature_values()));
   std::vector<BigNum> as =
       ParseBigNumVectorProto(ctx_, request_state.private_as());
 
@@ -1482,7 +1494,7 @@ StatusOr<std::vector<ECPoint>> BbObliviousSignature::ExtractResults(
   prf_values.reserve(masked_prf_values.size());
 
   for (size_t i = 0; i < masked_prf_values.size(); ++i) {
-    ASSIGN_OR_RETURN(ECPoint prf_value, masked_prf_values[i].Mul(as[i]));
+    PJC_ASSIGN_OR_RETURN(ECPoint prf_value, masked_prf_values[i].Mul(as[i]));
     prf_values.push_back(std::move(prf_value));
   }
 

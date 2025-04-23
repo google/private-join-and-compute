@@ -46,8 +46,9 @@ DyVerifiableRandomFunction::Create(proto::DyVrfParameters parameters_proto,
         "parameters.challenge_length_bits must be >= 0");
   }
 
-  ASSIGN_OR_RETURN(ECPoint dy_prf_base_g,
-                   ec_group->CreateECPoint(parameters_proto.dy_prf_base_g()));
+  PJC_ASSIGN_OR_RETURN(
+      ECPoint dy_prf_base_g,
+      ec_group->CreateECPoint(parameters_proto.dy_prf_base_g()));
 
   return absl::WrapUnique(new DyVerifiableRandomFunction(
       std::move(parameters_proto), context, ec_group, std::move(dy_prf_base_g),
@@ -62,8 +63,8 @@ DyVerifiableRandomFunction::GenerateKeyPair() {
   BigNum key = ec_group_->GeneratePrivateKey();
 
   int num_copies = pedersen_->gs().size();
-  ASSIGN_OR_RETURN(PedersenOverZn::CommitmentAndOpening commit_and_open_key,
-                   pedersen_->Commit(std::vector<BigNum>(num_copies, key)));
+  PJC_ASSIGN_OR_RETURN(PedersenOverZn::CommitmentAndOpening commit_and_open_key,
+                       pedersen_->Commit(std::vector<BigNum>(num_copies, key)));
 
   DyVerifiableRandomFunction::PublicKey public_key{
       commit_and_open_key.commitment  // commit_key
@@ -108,8 +109,9 @@ DyVerifiableRandomFunction::GenerateKeyPair() {
   BigNum dummy_opening = context_->GenerateRandLessThan(dummy_opening_bound);
   std::vector<BigNum> dummy_key_vector =
       std::vector<BigNum>(num_copies, dummy_key);
-  ASSIGN_OR_RETURN(PedersenOverZn::Commitment dummy_commit_prf_key,
-                   pedersen_->CommitWithRand(dummy_key_vector, dummy_opening));
+  PJC_ASSIGN_OR_RETURN(
+      PedersenOverZn::Commitment dummy_commit_prf_key,
+      pedersen_->CommitWithRand(dummy_key_vector, dummy_opening));
 
   // Create Statement and first message, and generate the challenge.
   proto::DyVrfGenerateKeysProof::Statement statement;
@@ -119,8 +121,8 @@ DyVerifiableRandomFunction::GenerateKeyPair() {
   proto::DyVrfGenerateKeysProof::Message1 message_1;
   *message_1.mutable_dummy_commit_prf_key() = dummy_commit_prf_key.ToBytes();
 
-  ASSIGN_OR_RETURN(BigNum challenge,
-                   GenerateChallengeForGenerateKeysProof(statement, message_1));
+  PJC_ASSIGN_OR_RETURN(BigNum challenge, GenerateChallengeForGenerateKeysProof(
+                                             statement, message_1));
 
   // Create the masked_dummy_opening values.
   BigNum masked_dummy_prf_key = dummy_key + (key.Mul(challenge));
@@ -170,13 +172,15 @@ Status DyVerifiableRandomFunction::VerifyGenerateKeysProof(
   // the proof.
   std::vector<BigNum> masked_dummy_prf_key_vector =
       std::vector<BigNum>(pedersen_->gs().size(), masked_dummy_prf_key);
-  ASSIGN_OR_RETURN(PedersenOverZn::Commitment masked_dummy_prf_key_commitment,
-                   pedersen_->CommitWithRand(masked_dummy_prf_key_vector,
-                                             masked_dummy_opening));
+  PJC_ASSIGN_OR_RETURN(
+      PedersenOverZn::Commitment masked_dummy_prf_key_commitment,
+      pedersen_->CommitWithRand(masked_dummy_prf_key_vector,
+                                masked_dummy_opening));
 
-  ASSIGN_OR_RETURN(PedersenOverZn::Commitment commit_keys_to_challenge_inverse,
-                   pedersen_->Multiply(commit_prf_key, challenge_from_proof)
-                       .ModInverse(pedersen_->n()));
+  PJC_ASSIGN_OR_RETURN(
+      PedersenOverZn::Commitment commit_keys_to_challenge_inverse,
+      pedersen_->Multiply(commit_prf_key, challenge_from_proof)
+          .ModInverse(pedersen_->n()));
   PedersenOverZn::Commitment dummy_commit_prf_key = pedersen_->Add(
       commit_keys_to_challenge_inverse, masked_dummy_prf_key_commitment);
 
@@ -190,8 +194,9 @@ Status DyVerifiableRandomFunction::VerifyGenerateKeysProof(
 
   message_1.set_dummy_commit_prf_key(dummy_commit_prf_key.ToBytes());
 
-  ASSIGN_OR_RETURN(BigNum reconstructed_challenge,
-                   GenerateChallengeForGenerateKeysProof(statement, message_1));
+  PJC_ASSIGN_OR_RETURN(
+      BigNum reconstructed_challenge,
+      GenerateChallengeForGenerateKeysProof(statement, message_1));
 
   if (reconstructed_challenge != challenge_from_proof) {
     return absl::InvalidArgumentError(absl::StrCat(
@@ -246,16 +251,17 @@ StatusOr<std::vector<ECPoint>> DyVerifiableRandomFunction::Apply(
   std::vector<ECPoint> dy_prf_evaluations;
   dy_prf_evaluations.reserve(messages.size());
 
-  ASSIGN_OR_RETURN(DyVerifiableRandomFunction::PrivateKey parsed_private_key,
-                   ParseDyVrfPrivateKeyProto(context_, private_key));
+  PJC_ASSIGN_OR_RETURN(
+      DyVerifiableRandomFunction::PrivateKey parsed_private_key,
+      ParseDyVrfPrivateKeyProto(context_, private_key));
 
   for (const BigNum& message : messages) {
     // f(m) = g^(1/(key+m))
-    ASSIGN_OR_RETURN(
+    PJC_ASSIGN_OR_RETURN(
         BigNum key_plus_message_inverse,
         (message + parsed_private_key.key).ModInverse(ec_group_->GetOrder()));
-    ASSIGN_OR_RETURN(ECPoint prf_evaluation,
-                     dy_prf_base_g_.Mul(key_plus_message_inverse));
+    PJC_ASSIGN_OR_RETURN(ECPoint prf_evaluation,
+                         dy_prf_base_g_.Mul(key_plus_message_inverse));
     dy_prf_evaluations.push_back(std::move(prf_evaluation));
   }
 
@@ -304,7 +310,7 @@ DyVerifiableRandomFunction::GenerateApplyProofMessage1(
 
   PedersenOverZn::Opening dummy_opening =
       context_->GenerateRandLessThan(dummy_opening_bound);
-  ASSIGN_OR_RETURN(
+  PJC_ASSIGN_OR_RETURN(
       PedersenOverZn::Commitment commit_dummy_messages_plus_key,
       pedersen_->CommitWithRand(dummy_messages_plus_key, dummy_opening));
 
@@ -312,8 +318,8 @@ DyVerifiableRandomFunction::GenerateApplyProofMessage1(
   std::vector<ECPoint> dummy_dy_prf_base_gs;
   dummy_dy_prf_base_gs.reserve(messages.size());
   for (size_t i = 0; i < messages.size(); ++i) {
-    ASSIGN_OR_RETURN(ECPoint dummy_dy_prf_base_g,
-                     prf_evaluations[i].Mul(dummy_messages_plus_key[i]));
+    PJC_ASSIGN_OR_RETURN(ECPoint dummy_dy_prf_base_g,
+                         prf_evaluations[i].Mul(dummy_messages_plus_key[i]));
     dummy_dy_prf_base_gs.push_back(std::move(dummy_dy_prf_base_g));
   }
 
@@ -374,10 +380,10 @@ StatusOr<proto::DyVrfApplyProof> DyVerifiableRandomFunction::GenerateApplyProof(
     const proto::DyVrfPublicKey& public_key,
     const proto::DyVrfPrivateKey& private_key,
     const PedersenOverZn::CommitmentAndOpening& commit_and_open_messages) {
-  ASSIGN_OR_RETURN(PublicKey public_key_parsed,
-                   ParseDyVrfPublicKeyProto(context_, public_key));
-  ASSIGN_OR_RETURN(PrivateKey private_key_parsed,
-                   ParseDyVrfPrivateKeyProto(context_, private_key));
+  PJC_ASSIGN_OR_RETURN(PublicKey public_key_parsed,
+                       ParseDyVrfPublicKeyProto(context_, public_key));
+  PJC_ASSIGN_OR_RETURN(PrivateKey private_key_parsed,
+                       ParseDyVrfPrivateKeyProto(context_, private_key));
 
   proto::DyVrfApplyProof proof_proto;
 
@@ -386,20 +392,21 @@ StatusOr<proto::DyVrfApplyProof> DyVerifiableRandomFunction::GenerateApplyProof(
   std::unique_ptr<DyVerifiableRandomFunction::ApplyProof::Message1PrivateState>
       proof_message_1_private_state;
 
-  ASSIGN_OR_RETURN(std::tie(proof_message_1, proof_message_1_private_state),
-                   GenerateApplyProofMessage1(
-                       messages, prf_evaluations, commit_and_open_messages,
-                       public_key_parsed, private_key_parsed));
+  PJC_ASSIGN_OR_RETURN(std::tie(proof_message_1, proof_message_1_private_state),
+                       GenerateApplyProofMessage1(
+                           messages, prf_evaluations, commit_and_open_messages,
+                           public_key_parsed, private_key_parsed));
 
-  ASSIGN_OR_RETURN(*proof_proto.mutable_message_1(),
-                   DyVrfApplyProofMessage1ToProto(*proof_message_1));
+  PJC_ASSIGN_OR_RETURN(*proof_proto.mutable_message_1(),
+                       DyVrfApplyProofMessage1ToProto(*proof_message_1));
 
-  ASSIGN_OR_RETURN(BigNum challenge, GenerateApplyProofChallenge(
-                                         prf_evaluations, public_key,
-                                         commit_and_open_messages.commitment,
-                                         proof_proto.message_1()));
+  PJC_ASSIGN_OR_RETURN(
+      BigNum challenge,
+      GenerateApplyProofChallenge(prf_evaluations, public_key,
+                                  commit_and_open_messages.commitment,
+                                  proof_proto.message_1()));
 
-  ASSIGN_OR_RETURN(
+  PJC_ASSIGN_OR_RETURN(
       std::unique_ptr<DyVerifiableRandomFunction::ApplyProof::Message2>
           proof_message_2,
       GenerateApplyProofMessage2(messages, prf_evaluations,
@@ -419,12 +426,12 @@ Status DyVerifiableRandomFunction::VerifyApplyProof(
     const proto::DyVrfPublicKey& public_key,
     const PedersenOverZn::Commitment& commit_messages,
     const proto::DyVrfApplyProof& proof) {
-  ASSIGN_OR_RETURN(PublicKey public_key_parsed,
-                   ParseDyVrfPublicKeyProto(context_, public_key));
-  ASSIGN_OR_RETURN(ApplyProof::Message1 message_1,
-                   ParseDyVrfApplyProofMessage1Proto(context_, ec_group_,
-                                                     proof.message_1()));
-  ASSIGN_OR_RETURN(
+  PJC_ASSIGN_OR_RETURN(PublicKey public_key_parsed,
+                       ParseDyVrfPublicKeyProto(context_, public_key));
+  PJC_ASSIGN_OR_RETURN(ApplyProof::Message1 message_1,
+                       ParseDyVrfApplyProofMessage1Proto(context_, ec_group_,
+                                                         proof.message_1()));
+  PJC_ASSIGN_OR_RETURN(
       ApplyProof::Message2 message_2,
       ParseDyVrfApplyProofMessage2Proto(context_, proof.message_2()));
 
@@ -457,9 +464,10 @@ Status DyVerifiableRandomFunction::VerifyApplyProof(
 
   // Invoke GenerateApplyProofChallenge if challenge is not already specified
   // as a parameter.
-  ASSIGN_OR_RETURN(BigNum challenge, GenerateApplyProofChallenge(
-                                         prf_evaluations, public_key,
-                                         commit_messages, proof.message_1()));
+  PJC_ASSIGN_OR_RETURN(
+      BigNum challenge,
+      GenerateApplyProofChallenge(prf_evaluations, public_key, commit_messages,
+                                  proof.message_1()));
 
   // Verify the bit lengths of the masked values in the proof.
   for (const auto& masked_value : message_2.masked_dummy_messages_plus_key) {
@@ -475,18 +483,18 @@ Status DyVerifiableRandomFunction::VerifyApplyProof(
   }
 
   // Check properties hold for dummy_dy_prf_base_gs.
-  ASSIGN_OR_RETURN(ECPoint dy_prf_base_g_to_challenge,
-                   dy_prf_base_g_.Mul(challenge));
+  PJC_ASSIGN_OR_RETURN(ECPoint dy_prf_base_g_to_challenge,
+                       dy_prf_base_g_.Mul(challenge));
   for (size_t i = 0; i < prf_evaluations.size(); ++i) {
     // Let sigma be the prf evaluation. Then we must check (in multiplicative
     // notation):
     // sigma^(masked_key_plus_message) =
     //   (dummy_dy_prf_base_gs * (dy_prf_base_g^challenge))
-    ASSIGN_OR_RETURN(
+    PJC_ASSIGN_OR_RETURN(
         ECPoint check_prf_left_hand_side,
         prf_evaluations[i].Mul(message_2.masked_dummy_messages_plus_key[i]));
 
-    ASSIGN_OR_RETURN(
+    PJC_ASSIGN_OR_RETURN(
         ECPoint check_prf_right_hand_side,
         message_1.dummy_dy_prf_base_gs[i].Add(dy_prf_base_g_to_challenge));
     if (check_prf_left_hand_side != check_prf_right_hand_side) {
@@ -502,7 +510,7 @@ Status DyVerifiableRandomFunction::VerifyApplyProof(
           pedersen_->Add(commit_messages, public_key_parsed.commit_key),
           challenge);
 
-  ASSIGN_OR_RETURN(
+  PJC_ASSIGN_OR_RETURN(
       PedersenOverZn::Commitment masked_dummy_commitment,
       pedersen_->CommitWithRand(message_2.masked_dummy_messages_plus_key,
                                 message_2.masked_dummy_opening));
@@ -529,8 +537,8 @@ StatusOr<BigNum> DyVerifiableRandomFunction::GenerateApplyProofChallenge(
   *statement.mutable_parameters() = parameters_proto_;
   *statement.mutable_public_key() = public_key;
   statement.set_commit_messages(commit_messages.ToBytes());
-  ASSIGN_OR_RETURN(*statement.mutable_prf_evaluations(),
-                   ECPointVectorToProto(prf_evaluations));
+  PJC_ASSIGN_OR_RETURN(*statement.mutable_prf_evaluations(),
+                       ECPointVectorToProto(prf_evaluations));
 
   // Note that the random oracle prefix is implicitly included as part of the
   // parameters being serialized in the statement proto. We skip including it
@@ -580,8 +588,8 @@ DyVerifiableRandomFunction::DyVrfApplyProofMessage1ToProto(
   proto::DyVrfApplyProof::Message1 message_1_proto;
   message_1_proto.set_commit_dummy_messages_plus_key(
       message_1.commit_dummy_messages_plus_key.ToBytes());
-  ASSIGN_OR_RETURN(*message_1_proto.mutable_dummy_dy_prf_base_gs(),
-                   ECPointVectorToProto(message_1.dummy_dy_prf_base_gs));
+  PJC_ASSIGN_OR_RETURN(*message_1_proto.mutable_dummy_dy_prf_base_gs(),
+                       ECPointVectorToProto(message_1.dummy_dy_prf_base_gs));
   return message_1_proto;
 }
 proto::DyVrfApplyProof::Message2
@@ -616,9 +624,10 @@ DyVerifiableRandomFunction::ParseDyVrfApplyProofMessage1Proto(
     const proto::DyVrfApplyProof::Message1& message_1_proto) {
   BigNum commit_dummy_messages_plus_key =
       ctx->CreateBigNum(message_1_proto.commit_dummy_messages_plus_key());
-  ASSIGN_OR_RETURN(std::vector<ECPoint> dummy_dy_prf_base_gs,
-                   ParseECPointVectorProto(
-                       ctx, ec_group, message_1_proto.dummy_dy_prf_base_gs()));
+  PJC_ASSIGN_OR_RETURN(
+      std::vector<ECPoint> dummy_dy_prf_base_gs,
+      ParseECPointVectorProto(ctx, ec_group,
+                              message_1_proto.dummy_dy_prf_base_gs()));
   return DyVerifiableRandomFunction::ApplyProof::Message1{
       std::move(commit_dummy_messages_plus_key),
       std::move(dummy_dy_prf_base_gs)};
