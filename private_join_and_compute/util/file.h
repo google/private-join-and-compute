@@ -18,6 +18,7 @@
 
 #include <string>
 
+#include "absl/strings/string_view.h"
 #include "private_join_and_compute/util/status.inc"
 
 namespace private_join_and_compute {
@@ -31,6 +32,18 @@ Status RenameFile(absl::string_view from, absl::string_view to);
 // Returns Status::OK for success.
 // Error code in case of an error depends on the underlying implementation.
 Status DeleteFile(absl::string_view file_name);
+
+// Checks if a file exists.
+// Returns Status::OK for success.
+// Error code in case of an error depends on the underlying implementation.
+Status FileExists(absl::string_view file_name);
+
+// Recursively creates a directory.
+// Returns Status::OK for success.
+// Error code in case of an error depends on the underlying implementation.
+// Usually returns ok if the directory already exists, but this is
+// implementation dependent.
+Status RecursivelyCreateDir(absl::string_view dir_name);
 
 class File {
  public:

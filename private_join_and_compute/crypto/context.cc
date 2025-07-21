@@ -21,6 +21,7 @@
 
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
+#include "private_join_and_compute/crypto/openssl.inc"
 #include "private_join_and_compute/crypto/openssl_init.h"
 
 namespace private_join_and_compute {

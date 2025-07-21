@@ -46,8 +46,8 @@ using ::testing::TempDir;
 std::string GetTestPBWithDummyAsStr(absl::string_view data,
                                     absl::string_view dummy) {
   TestProto test_proto;
-  test_proto.set_record(std::string(data));
-  test_proto.set_dummy(std::string(dummy));
+  test_proto.set_record(data);
+  test_proto.set_dummy(dummy);
   return ProtoUtils::ToString(test_proto);
 }
 
@@ -66,7 +66,7 @@ void ExpectFileContainsRecords(absl::string_view filename,
 
 TestProto GetRecord(absl::string_view id) {
   TestProto record;
-  record.set_record(std::string(id));
+  record.set_record(id);
   return record;
 }
 

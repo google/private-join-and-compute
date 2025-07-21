@@ -17,7 +17,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <exception>
+#include <filesystem>  // NOLINT
+#include <string>
+#include <system_error>  // NOLINT
+
 #include "absl/strings/str_cat.h"
+#include "absl/strings/string_view.h"
 #include "private_join_and_compute/util/file.h"
 #include "private_join_and_compute/util/status.inc"
 
@@ -162,6 +168,47 @@ Status DeleteFile(absl::string_view file_name) {
         absl::StrCat("DeleteFile failed:", "Cannot delete file, ", file_name));
   }
   return OkStatus();
+}
+
+// Checks if a file exists.
+// Returns Status::OK for success.
+// Error code in case of an error depends on the underlying implementation.
+Status FileExists(absl::string_view file_name) {
+  std::string file_path = std::string(file_name);
+  if (std::filesystem::exists(file_path)) {
+    return OkStatus();
+  }
+  return absl::NotFoundError(absl::StrCat("File does not exist: ", file_name));
+}
+
+// Recursively creates a directory.
+// Returns Status::OK for success.
+// Error code in case of an error depends on the underlying implementation.
+Status RecursivelyCreateDir(absl::string_view dir_name) {
+  std::string dir_path = std::string(dir_name);
+  try {
+    // Attempt to create the directories recursively
+    if (std::filesystem::create_directories(dir_path)) {
+      return OkStatus();
+    } else {
+      // This 'else' branch is typically reached if the directory already exists
+      return absl::AlreadyExistsError(absl::StrCat(
+          "Directories already exist or creation failed for another reason: ",
+          dir_path));
+    }
+  } catch (const std::filesystem::filesystem_error& e) {
+    return absl::InternalError(absl::StrCat(
+        "RecursivelyCreateDir failed: Filesystem error: ", e.what(),
+        " for directory: ", dir_path));
+  } catch (const std::system_error& e) {
+    // Catch other general exceptions
+    return absl::InternalError(
+        absl::StrCat("RecursivelyCreateDir failed: General error: ", e.what(),
+                     " for directory: ", dir_path));
+  } catch (...) {
+    return absl::InternalError(absl::StrCat(
+        "RecursivelyCreateDir failed: Unknown error for directory:", dir_path));
+  }
 }
 
 }  // namespace private_join_and_compute

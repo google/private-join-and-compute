@@ -148,5 +148,35 @@ TEST_F(FileTest, ReadLineWithCarriageReturnsTest) {
   EXPECT_TRUE(f_->Close().ok());
 }
 
+TEST_F(FileTest, FileDoesNotExist) {
+  EXPECT_FALSE(FileExists(testing::TempDir() + "/nonexistent.txt").ok());
+}
+
+TEST_F(FileTest, FileExists) {
+  EXPECT_TRUE(f_->Open(testing::TempDir() + "/newly_written.txt", "wb").ok());
+  EXPECT_TRUE(f_->Write("water", 5).ok());
+  EXPECT_TRUE(f_->Close().ok());
+  // File exists after writing.
+  EXPECT_TRUE(FileExists(testing::TempDir() + "/newly_written.txt").ok());
+}
+
+TEST_F(FileTest, WriteToUncreatedDirectoryFails) {
+  // Write to uncreated directory.
+  EXPECT_FALSE(
+      f_->Open(testing::TempDir() + "/tmp/nonexsistent/tmp.txt", "wb").ok());
+}
+
+TEST_F(FileTest, RecursivelyCreateDir) {
+  // Create a directory.
+  EXPECT_TRUE(RecursivelyCreateDir(testing::TempDir() + "/tmp/dir1/dir2").ok());
+  // Write to the directory.
+  EXPECT_TRUE(
+      f_->Open(testing::TempDir() + "/tmp/dir1/dir2/tmp.txt", "wb").ok());
+  EXPECT_TRUE(f_->Write("water", 5).ok());
+  EXPECT_TRUE(f_->Close().ok());
+  // File exists after writing.
+  EXPECT_TRUE(FileExists(testing::TempDir() + "/tmp/dir1/dir2/tmp.txt").ok());
+}
+
 }  // namespace
 }  // namespace private_join_and_compute

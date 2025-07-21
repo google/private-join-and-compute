@@ -39,6 +39,7 @@
 
 #include "absl/memory/memory.h"
 #include "absl/strings/string_view.h"
+#include "absl/types/span.h"
 #include "private_join_and_compute/util/file.h"
 #include "private_join_and_compute/util/status.inc"
 
@@ -249,7 +250,7 @@ class ShardMerger {
   // Merges the supplied shards into a single output file, using the supplied
   // key.
   Status Merge(const std::function<T(absl::string_view)>& get_key,
-               const std::vector<std::string>& shard_files,
+               absl::Span<const std::string> shard_files,
                absl::string_view output_file);
 
   // Deletes the supplied shard files.

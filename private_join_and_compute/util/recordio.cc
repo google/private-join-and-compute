@@ -30,6 +30,7 @@
 #include "absl/strings/str_join.h"
 #include "absl/strings/string_view.h"
 #include "absl/synchronization/mutex.h"
+#include "absl/types/span.h"
 #include "private_join_and_compute/util/status.inc"
 #include "src/google/protobuf/io/coded_stream.h"
 #include "src/google/protobuf/io/zero_copy_stream_impl_lite.h"
@@ -564,7 +565,7 @@ ShardMerger<T>::ShardMerger(std::unique_ptr<MultiSortedReader<T>> multi_reader,
 
 template <typename T>
 Status ShardMerger<T>::Merge(const std::function<T(absl::string_view)>& get_key,
-                             const std::vector<std::string>& shard_files,
+                             absl::Span<const std::string> shard_files,
                              absl::string_view output_file) {
   if (shard_files.empty()) {
     // Create an empty output file.
