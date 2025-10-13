@@ -17,6 +17,8 @@ syntax = "proto3";
 
 package private_join_and_compute;
 
+option optimize_for = LITE_RUNTIME;
+
 // Holds a Paillier Public Key.
 message PaillierPublicKey {
   // Contains a serialized BigNum encoding the Paillier modulus n.

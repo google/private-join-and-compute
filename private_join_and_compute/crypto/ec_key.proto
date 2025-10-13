@@ -21,6 +21,7 @@ package private_join_and_compute;
 
 option java_package = "privacy.blinders";
 option java_outer_classname = "EcKey";
+option optimize_for = LITE_RUNTIME;
 
 
 message EcKeyProto {

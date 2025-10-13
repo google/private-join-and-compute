@@ -21,6 +21,8 @@ syntax = "proto3";
 
 package private_join_and_compute;
 
+option optimize_for = LITE_RUNTIME;
+
 // Public key for ElGamal encryption scheme. For ElGamal over integers, all the
 // fields are serialized BigNums; for ElGamal over an Elliptic Curve, g and y
 // are serialized ECPoints, p is not set.

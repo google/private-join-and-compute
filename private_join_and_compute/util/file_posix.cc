@@ -186,29 +186,19 @@ Status FileExists(absl::string_view file_name) {
 // Error code in case of an error depends on the underlying implementation.
 Status RecursivelyCreateDir(absl::string_view dir_name) {
   std::string dir_path = std::string(dir_name);
-  try {
-    // Attempt to create the directories recursively
-    if (std::filesystem::create_directories(dir_path)) {
-      return OkStatus();
-    } else {
-      // This 'else' branch is typically reached if the directory already exists
-      return absl::AlreadyExistsError(absl::StrCat(
-          "Directories already exist or creation failed for another reason: ",
-          dir_path));
-    }
-  } catch (const std::filesystem::filesystem_error& e) {
-    return absl::InternalError(absl::StrCat(
-        "RecursivelyCreateDir failed: Filesystem error: ", e.what(),
-        " for directory: ", dir_path));
-  } catch (const std::system_error& e) {
-    // Catch other general exceptions
+  std::error_code error;
+  bool created = std::filesystem::create_directories(dir_path, error);
+  if (error) {
     return absl::InternalError(
-        absl::StrCat("RecursivelyCreateDir failed: General error: ", e.what(),
-                     " for directory: ", dir_path));
-  } catch (...) {
-    return absl::InternalError(absl::StrCat(
-        "RecursivelyCreateDir failed: Unknown error for directory:", dir_path));
+        absl::StrCat("RecursivelyCreateDir failed: Error (", error.message(),
+                     ") for directory: ", dir_path));
   }
+  if (!created) {
+    return absl::AlreadyExistsError(absl::StrCat(
+        "Directories already exist or creation failed for another reason: ",
+        dir_path));
+  }
+  return OkStatus();
 }
 
 }  // namespace private_join_and_compute

@@ -19,6 +19,8 @@ package private_join_and_compute;
 
 import "private_join_and_compute/match.proto";
 
+option optimize_for = LITE_RUNTIME;
+
 // Client Messages
 
 message PrivateIntersectionSumClientMessage {
