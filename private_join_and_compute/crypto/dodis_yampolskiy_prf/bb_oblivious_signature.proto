@@ -25,6 +25,7 @@ import "private_join_and_compute/crypto/proto/pedersen.proto";
 
 
 option java_multiple_files = true;
+option optimize_for = LITE_RUNTIME;
 
 message BbObliviousSignatureParameters {
   // How many bits (more than the challenge bits) to add to each
