@@ -19,9 +19,8 @@ package private_join_and_compute.proto;
 
 import "private_join_and_compute/crypto/proto/big_num.proto";
 
-
-option java_multiple_files = true;
 option optimize_for = LITE_RUNTIME;
+option java_multiple_files = true;
 
 // Parameters key for Pedersen commitment scheme. All the fields are serialized
 // BigNums.

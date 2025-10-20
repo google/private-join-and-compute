@@ -17,7 +17,7 @@ syntax = "proto3";
 
 package private_join_and_compute.util.proto.test;
 
-
+option optimize_for = LITE_RUNTIME;
 
 message IntValueProto {
   int32 prefix = 1;

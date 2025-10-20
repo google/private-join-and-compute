@@ -17,6 +17,8 @@ syntax = "proto3";
 
 package private_join_and_compute.testing;
 
+option optimize_for = LITE_RUNTIME;
+
 message TestProto {
   bytes record = 1;
   bytes dummy = 2;

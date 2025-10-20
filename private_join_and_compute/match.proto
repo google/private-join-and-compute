@@ -17,6 +17,8 @@ syntax = "proto3";
 
 package private_join_and_compute;
 
+option optimize_for = LITE_RUNTIME;
+
 // Holds a set of encrypted values.
 message EncryptedSet {
   repeated EncryptedElement elements = 1;

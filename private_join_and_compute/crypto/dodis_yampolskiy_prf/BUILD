@@ -110,6 +110,7 @@ cc_library(
         "//private_join_and_compute/crypto/proto:ec_point_cc_proto",
         "//private_join_and_compute/crypto/proto:proto_util",
         "@abseil-cpp//absl/strings",
+        "@protobuf//:protobuf_lite",
     ],
 )
 

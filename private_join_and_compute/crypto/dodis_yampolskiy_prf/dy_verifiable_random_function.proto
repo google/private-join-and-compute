@@ -21,10 +21,8 @@ import "private_join_and_compute/crypto/proto/big_num.proto";
 import "private_join_and_compute/crypto/proto/ec_point.proto";
 import "private_join_and_compute/crypto/proto/pedersen.proto";
 
-
-
-option java_multiple_files = true;
 option optimize_for = LITE_RUNTIME;
+option java_multiple_files = true;
 
 message DyVrfParameters {
   // How many bits (more than the challenge bits) to add to each

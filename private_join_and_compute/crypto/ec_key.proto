@@ -19,9 +19,9 @@ syntax = "proto3";
 
 package private_join_and_compute;
 
+option optimize_for = LITE_RUNTIME;
 option java_package = "privacy.blinders";
 option java_outer_classname = "EcKey";
-
 
 message EcKeyProto {
   // Named curve id
