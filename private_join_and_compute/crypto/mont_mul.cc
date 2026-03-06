@@ -75,17 +75,6 @@ bool MontBigNum::operator==(const MontBigNum& other) const {
   return BN_cmp(bn_.get(), other.bn_.get()) == 0;
 }
 
-MontBigNum MontBigNum::PowTo2To(int64_t exponent) const {
-  CHECK(exponent >= 0) << "MontBigNum::PowTo2To: exponent must be nonnegative";
-  MontBigNum r = *this;
-  for (int64_t i = 0; i < exponent; i++) {
-    CRYPTO_CHECK(1 == BN_mod_mul_montgomery(r.bn_.get(), r.bn_.get(),
-                                            r.bn_.get(), mont_ctx_,
-                                            ctx_->GetBnCtx()));
-  }
-  return r;
-}
-
 // The reinterpret_cast is necessary to return a string.
 std::string MontBigNum::ToBytes() const {
   int length = BN_num_bytes(bn_.get());

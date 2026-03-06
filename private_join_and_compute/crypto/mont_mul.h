@@ -77,10 +77,6 @@ class MontBigNum {
     return !(*this == other);
   }
 
-  // Computes this^(2^exponent) in Montgomery form and returns the resulting
-  // MontBigNum.
-  MontBigNum PowTo2To(int64_t exponent) const;
-
   // Serializes this without converting to BigNum.
   std::string ToBytes() const;
 

@@ -130,7 +130,7 @@ TEST(ElGamalKeyUtilTest, TestEmptyKeyShares) {
 }
 
 TEST(ElGamalKeyUtilTest, TestKeyReadWrite) {
-  std::unique_ptr<Context> context(new Context);
+  std::unique_ptr<Context> context = std::make_unique<Context>();
   ASSERT_OK_AND_ASSIGN(ECGroup group,
                        ECGroup::Create(kTestCurveId, context.get()));
   ASSERT_OK_AND_ASSIGN(

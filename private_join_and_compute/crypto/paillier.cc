@@ -156,7 +156,8 @@ std::unique_ptr<BigNumTable> GetDecryptPrecomp(
   //     ---|
   //      --|
   //       -+
-  std::unique_ptr<BigNumTable> precomp_table(new BigNumTable(s + 1));
+  std::unique_ptr<BigNumTable> precomp_table =
+      std::make_unique<BigNumTable>(s + 1);
   for (int k = 2; k <= s; k++) {
     BigNum k_inverse = ctx->CreateBigNum(k).ModInverse(powers[s]).value();
     precomp_table->Insert(k, s, k_inverse.ModMul(precomp[k - 1], powers[s]));

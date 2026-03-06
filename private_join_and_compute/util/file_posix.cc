@@ -201,4 +201,16 @@ Status RecursivelyCreateDir(absl::string_view dir_name) {
   return OkStatus();
 }
 
+Status RecursivelyDeleteDir(absl::string_view dir_name) {
+  std::string dir_path = std::string(dir_name);
+  std::error_code error;
+  std::filesystem::remove_all(dir_path, error);
+  if (error) {
+    return absl::InternalError(
+        absl::StrCat("RecursivelyDeleteDir failed: Error (", error.value(),
+                     ": ", error.message(), ") for directory: ", dir_path));
+  }
+  return OkStatus();
+}
+
 }  // namespace private_join_and_compute

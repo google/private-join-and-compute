@@ -46,6 +46,11 @@ Status FileExists(absl::string_view file_name);
 // implementation dependent.
 Status RecursivelyCreateDir(absl::string_view dir_name);
 
+// Recursively deletes a directory and its contents.
+// Returns Status::OK for success.
+// Error code in case of an error depends on the underlying implementation.
+Status RecursivelyDeleteDir(absl::string_view dir_name);
+
 class File {
  public:
   virtual ~File() = default;

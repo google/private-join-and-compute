@@ -178,5 +178,19 @@ TEST_F(FileTest, RecursivelyCreateDir) {
   EXPECT_TRUE(FileExists(testing::TempDir() + "/tmp/dir1/dir2/tmp.txt").ok());
 }
 
+TEST_F(FileTest, RecursivelyDeleteDir) {
+  std::string dir = testing::TempDir() + "/tmp/to_delete/dir1/dir2";
+  EXPECT_TRUE(RecursivelyCreateDir(dir).ok());
+  std::string file = dir + "/tmp.txt";
+  EXPECT_TRUE(f_->Open(file, "wb").ok());
+  EXPECT_TRUE(f_->Write("water", 5).ok());
+  EXPECT_TRUE(f_->Close().ok());
+  EXPECT_TRUE(FileExists(file).ok());
+
+  EXPECT_TRUE(RecursivelyDeleteDir(testing::TempDir() + "/tmp/to_delete").ok());
+  EXPECT_FALSE(FileExists(file).ok());
+  EXPECT_FALSE(FileExists(testing::TempDir() + "/tmp/to_delete").ok());
+}
+
 }  // namespace
 }  // namespace private_join_and_compute
